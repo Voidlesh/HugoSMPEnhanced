@@ -6,7 +6,6 @@
 		"TpaSystemChatMixin",
 		"PersistentChatMixin",
 		"CompactTabListMixin",
-		"SelfOnTopTabListMixin",
 		"TitleScreenQuickJoinMixin",
 		"ChatFilterMixin"
 	],

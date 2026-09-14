@@ -31,5 +31,4 @@ public class ModConfig {
 	// Tabliste
 	public boolean tabListCompactEnabled = false;
 	public double tabListScale = 0.75;
-	public boolean tabListSelfOnTopEnabled = false;
 }
