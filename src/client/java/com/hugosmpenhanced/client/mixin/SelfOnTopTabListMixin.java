@@ -27,11 +27,16 @@ public abstract class SelfOnTopTabListMixin {
 			return;
 		}
 		UUID selfId = client.player.getGameProfile().id();
+		String selfName = client.player.getGameProfile().name();
 
 		List<PlayerInfo> original = cir.getReturnValue();
 		int selfIndex = -1;
 		for (int i = 0; i < original.size(); i++) {
-			if (original.get(i).getProfile().id().equals(selfId)) {
+			// Matched by UUID first, falling back to name: some proxied setups (e.g. Velocity/
+			// BungeeCord with misconfigured forwarding) report a different UUID for our own
+			// entry in the tab list than the one the client authenticated with.
+			var profile = original.get(i).getProfile();
+			if (profile.id().equals(selfId) || profile.name().equalsIgnoreCase(selfName)) {
 				selfIndex = i;
 				break;
 			}

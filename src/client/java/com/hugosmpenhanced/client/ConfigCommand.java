@@ -14,7 +14,9 @@ public final class ConfigCommand {
 				dispatcher.register(ClientCommandManager.literal("hugosmpenhanced")
 						.executes(context -> {
 							Minecraft client = Minecraft.getInstance();
-							client.setScreen(ConfigScreenBuilder.build(client.screen));
+							// Deferred: the chat screen closes itself right after dispatching this
+							// command, which would immediately undo a setScreen() called inline here.
+							client.execute(() -> client.setScreen(ConfigScreenBuilder.build(client.screen)));
 							return 1;
 						})));
 	}
