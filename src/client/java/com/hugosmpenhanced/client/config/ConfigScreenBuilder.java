@@ -107,11 +107,6 @@ public final class ConfigScreenBuilder {
 								.step(0.05)
 								.valueFormatter(v -> Component.literal(Math.round(v * 100) + "%")))
 						.build())
-				.option(Option.<Boolean>createBuilder()
-						.name(Component.literal("Eigenen Namen oben anzeigen"))
-						.binding(false, () -> config.tabListSelfOnTopEnabled, v -> config.tabListSelfOnTopEnabled = v)
-						.controller(BooleanControllerBuilder::create)
-						.build())
 				.build();
 	}
 
