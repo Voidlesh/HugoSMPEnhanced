@@ -39,7 +39,7 @@ public final class MentionHighlightFeature {
 				client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_TOAST_IN, 1.0f));
 			}
 
-			client.gui.hud.getChat().addClientSystemMessage(
+			client.gui.getChat().addMessage(
 					Component.literal("» ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
 							.append(Component.literal(sender.name()).withStyle(ChatFormatting.YELLOW))
 							.append(Component.literal(" hat dich erwähnt").withStyle(ChatFormatting.GOLD)));
