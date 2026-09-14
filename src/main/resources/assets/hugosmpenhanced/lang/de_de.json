@@ -1,0 +1,7 @@
+{
+	"key.hugosmpenhanced.accept_tpa": "Teleport-Anfrage annehmen",
+	"key.categories.hugosmpenhanced.tpa": "HugoSMP Enhanced",
+	"hugosmpenhanced.tpa.title": "%s möchte sich zu dir teleportieren",
+	"hugosmpenhanced.tpahere.title": "%s möchte, dass du dich zu ihm teleportierst",
+	"hugosmpenhanced.tpa.subtitle": "Drücke %s zum Annehmen"
+}

@@ -1,0 +1,16 @@
+{
+	"required": true,
+	"minVersion": "0.8",
+	"package": "com.hugosmpenhanced.client.mixin",
+	"mixins": [
+		"TpaSystemChatMixin",
+		"PersistentChatMixin",
+		"CompactTabListMixin",
+		"SelfOnTopTabListMixin",
+		"TitleScreenQuickJoinMixin",
+		"ChatFilterMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

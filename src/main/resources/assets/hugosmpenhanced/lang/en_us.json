@@ -1,0 +1,7 @@
+{
+	"key.hugosmpenhanced.accept_tpa": "Accept teleport request",
+	"key.categories.hugosmpenhanced.tpa": "HugoSMP Enhanced",
+	"hugosmpenhanced.tpa.title": "%s wants to teleport to you",
+	"hugosmpenhanced.tpahere.title": "%s wants you to teleport to them",
+	"hugosmpenhanced.tpa.subtitle": "Press %s to accept"
+}

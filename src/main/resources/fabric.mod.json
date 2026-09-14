@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "hugosmpenhanced",
+	"version": "${version}",
+	"name": "HugoSMP Enhanced",
+	"description": "Inoffizieller Community-Client-Mod für HugoSMP.net — visuelle und QoL-Erweiterungen. Nicht offiziell von HugoSMP oder LetsHugo affiliiert.",
+	"authors": [
+		"Levi Maiwald"
+	],
+	"contact": {},
+	"license": "CC0-1.0",
+	"icon": "assets/hugosmpenhanced/icon.png",
+	"environment": "client",
+	"entrypoints": {
+		"client": [
+			"com.hugosmpenhanced.client.HugoSmpEnhancedClient"
+		],
+		"modmenu": [
+			"com.hugosmpenhanced.client.ModMenuIntegration"
+		]
+	},
+	"mixins": [
+		{
+			"config": "hugosmpenhanced.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.19.5",
+		"minecraft": "~26.2",
+		"java": ">=25",
+		"fabric-api": "*",
+		"yet_another_config_lib_v3": "*"
+	},
+	"suggests": {
+		"modmenu": "*"
+	}
+}
