@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import com.hugosmpenhanced.client.HugoSmpEnhancedClient;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.util.ServerCheck;
 import net.minecraft.client.Minecraft;
@@ -14,8 +15,12 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
+import java.util.stream.Collectors;
+
 @Mixin(PlayerTabOverlay.class)
 public abstract class SelfOnTopTabListMixin {
+	private static long hugosmpenhanced$lastLogMs = 0L;
+
 	@Inject(method = "getPlayerInfos", at = @At("RETURN"), cancellable = true)
 	private void hugosmpenhanced$moveSelfToTop(CallbackInfoReturnable<List<PlayerInfo>> cir) {
 		if (!ModConfigManager.CONFIG.tabListSelfOnTopEnabled || !ServerCheck.isHugoSmp()) {
@@ -41,6 +46,9 @@ public abstract class SelfOnTopTabListMixin {
 				break;
 			}
 		}
+
+		hugosmpenhanced$debugLog(original, selfName, selfIndex);
+
 		if (selfIndex <= 0) {
 			return;
 		}
@@ -49,5 +57,24 @@ public abstract class SelfOnTopTabListMixin {
 		PlayerInfo self = reordered.remove(selfIndex);
 		reordered.add(0, self);
 		cir.setReturnValue(reordered);
+	}
+
+	// TEMPORARY diagnostic: HugoSMP uses a custom resource pack, and it's unclear whether the
+	// tab list our mixin reorders is even the same list the pack renders. Logs at most once
+	// every 3s (getPlayerInfos runs every frame) so this can be checked in logs/latest.log
+	// without flooding it. Remove once the root cause is confirmed.
+	private static void hugosmpenhanced$debugLog(List<PlayerInfo> original, String selfName, int selfIndex) {
+		long now = System.currentTimeMillis();
+		if (now - hugosmpenhanced$lastLogMs < 3000L) {
+			return;
+		}
+		hugosmpenhanced$lastLogMs = now;
+
+		String names = original.stream()
+				.map(info -> info.getProfile().name())
+				.collect(Collectors.joining(", "));
+		HugoSmpEnhancedClient.LOGGER.info(
+				"[SelfOnTop] self='{}' foundAtIndex={} listSize={} entries=[{}]",
+				selfName, selfIndex, original.size(), names);
 	}
 }
