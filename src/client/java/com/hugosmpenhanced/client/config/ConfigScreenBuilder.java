@@ -26,6 +26,7 @@ public final class ConfigScreenBuilder {
 				.category(ConfigCategory.createBuilder()
 						.name(Component.literal("Allgemein"))
 						.group(mentionsGroup(config))
+						.group(mentionTriggersGroup(config))
 						.group(priceGroup(config))
 						.group(tpaGroup(config))
 						.group(tabListGroup(config))
@@ -51,15 +52,18 @@ public final class ConfigScreenBuilder {
 						.binding(true, () -> config.mentionsSoundEnabled, v -> config.mentionsSoundEnabled = v)
 						.controller(BooleanControllerBuilder::create)
 						.build())
-				.option(ListOption.<String>createBuilder()
-						.name(Component.literal("Zusätzliche Trigger-Wörter"))
-						.description(OptionDescription.of(Component.literal(
-								"Dein Spielername wird immer automatisch erkannt, unabhängig von dieser Liste.")))
-						.initial("")
-						.controller(StringControllerBuilder::create)
-						.binding(new ArrayList<>(config.mentionTriggers), () -> config.mentionTriggers,
-								v -> config.mentionTriggers = v)
-						.build())
+				.build();
+	}
+
+	private static ListOption<String> mentionTriggersGroup(ModConfig config) {
+		return ListOption.<String>createBuilder()
+				.name(Component.literal("Zusätzliche Trigger-Wörter"))
+				.description(OptionDescription.of(Component.literal(
+						"Dein Spielername wird immer automatisch erkannt, unabhängig von dieser Liste.")))
+				.initial("")
+				.controller(StringControllerBuilder::create)
+				.binding(new ArrayList<>(config.mentionTriggers), () -> config.mentionTriggers,
+						v -> config.mentionTriggers = v)
 				.build();
 	}
 
