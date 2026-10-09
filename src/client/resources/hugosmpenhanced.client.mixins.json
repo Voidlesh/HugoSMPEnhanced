@@ -7,7 +7,15 @@
 		"PersistentChatMixin",
 		"CompactTabListMixin",
 		"TitleScreenQuickJoinMixin",
-		"ChatFilterMixin"
+		"ChatFilterMixin",
+		"GuiGraphicsRenderStateMixin",
+		"NametagTabListMixin",
+		"NametagScoreboardMixin",
+		"NametagWorldTextMixin",
+		"NametagChatMixin$Background",
+		"NametagChatMixin$Focused",
+		"SecondNametagShowOwnNameMixin",
+		"SecondNametagRenderMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
