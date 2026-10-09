@@ -2,6 +2,9 @@ package com.hugosmpenhanced.client.config;
 
 import java.util.ArrayList;
 
+import com.hugosmpenhanced.client.feature.secondnametag.SecondNametagPosition;
+
+import dev.isxander.yacl3.api.ButtonOption;
 import dev.isxander.yacl3.api.ConfigCategory;
 import dev.isxander.yacl3.api.ListOption;
 import dev.isxander.yacl3.api.Option;
@@ -10,7 +13,9 @@ import dev.isxander.yacl3.api.OptionGroup;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
 import dev.isxander.yacl3.api.controller.BooleanControllerBuilder;
 import dev.isxander.yacl3.api.controller.DoubleSliderControllerBuilder;
+import dev.isxander.yacl3.api.controller.EnumControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -30,6 +35,8 @@ public final class ConfigScreenBuilder {
 						.group(priceGroup(config))
 						.group(tpaGroup(config))
 						.group(tabListGroup(config))
+						.group(nametagStyleGroup())
+						.group(secondNametagGroup(config))
 						.group(chatGroup(config))
 						.group(chatFilterGroup(config))
 						.group(mainMenuGroup(config))
@@ -104,6 +111,55 @@ public final class ConfigScreenBuilder {
 						.binding(0.75, () -> config.tabListScale, v -> config.tabListScale = v)
 						.controller(opt -> DoubleSliderControllerBuilder.create(opt)
 								.range(0.5, 1.0)
+								.step(0.05)
+								.valueFormatter(v -> Component.literal(Math.round(v * 100) + "%")))
+						.build())
+				.build();
+	}
+
+	private static OptionGroup nametagStyleGroup() {
+		return OptionGroup.createBuilder()
+				.name(Component.literal("Namens-Stil"))
+				.description(OptionDescription.of(Component.literal(
+						"Nur für dich sichtbar: Effekte für deinen eigenen Namen in Tabliste, Nametag, Scoreboard und Chat.")))
+				.option(ButtonOption.createBuilder()
+						.name(Component.literal("Nametag-Stil bearbeiten"))
+						.text(Component.literal("Öffnen"))
+						.action((screen, option) -> Minecraft.getInstance().setScreen(NametagStyleScreen.build(screen)))
+						.build())
+				.build();
+	}
+
+	private static OptionGroup secondNametagGroup(ModConfig config) {
+		return OptionGroup.createBuilder()
+				.name(Component.literal("Zweiter Nametag"))
+				.description(OptionDescription.of(Component.literal(
+						"Nur für dich sichtbar: eine zusätzliche Zeile über oder unter deinem Nametag in der Third-Person-Ansicht (F5).")))
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Aktiviert"))
+						.binding(false, () -> config.secondNametagEnabled, v -> config.secondNametagEnabled = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.option(Option.<String>createBuilder()
+						.name(Component.literal("Text"))
+						.description(OptionDescription.of(Component.literal(
+								"Farben mit &0-&9 und &a-&f, Hex-Farben mit &#RRGGBB, Formatierung mit &k-&o, Zurücksetzen mit &r.")))
+						.binding("", () -> config.secondNametagText, v -> config.secondNametagText = v)
+						.controller(StringControllerBuilder::create)
+						.build())
+				.option(Option.<SecondNametagPosition>createBuilder()
+						.name(Component.literal("Position"))
+						.binding(SecondNametagPosition.ABOVE, () -> config.secondNametagPosition,
+								v -> config.secondNametagPosition = v)
+						.controller(opt -> EnumControllerBuilder.create(opt)
+								.enumClass(SecondNametagPosition.class)
+								.formatValue(v -> Component.literal(v.displayName())))
+						.build())
+				.option(Option.<Double>createBuilder()
+						.name(Component.literal("Größe"))
+						.binding(1.0, () -> config.secondNametagScale, v -> config.secondNametagScale = v)
+						.controller(opt -> DoubleSliderControllerBuilder.create(opt)
+								.range(0.5, 2.0)
 								.step(0.05)
 								.valueFormatter(v -> Component.literal(Math.round(v * 100) + "%")))
 						.build())
