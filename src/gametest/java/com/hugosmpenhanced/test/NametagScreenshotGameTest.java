@@ -1,0 +1,116 @@
+package com.hugosmpenhanced.test;
+
+import java.util.EnumSet;
+import java.util.LinkedHashSet;
+import java.util.Set;
+
+import com.hugosmpenhanced.client.config.ModConfigManager;
+import com.hugosmpenhanced.client.config.NametagStyleScreen;
+import com.hugosmpenhanced.client.config.SecondNametagScreen;
+import com.hugosmpenhanced.client.feature.nametag.NametagEffect;
+import com.hugosmpenhanced.client.feature.secondnametag.SecondNametagPosition;
+
+import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
+import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
+import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.minecraft.client.CameraType;
+
+/**
+ * Renders the nametag previews and the in-world nametag for every style and saves screenshots, so
+ * the effects can be checked by eye after a change: {@code ./gradlew runClientGameTest}, then look
+ * in the run directory's {@code screenshots} folder. Animated styles are captured over several
+ * frames.
+ */
+@SuppressWarnings("UnstableApiUsage")
+public class NametagScreenshotGameTest implements FabricClientGameTest {
+	@Override
+	public void runTest(ClientGameTestContext context) {
+		configureSecondNametag(context, false);
+
+		// Every effect on its own in the style screen, a few frames apart.
+		for (NametagEffect effect : NametagEffect.values()) {
+			useEffects(context, EnumSet.of(effect));
+			context.setScreen(() -> NametagStyleScreen.build(null));
+			for (int frame = 0; frame < framesFor(effect); frame++) {
+				context.waitTicks(frame == 0 ? 2 : ticksBetweenFrames(effect));
+				context.takeScreenshot("style-" + effect.name().toLowerCase() + "-" + frame);
+			}
+		}
+
+		// A few combinations that stack every layer type.
+		useEffects(context, EnumSet.of(NametagEffect.RAINBOW, NametagEffect.SHIMMER, NametagEffect.WAVING));
+		capture(context, "combo-rainbow-shimmer-waving", 4);
+		useEffects(context, EnumSet.of(NametagEffect.FIRE, NametagEffect.GLOWING, NametagEffect.BOUNCING));
+		capture(context, "combo-fire-glow-bounce", 4);
+		useEffects(context, EnumSet.of(NametagEffect.METALLIC, NametagEffect.OUTLINE, NametagEffect.SWINGING));
+		capture(context, "combo-metallic-outline-swing", 4);
+
+		// The second nametag editor, with the second line above and below.
+		configureSecondNametag(context, true);
+		useEffects(context, EnumSet.of(NametagEffect.GRADIENT));
+		context.setScreen(() -> SecondNametagScreen.build(null));
+		context.waitTicks(3);
+		context.takeScreenshot("second-above");
+		context.runOnClient(client -> ModConfigManager.CONFIG.secondNametagPosition = SecondNametagPosition.BELOW);
+		context.setScreen(() -> SecondNametagScreen.build(null));
+		context.waitTicks(3);
+		context.takeScreenshot("second-below");
+
+		// The real nametag above the player, in third person.
+		context.setScreen(() -> null);
+		try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
+			singleplayer.getClientWorld().waitForChunksRender();
+			context.runOnClient(client -> client.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
+			context.runOnClient(client -> ModConfigManager.CONFIG.secondNametagPosition = SecondNametagPosition.ABOVE);
+			useEffects(context, EnumSet.of(NametagEffect.RAINBOW, NametagEffect.SHIMMER));
+			context.waitTicks(20);
+			context.takeScreenshot("world-rainbow-shimmer");
+			useEffects(context, EnumSet.of(NametagEffect.METALLIC, NametagEffect.GLOWING));
+			context.waitTicks(10);
+			context.takeScreenshot("world-metallic-glow");
+			useEffects(context, EnumSet.of(NametagEffect.FIRE, NametagEffect.OUTLINE, NametagEffect.BOUNCING));
+			context.waitTicks(10);
+			context.takeScreenshot("world-fire-outline-bounce");
+		}
+	}
+
+	private static int framesFor(NametagEffect effect) {
+		return switch (effect) {
+			case OUTLINE -> 1;
+			// Short events: Glitch bursts last a few frames, the sweeps a fraction of their period.
+			case GLITCH -> 40;
+			case SHIMMER, METALLIC -> 14;
+			default -> 4;
+		};
+	}
+
+	private static int ticksBetweenFrames(NametagEffect effect) {
+		return switch (effect) {
+			case GLITCH -> 1;
+			case SHIMMER, METALLIC -> 2;
+			default -> 4;
+		};
+	}
+
+	private static void capture(ClientGameTestContext context, String name, int frames) {
+		context.setScreen(() -> NametagStyleScreen.build(null));
+		for (int frame = 0; frame < frames; frame++) {
+			context.waitTicks(frame == 0 ? 2 : 4);
+			context.takeScreenshot(name + "-" + frame);
+		}
+	}
+
+	private static void useEffects(ClientGameTestContext context, Set<NametagEffect> effects) {
+		context.runOnClient(client -> ModConfigManager.CONFIG.nametagEffects = new LinkedHashSet<>(effects));
+	}
+
+	private static void configureSecondNametag(ClientGameTestContext context, boolean enabled) {
+		context.runOnClient(client -> {
+			ModConfigManager.CONFIG.secondNametagEnabled = enabled;
+			ModConfigManager.CONFIG.secondNametagText = "&#FFD166&lHugo&r&7SMP &b✦ &fEnhanced";
+			ModConfigManager.CONFIG.secondNametagScale = 0.8;
+			ModConfigManager.CONFIG.secondNametagBackground = true;
+			ModConfigManager.CONFIG.secondNametagPosition = SecondNametagPosition.ABOVE;
+		});
+	}
+}

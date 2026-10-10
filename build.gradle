@@ -47,6 +47,18 @@ dependencies {
 	modImplementation "maven.modrinth:modmenu:${project.modmenu_version}"
 }
 
+fabricApi {
+	configureTests {
+		// Client game tests (src/gametest) start the real client and take screenshots of the
+		// nametag previews and of the styled nametag in a test world: ./gradlew runClientGameTest
+		createSourceSet = true
+		modId = "hugosmpenhanced-test"
+		enableGameTests = false
+		enableClientGameTests = true
+		eula = true
+	}
+}
+
 processResources {
 	def version = project.version
 	inputs.property "version", version

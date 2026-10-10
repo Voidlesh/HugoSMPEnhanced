@@ -1,32 +1,46 @@
 package com.hugosmpenhanced.client.config;
 
+import java.util.ArrayList;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 import com.hugosmpenhanced.client.feature.nametag.NametagEffect;
 import com.hugosmpenhanced.client.feature.nametag.NametagStyleRenderer;
+import com.hugosmpenhanced.client.feature.secondnametag.SecondNametag;
 
-import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
 /**
- * Custom grid screen for picking nametag style effects, modeled after NoRisk Client's
- * "Nametag Style" screen: every button live-previews its own effect in its label, and any number
- * of them can be toggled on at once. Per {@code docs/SPEC.md} the buttons are laid out in their
- * spec group order — motion, then colour, then overlay — and only the colour group is mutually
- * exclusive, since a glyph can carry exactly one colour.
+ * Picker for the nametag style effects, modeled after NoRisk Client's "Nametag Style" screen: a large
+ * live preview of the own nametag at the top shows every active effect together, the way it looks
+ * above the player's head, and below it every button previews its own effect in its label. Any
+ * number of effects can be toggled on at once; only the colour group is mutually exclusive, since a
+ * glyph can carry exactly one colour. The buttons are grouped as in {@code docs/SPEC.md}: motion,
+ * colour, overlay.
+ *
+ * <p>The grid adapts to the window: as many columns as fit, and the preview gives up height first
+ * when the screen is short, so the screen stays usable at large GUI scales.
  */
 public class NametagStyleScreen extends Screen {
-	private static final int COLUMNS = 4;
-	private static final int CELL_WIDTH = 130;
-	private static final int CELL_HEIGHT = 32;
-	private static final int CELL_GAP = 8;
-	private static final int GRID_TOP = 74;
+	private static final int MIN_CELL_WIDTH = 62;
+	private static final int MAX_CELL_WIDTH = 120;
+	private static final int MAX_COLUMNS = 6;
+	private static final int CELL_HEIGHT = 20;
+	private static final int CELL_GAP = 3;
+	private static final int LABEL_HEIGHT = 11;
+	private static final int PREVIEW_TOP = 19;
+	private static final int MIN_PREVIEW_HEIGHT = 34;
+	private static final int MAX_PREVIEW_HEIGHT = 76;
 
 	private final Screen parent;
+	private final List<GroupLabel> labels = new ArrayList<>();
+	private int previewLeft;
+	private int previewWidth;
+	private int previewHeight;
 
 	protected NametagStyleScreen(Screen parent) {
 		super(Component.literal("Nametag-Stil"));
@@ -37,24 +51,66 @@ public class NametagStyleScreen extends Screen {
 		return new NametagStyleScreen(parent);
 	}
 
+	private record GroupLabel(String text, int x, int y) {
+	}
+
 	@Override
 	protected void init() {
-		int gridWidth = COLUMNS * CELL_WIDTH + (COLUMNS - 1) * CELL_GAP;
-		int startX = this.width / 2 - gridWidth / 2;
-		NametagEffect[] effects = NametagEffect.values();
+		this.labels.clear();
+		int available = Math.min(this.width - 20, MAX_COLUMNS * (MAX_CELL_WIDTH + CELL_GAP) - CELL_GAP);
+		int columns = Math.max(3, Math.min(MAX_COLUMNS, (available + CELL_GAP) / (MIN_CELL_WIDTH + CELL_GAP)));
+		int cellWidth = Math.min(MAX_CELL_WIDTH, (available - (columns - 1) * CELL_GAP) / columns);
+		int gridWidth = columns * cellWidth + (columns - 1) * CELL_GAP;
+		int gridLeft = this.width / 2 - gridWidth / 2;
 
-		for (int i = 0; i < effects.length; i++) {
-			int col = i % COLUMNS;
-			int row = i / COLUMNS;
-			int x = startX + col * (CELL_WIDTH + CELL_GAP);
-			int y = GRID_TOP + row * (CELL_HEIGHT + CELL_GAP);
-			this.addRenderableWidget(new EffectButton(x, y, CELL_WIDTH, CELL_HEIGHT, effects[i]));
+		int gridHeight = 0;
+		for (NametagEffect.Group group : NametagEffect.Group.values()) {
+			int rows = (count(group) + columns - 1) / columns;
+			gridHeight += LABEL_HEIGHT + rows * (CELL_HEIGHT + CELL_GAP);
+		}
+		int fixed = PREVIEW_TOP + 6 + gridHeight + 3 + 20 + 6;
+		this.previewHeight = Math.max(MIN_PREVIEW_HEIGHT, Math.min(MAX_PREVIEW_HEIGHT, this.height - fixed));
+		this.previewWidth = gridWidth;
+		this.previewLeft = gridLeft;
+
+		int y = PREVIEW_TOP + this.previewHeight + 6;
+		for (NametagEffect.Group group : NametagEffect.Group.values()) {
+			this.labels.add(new GroupLabel(groupLabel(group), gridLeft + 1, y + 1));
+			y += LABEL_HEIGHT;
+			int index = 0;
+			for (NametagEffect effect : NametagEffect.values()) {
+				if (effect.group() != group) {
+					continue;
+				}
+				int x = gridLeft + (index % columns) * (cellWidth + CELL_GAP);
+				int rowY = y + (index / columns) * (CELL_HEIGHT + CELL_GAP);
+				this.addRenderableWidget(new EffectButton(x, rowY, cellWidth, CELL_HEIGHT, effect));
+				index++;
+			}
+			y += (index + columns - 1) / columns * (CELL_HEIGHT + CELL_GAP);
 		}
 
-		int bottomY = GRID_TOP + ((effects.length - 1) / COLUMNS + 1) * (CELL_HEIGHT + CELL_GAP) + 8;
 		this.addRenderableWidget(
-			Button.builder(Component.literal("Zurück"), button -> this.onClose()).bounds(this.width / 2 - 75, bottomY, 150, 20).build()
+			Button.builder(Component.literal("Fertig"), button -> this.onClose()).bounds(this.width / 2 - 75, y + 3, 150, 20).build()
 		);
+	}
+
+	private static int count(NametagEffect.Group group) {
+		int count = 0;
+		for (NametagEffect effect : NametagEffect.values()) {
+			if (effect.group() == group) {
+				count++;
+			}
+		}
+		return count;
+	}
+
+	private static String groupLabel(NametagEffect.Group group) {
+		return switch (group) {
+			case MOTION -> "Bewegung";
+			case COLOR -> "Farbe · nur eine gleichzeitig";
+			case OVERLAY -> "Overlay";
+		};
 	}
 
 	@Override
@@ -65,26 +121,13 @@ public class NametagStyleScreen extends Screen {
 
 	@Override
 	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		graphics.drawCenteredString(this.font, "— NAMETAG STYLE —", this.width / 2, 16, 0xFFAAAAAA);
-
-		String previewName = previewName();
-		Set<NametagEffect> active = NametagStyleRenderer.activeEffects();
-		int previewWidth = this.font.width(previewName);
-		if (active.isEmpty()) {
-			graphics.drawCenteredString(this.font, previewName, this.width / 2, 32, 0xFFFFFFFF);
-		} else {
-			NametagStyleRenderer.renderName2D(
-				graphics, this.font, previewName, this.width / 2f - previewWidth / 2f, 32, 0xFFFFFFFF, true, active
-			);
+		graphics.drawCenteredString(this.font, "— NAMETAG STYLE —", this.width / 2, 6, 0xFFAAAAAA);
+		NametagPreview.render(graphics, this.font, this.previewLeft, PREVIEW_TOP, this.previewWidth, this.previewHeight,
+			SecondNametag.isActive());
+		for (GroupLabel label : this.labels) {
+			graphics.drawString(this.font, label.text(), label.x(), label.y(), 0xFF9A9A9A);
 		}
-		graphics.drawCenteredString(this.font, "Custom", this.width / 2, 52, 0xFF888888);
-
 		super.render(graphics, mouseX, mouseY, partialTick);
-	}
-
-	private String previewName() {
-		var player = Minecraft.getInstance().player;
-		return player != null ? player.getGameProfile().name() : "Voidlesh";
 	}
 
 	private static void toggleEffect(NametagEffect effect) {
@@ -123,10 +166,14 @@ public class NametagStyleScreen extends Screen {
 			String label = this.effect.displayName();
 			int labelWidth = NametagStyleScreen.this.font.width(label);
 			float x = this.getX() + (this.getWidth() - labelWidth) / 2f;
-			float y = this.getY() + (this.getHeight() - 9) / 2f;
+			float y = this.getY() + (this.getHeight() - 8) / 2f;
+			// Each label previews its own effect, clipped to the button so motion effects such as
+			// Bouncing or Growing cannot spill onto the neighbouring buttons.
+			graphics.enableScissor(this.getX() + 1, this.getY() + 1, this.getRight() - 1, this.getBottom() - 1);
 			NametagStyleRenderer.renderName2D(
 				graphics, NametagStyleScreen.this.font, label, x, y, active ? 0xFFFFFFFF : 0xFF9A9A9A, true, EnumSet.of(this.effect)
 			);
+			graphics.disableScissor();
 		}
 	}
 }
