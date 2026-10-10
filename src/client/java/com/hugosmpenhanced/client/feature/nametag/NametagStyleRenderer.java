@@ -71,11 +71,12 @@ import net.minecraft.util.FormattedCharSequence;
  * layer at all — they only change the fill's colour.
  *
  * <h2>Fill priority</h2>
- * An active colour style wins, then Shimmer, then Outline's transparent fill (hollow text), then
- * Glowing's solid white fill, then the colour the glyph already had. That last step stands in for
- * the spec's flat {@code #e8e8ee} base: in game the "base" is whatever colour the server gave the
- * text, so a rank colour survives when no colour style is selected. Shimmer ranks above Outline and
- * Glowing because it needs a fill to travel across — see {@link #fillField}.
+ * An active colour style wins, then Shimmer, then Glowing's solid white fill, then the colour the
+ * glyph already had. That last step stands in for the spec's flat {@code #e8e8ee} base: in game the
+ * "base" is whatever colour the server gave the text, so a rank colour survives when no colour
+ * style is selected. Shimmer ranks above Glowing because it needs a fill to travel across — see
+ * {@link #fillField}. Outline never replaces the fill: hollow text cannot work with a font whose
+ * strokes are a single pixel wide.
  *
  * <h2>Where it applies</h2>
  * Mixins intercept the vanilla name-drawing calls in the tab list, the scoreboard sidebar, chat and
@@ -119,12 +120,11 @@ public final class NametagStyleRenderer {
 		}
 	}
 
-	// The outline is a stroke, not a bleed, so it gets its own 8 neighbours — the four sides and the
-	// four corners, each displaced by exactly the stroke width on each axis — rather than the halo
-	// rings' unit circle. Diagonal samples at radius*0.7071 would land between pixels, and the
-	// font's sub-pixel sampling turns that into a soft, glowing edge, which is exactly what an
-	// outline must not look like. Whole steps per axis keep every copy grid-aligned (see
-	// {@link #guiStrokeWidth}), so the stroke stops dead at its edge.
+	// The outline is the glyph redrawn at its 8 neighbouring font pixels — the four sides and the
+	// four corners, each displaced by exactly one texel per axis — under the fill, like vanilla's
+	// glowing sign text. Whole texels are essential: the font's strokes are themselves one texel
+	// wide, so any thinner offset lands the copies on the glyph's own pixels and the letters melt
+	// into a blob. At whole texels the ring sits exactly outside the glyph, crisp at any scale.
 	private static final float[] OUTLINE_X = {-1f, 1f, 0f, 0f, -1f, 1f, -1f, 1f};
 	private static final float[] OUTLINE_Y = {0f, 0f, -1f, 1f, -1f, -1f, 1f, 1f};
 
@@ -323,6 +323,7 @@ public final class NametagStyleRenderer {
 		float cursor = 0;
 		int n = samples.size();
 		int i = 0;
+		boolean raised = false;
 
 		// Anything that isn't the name is skipped entirely — not redrawn — since it's already on
 		// screen from vanilla's own pass; the cursor still has to advance across it with the style
@@ -344,6 +345,14 @@ public final class NametagStyleRenderer {
 				Glyph glyph = glyph(font, String.valueOf(sample.ch()), sample.style().withColor((TextColor) null), base);
 				glyphs.add(glyph);
 				cursor += glyph.advance();
+			}
+			if (!raised) {
+				// Vanilla's line is still a pending text state at this point, and text states are
+				// turned into glyphs after the glyphs submitted directly to the same layer — so in
+				// that layer vanilla's white name and shadow would be drawn over the overlay,
+				// hiding every colour style. Moving up one layer puts the overlay on top.
+				((GuiRenderStateAccess) graphics).hugosmpenhanced$renderState().up();
+				raised = true;
 			}
 			drawSpan2D(graphics, font, glyphs, spanStartX, y, effects, now, lineAlpha, dropShadow, SpanOptions.STATIONARY);
 			i += matchLen;
@@ -421,7 +430,7 @@ public final class NametagStyleRenderer {
 			};
 			font.prepareText(glyph.sequence(), gx, gy, argb, shadow, false, 0).visit(target);
 		};
-		drawSpanGlyphs(glyphs, startX, y, unit, guiStrokeWidth(unit), effects, now, spanAlpha, dropShadow, options, sink);
+		drawSpanGlyphs(glyphs, startX, y, unit, effects, now, spanAlpha, dropShadow, options, sink);
 	}
 
 	/** Applies the word transform around {@code (pivotX, pivotY)}, outermost effect first. */
@@ -520,11 +529,7 @@ public final class NametagStyleRenderer {
 				}
 			});
 		};
-		// No pixel grid to snap to out here: the nametag carries its own world scale and is shrunk
-		// further by distance, so the spec's hairline is used as-is rather than rounded to a whole
-		// font pixel, which at this size would read as a thick border.
-		float strokeWidth = NametagEffectEngine.OUTLINE_WIDTH_EM * unit;
-		drawSpanGlyphs(glyphs, startX, y, unit, strokeWidth, effects, now, passAlpha, dropShadow, SpanOptions.FULL, sink);
+		drawSpanGlyphs(glyphs, startX, y, unit, effects, now, passAlpha, dropShadow, SpanOptions.FULL, sink);
 	}
 
 	private static void drawBackground3D(
@@ -577,7 +582,7 @@ public final class NametagStyleRenderer {
 	 * fill carries the colour field; the halos and copies are flat colours by design.
 	 */
 	private static void drawSpanGlyphs(
-		List<Glyph> glyphs, float startX, float y, float unit, float strokeWidth,
+		List<Glyph> glyphs, float startX, float y, float unit,
 		Set<NametagEffect> effects, double now, float spanAlpha, boolean dropShadow,
 		SpanOptions options, GlyphSink sink
 	) {
@@ -622,24 +627,30 @@ public final class NametagStyleRenderer {
 				drawSplit(sink, glyph, gx, gy, glitch.splitXEm() * unit, glitch.splitYEm() * unit,
 					Glitch.COLOR_A, Glitch.COLOR_B, Glitch.ALPHA * spanAlpha, brightness, shape);
 			}
+			ColorField field = fillField(styleField, shimmer, glyph.baseColor(), now, width, brightness);
+			int flat = NametagEffectEngine.scaleRgb(flatFill(glow != null, glyph.baseColor()), brightness);
 			if (outline) {
+				// The ring contrasts with the fill it surrounds: dark around light text, light around
+				// dark text, judged from the fill at the middle of the glyph.
+				int inside = field != null ? field.colorAt(gx - startX + glyph.advance() / 2f, 0.45f) : flat;
 				int stroke = NametagEffectEngine.scaleRgb(
-					NametagEffectEngine.scaleAlpha(NametagEffectEngine.OUTLINE_COLOR, spanAlpha), brightness
+					NametagEffectEngine.scaleAlpha(NametagEffectEngine.outlineColor(inside), spanAlpha), brightness
 				);
-				drawRing(sink, glyph, gx, gy, strokeWidth, OUTLINE_X, OUTLINE_Y, stroke, shape);
+				drawRing(sink, glyph, gx, gy, 1f, OUTLINE_X, OUTLINE_Y, stroke, shape);
 			}
 
-			ColorField field = fillField(styleField, shimmer, glyph.baseColor(), now, width, brightness);
+			// An outline replaces the drop shadow, as on vanilla's glowing sign text: the shadow's
+			// one-pixel offset would sit on top of the ring on two sides only.
+			boolean shadow = dropShadow && !outline;
 			if (field != null) {
 				// The field supplies the colour; the draw colour only carries the alpha, and lets the
 				// font derive its usual quarter-brightness shadow, which the field then tints too.
 				int alphaOnly = NametagEffectEngine.scaleAlpha(0xFFFFFFFF, spanAlpha);
-				sink.draw(glyph, gx, gy, alphaOnly, dropShadow, new GlyphFx(field, startX, gy, transform, rowShift));
+				sink.draw(glyph, gx, gy, alphaOnly, shadow, new GlyphFx(field, startX, gy, transform, rowShift));
 			} else {
-				int fill = NametagEffectEngine.scaleRgb(flatFill(outline, glow != null, glyph.baseColor()), brightness);
-				int fillArgb = NametagEffectEngine.scaleAlpha(fill, spanAlpha);
+				int fillArgb = NametagEffectEngine.scaleAlpha(flat, spanAlpha);
 				if ((fillArgb >>> 24) != 0) {
-					sink.draw(glyph, gx, gy, fillArgb, dropShadow, shape);
+					sink.draw(glyph, gx, gy, fillArgb, shadow, shape);
 				}
 			}
 
@@ -650,8 +661,8 @@ public final class NametagStyleRenderer {
 	/**
 	 * The fill as a colour field, or null when it is a single flat colour. A colour style supplies
 	 * the field; Shimmer then runs its highlight over it, or over the glyph's own colour when no style
-	 * is active. Shimmer outranks Outline's hollow fill and Glowing's white fill because it needs a
-	 * fill to travel across; the stroke and halo still draw around it as usual.
+	 * is active. Shimmer outranks Glowing's white fill because it needs a fill to travel across; the
+	 * halo still draws around it as usual.
 	 */
 	private static ColorField fillField(ColorField styleField, boolean shimmer, int baseColor, double now, float width, float brightness) {
 		ColorField field = styleField;
@@ -665,14 +676,8 @@ public final class NametagStyleRenderer {
 		return field;
 	}
 
-	/**
-	 * Fill when there is no field, highest priority first: Outline's transparent fill (hollow text),
-	 * then Glowing's solid white fill, then the colour the glyph already had.
-	 */
-	private static int flatFill(boolean outline, boolean glowing, int baseColor) {
-		if (outline) {
-			return 0;
-		}
+	/** Fill when there is no field: Glowing's solid white fill, else the colour the glyph already had. */
+	private static int flatFill(boolean glowing, int baseColor) {
 		if (glowing) {
 			return NametagEffectEngine.GLOW_FILL_COLOR;
 		}
@@ -719,25 +724,6 @@ public final class NametagStyleRenderer {
 		for (int i = 0; i < unitX.length; i++) {
 			sink.draw(glyph, x + unitX[i] * radius, y + unitY[i] * radius, argb, false, shape);
 		}
-	}
-
-	/**
-	 * The outline stroke width in font pixels, for the GUI.
-	 *
-	 * <p>The spec's 0.055em is a hairline — about half a font pixel at Minecraft's 9px text height —
-	 * so rounding it up to a whole font pixel would draw it at twice its intended weight. Instead it
-	 * is rounded to a whole <em>screen</em> pixel and converted back: at GUI scale 2 that lands on
-	 * exactly 0.055em, and at every scale it is both the thinnest stroke the display can show and
-	 * still perfectly texel-aligned, so the edge stays hard.
-	 *
-	 * <p>A word-scope scale (Growing) on top of this is not accounted for, so the stroke keeps its
-	 * screen weight while the text grows rather than scaling with it — which is how a stroke should
-	 * behave anyway.
-	 */
-	private static float guiStrokeWidth(float unit) {
-		double guiScale = Math.max(1.0, Minecraft.getInstance().getWindow().getGuiScale());
-		double screenPixels = Math.max(1.0, Math.round(NametagEffectEngine.OUTLINE_WIDTH_EM * unit * guiScale));
-		return (float) (screenPixels / guiScale);
 	}
 
 	private static float spanWidth(List<Glyph> glyphs) {
