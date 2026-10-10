@@ -171,6 +171,130 @@ public final class NametagEffectEngine {
 		return dy;
 	}
 
+	// ---------------------------------------------------------------- motion, per-letter transform ----
+
+	/**
+	 * The per-letter transform from Bouncing and Swinging, in local text coordinates, or null if
+	 * neither is active. {@code centreX} is the glyph's horizontal centre and {@code top} the top of
+	 * its cell (with any Waving/Iterating offset already applied), so the transform is anchored to
+	 * the letter wherever it currently is.
+	 */
+	public static GlyphFx.Affine letterTransform(Set<NametagEffect> effects, int index, int total, double elapsed,
+		float centreX, float top, float unit) {
+		GlyphFx.Affine transform = null;
+		if (effects.contains(NametagEffect.BOUNCING)) {
+			transform = bounce(phase(NametagEffect.BOUNCING, index, total, elapsed), centreX, top + BASELINE_EM * unit, unit);
+		}
+		if (effects.contains(NametagEffect.SWINGING)) {
+			// A pendulum hung from the top edge of the letter. The small second harmonic makes the
+			// turn at each end of the swing linger a little, the way a real hanging sign's does.
+			double t = phase(NametagEffect.SWINGING, index, total, elapsed);
+			double degrees = 10.5 * Math.sin(TAU * t) + 1.2 * Math.sin(TAU * 3 * t);
+			GlyphFx.Affine swing = GlyphFx.Affine.rotateAbout((float) Math.toRadians(degrees), centreX, top - 0.5f);
+			transform = transform == null ? swing : swing.after(transform);
+		}
+		return transform;
+	}
+
+	/** The baseline sits 7 of the 9 font pixels down the cell. */
+	private static final float BASELINE_EM = 7f / 9f;
+
+	/**
+	 * One bounce cycle: a gravity arc in the first half of the period, a squash on landing, a rest,
+	 * then a short crouch that leads straight into the next take-off. Every phase starts and ends at
+	 * scale 1, so the cycle has no seams. Scaling is about the bottom centre of the letter, so it
+	 * squashes into the ground rather than shrinking towards its middle.
+	 */
+	private static GlyphFx.Affine bounce(double t, float centreX, float baseline, float unit) {
+		double lift = 0;
+		double sx = 1;
+		double sy = 1;
+		if (t < 0.5) {
+			double u = t / 0.5;
+			lift = 4 * u * (1 - u) * 0.42;
+			// Stretch with speed: strongest at take-off and landing, gone at the top of the arc.
+			double speed = (1 - 2 * u) * (1 - 2 * u);
+			double stretch = 0.13 * speed * smoothstep(0, 0.10, u) * (1 - smoothstep(0.90, 1, u));
+			sy = 1 + stretch;
+			sx = 1 - 0.55 * stretch;
+		} else if (t < 0.72) {
+			double w = (t - 0.5) / 0.22;
+			double squash = Math.sin(Math.PI * w) * (1 - 0.4 * w);
+			sy = 1 - 0.22 * squash;
+			sx = 1 + 0.14 * squash;
+		} else if (t >= 0.86) {
+			double crouch = Math.sin(Math.PI * (t - 0.86) / 0.14);
+			sy = 1 - 0.08 * crouch;
+			sx = 1 + 0.05 * crouch;
+		}
+		GlyphFx.Affine scale = GlyphFx.Affine.scaleAbout((float) sx, (float) sy, centreX, baseline);
+		return GlyphFx.Affine.translate(0, (float) (-lift * unit)).after(scale);
+	}
+
+	// ---------------------------------------------------------------- overlays, glitch ----
+
+	/**
+	 * One frame of a Glitch burst: a horizontal shift for each of the glyph cell's 8 pixel rows (in
+	 * font pixels) and an RGB split offset (in em). Null between bursts.
+	 */
+	public record Glitch(float[] rowShift, float splitXEm, float splitYEm) {
+		public static final int COLOR_A = 0xFF2E63;
+		public static final int COLOR_B = 0x08D9D6;
+		public static final float ALPHA = 0.70f;
+	}
+
+	/** Glitch frames advance in hard steps at this rate, like a corrupted video stream. */
+	private static final double GLITCH_STEPS_PER_SECOND = 30;
+
+	public static Glitch glitch(Set<NametagEffect> effects, double elapsed) {
+		if (!effects.contains(NametagEffect.GLITCH)) {
+			return null;
+		}
+		// Each window of one period holds one burst at a random point, sometimes followed by a short
+		// echo; random spacing is what keeps it from reading as a metronome.
+		double period = NametagEffect.GLITCH.periodSeconds();
+		double position = elapsed / period;
+		int window = (int) Math.floor(position);
+		double f = position - window;
+		double start = 0.08 + 0.62 * NametagColorFields.hash01(window, 1);
+		double length = 0.06 + 0.14 * NametagColorFields.hash01(window, 2);
+		boolean burst = f >= start && f < start + length;
+		if (!burst && NametagColorFields.hash01(window, 3) > 0.5) {
+			double echo = start + length + 0.04 + 0.10 * NametagColorFields.hash01(window, 4);
+			burst = f >= echo && f < echo + 0.045;
+		}
+		if (!burst) {
+			return null;
+		}
+
+		int step = (int) Math.floor(elapsed * GLITCH_STEPS_PER_SECOND);
+		float[] rows = new float[8];
+		// About a third of the frames only flash the colour split; the rest also tear the cell in
+		// bands of two to three rows, of which only some move, by one or (rarely) two whole pixels.
+		// Kept that small on purpose: the name must stay readable through a burst, and whole-pixel
+		// steps keep the torn edges as crisp as the font itself.
+		if (NametagColorFields.hash01(step, 5) > 0.33) {
+			int row = 0;
+			int band = 0;
+			while (row < rows.length) {
+				int height = 2 + (int) (NametagColorFields.hash01(step, 40 + band) * 2);
+				float shift = 0f;
+				if (NametagColorFields.hash01(step, 60 + band) > 0.55) {
+					float sign = NametagColorFields.hash01(step, 80 + band) < 0.5 ? -1f : 1f;
+					shift = sign * (NametagColorFields.hash01(step, 100 + band) > 0.8 ? 2f : 1f);
+				}
+				for (int k = 0; k < height && row < rows.length; k++) {
+					rows[row++] = shift;
+				}
+				band++;
+			}
+		}
+		float splitX = (float) ((0.45 + 0.55 * NametagColorFields.hash01(step, 7)) * 0.12
+			* (NametagColorFields.hash01(step, 9) < 0.5 ? -1 : 1));
+		float splitY = (float) ((NametagColorFields.hash01(step, 8) - 0.5) * 0.06);
+		return new Glitch(rows, splitX, splitY);
+	}
+
 	// ---------------------------------------------------------------- overlays, word scope ----
 
 	/**
@@ -203,7 +327,16 @@ public final class NametagEffectEngine {
 		return new Chromatic((float) (0.085 * Math.sin(TAU * t)), (float) (0.022 * Math.sin(2 * TAU * t)));
 	}
 
-	/** Two layered halos whose radius and alpha breathe together. Radii in em, alphas in 0..1. */
+	/**
+	 * Two layered halos whose radius and alpha breathe together. Radii in em, alphas in 0..1.
+	 *
+	 * <p>The colours here are for white text only. Over a coloured name the halo takes the text's
+	 * own colour instead (see {@link #glowColors}), so it reads as the letters emitting light, like
+	 * neon, rather than as a lavender cloud behind them.
+	 *
+	 * <p>The outer radius peaks at 0.65em rather than the spec's original 0.96em: past about half
+	 * a glyph the ring copies stop blending and show up as ghost letters around the name.
+	 */
 	public record Glow(float innerRadiusEm, float innerAlpha, float outerRadiusEm, float outerAlpha) {
 		public static final int INNER_COLOR = 0xFFFFFF;
 		public static final int OUTER_COLOR = 0xA896FF;
@@ -216,130 +349,29 @@ public final class NametagEffectEngine {
 		double t = phase(NametagEffect.GLOWING, 0, 1, elapsed);
 		double k = (1 - Math.cos(TAU * t)) / 2;
 		return new Glow(
-			(float) (0.10 + 0.22 * k), (float) (0.45 + 0.45 * k),
-			(float) (0.26 + 0.70 * k), (float) (0.18 + 0.42 * k)
-		);
-	}
-
-	// ---------------------------------------------------------------- overlays, letter scope ----
-
-	/**
-	 * A specular pass that multiplies whatever colour is underneath rather than replacing it, which
-	 * is why Shimmer is an overlay and not a colour style. The dip either side of the peak is what
-	 * gives the highlight a crisp edge, and the falling saturation is what makes it read as light
-	 * rather than as a plain brightness pulse — real highlights run toward white.
-	 *
-	 * <p>Deliberate deviation from the spec: its {@code whiteGlow} drop-shadow is dropped. The
-	 * highlight is meant to be the text itself catching the light, and a bloom around the glyphs
-	 * turns it into a second, competing glow effect — which is what {@link NametagEffect#GLOWING}
-	 * is for. Only the brightness/saturate/contrast pass remains.
-	 */
-	public record Shimmer(float brightness, float saturate, float contrast) {
-		public boolean isNeutral() {
-			return Math.abs(brightness - 1f) <= 0.002f && Math.abs(saturate - 1f) <= 0.002f;
-		}
-	}
-
-	public static Shimmer shimmer(Set<NametagEffect> effects, int index, int total, double elapsed) {
-		if (!effects.contains(NametagEffect.SHIMMER)) {
-			return null;
-		}
-		double t = phase(NametagEffect.SHIMMER, index, total, elapsed);
-		double d = Math.min(t, 1 - t);
-		double g = gaussian(d, 0.045);
-		double dim = 0.13 * gaussian(d - 0.105, 0.05);
-		return new Shimmer(
-			(float) (1 - dim + 1.65 * g),
-			(float) (1 - 0.40 * g),
-			(float) (1 + 0.30 * g)
+			(float) (0.10 + 0.18 * k), (float) (0.45 + 0.45 * k),
+			(float) (0.22 + 0.43 * k), (float) (0.22 + 0.40 * k)
 		);
 	}
 
 	/**
-	 * Applies the shimmer filter chain to an already-resolved glyph colour, in the CSS order
-	 * {@code brightness -> saturate -> contrast} and in sRGB, matching how a browser evaluates the
-	 * same filter list.
+	 * Halo colours {@code {inner, outer}} (RGB) for a glyph whose fill colour at its centre is
+	 * {@code fill}. A near-neutral fill (white, grey) keeps the white and lavender defaults; a
+	 * coloured one glows in its own colour, with the inner halo lifted toward white so the core
+	 * still looks hot.
 	 */
-	public static int applyShimmer(int argb, Shimmer shimmer) {
-		if (shimmer == null) {
-			return argb;
+	public static int[] glowColors(int fill) {
+		int r = (fill >> 16) & 0xFF;
+		int g = (fill >> 8) & 0xFF;
+		int b = fill & 0xFF;
+		int spread = Math.max(r, Math.max(g, b)) - Math.min(r, Math.min(g, b));
+		if (spread < 40) {
+			return new int[] {Glow.INNER_COLOR, Glow.OUTER_COLOR};
 		}
-		float r = ((argb >> 16) & 0xFF) / 255f;
-		float g = ((argb >> 8) & 0xFF) / 255f;
-		float b = (argb & 0xFF) / 255f;
-
-		r *= shimmer.brightness();
-		g *= shimmer.brightness();
-		b *= shimmer.brightness();
-
-		float s = shimmer.saturate();
-		float nr = (0.213f + 0.787f * s) * r + (0.715f - 0.715f * s) * g + (0.072f - 0.072f * s) * b;
-		float ng = (0.213f - 0.213f * s) * r + (0.715f + 0.285f * s) * g + (0.072f - 0.072f * s) * b;
-		float nb = (0.213f - 0.213f * s) * r + (0.715f - 0.715f * s) * g + (0.072f + 0.928f * s) * b;
-
-		float c = shimmer.contrast();
-		nr = (nr - 0.5f) * c + 0.5f;
-		ng = (ng - 0.5f) * c + 0.5f;
-		nb = (nb - 0.5f) * c + 0.5f;
-
-		return (argb & 0xFF000000)
-			| (channel(nr) << 16)
-			| (channel(ng) << 8)
-			| channel(nb);
-	}
-
-	// ---------------------------------------------------------------- colour ----
-
-	/** The per-letter colour for the active colour style, or {@code fallbackArgb} if there is none. */
-	public static int letterColor(NametagEffect colorEffect, int index, int total, double elapsed, int fallbackArgb) {
-		if (colorEffect == null) {
-			return fallbackArgb;
-		}
-		double t = phase(colorEffect, index, total, elapsed);
-		return switch (colorEffect) {
-			// Violet to pink, interpolated in HSL so the midpoint stays vivid instead of going
-			// muddy the way an RGB blend between the two endpoints would.
-			case GRADIENT -> {
-				double k = (1 - Math.cos(TAU * t)) / 2;
-				yield hsl(258 + 72 * k, 84 + 4 * k, 66 - 4 * k);
-			}
-			// A hue sweep in HSL is not a good rainbow: HSL's "lightness" is not lightness, so
-			// yellow and cyan come out glaring while blue and red go dark, and the word visibly
-			// pulses as the hue travels. Sweeping in Oklch instead holds perceived lightness and
-			// chroma constant, so only the hue moves — an even, non-throbbing chroma wave.
-			case RAINBOW -> oklch(RAINBOW_LIGHTNESS, RAINBOW_CHROMA, 360 * t);
-			// A broad sheen (base) with one hard highlight pass (sheen) riding on top of it.
-			case METALLIC -> {
-				double d = Math.min(t, 1 - t);
-				double sheen = gaussian(d, 0.11);
-				double base = (1 - Math.cos(TAU * t)) / 2;
-				yield hsl(228, 9 + 6 * (1 - sheen), Math.min(44 + 16 * base + 40 * sheen, 100));
-			}
-			// Stacked harmonics give an organic flicker that still loops cleanly.
-			case FIRE -> {
-				double f = clamp01(0.50 + 0.30 * Math.sin(TAU * t)
-					+ 0.14 * Math.sin(2 * TAU * t + 1.1)
-					+ 0.06 * Math.sin(3 * TAU * t + 2.3));
-				yield hsl(4 + 44 * f, 100, 46 + 20 * f);
-			}
-			default -> fallbackArgb;
-		};
+		return new int[] {NametagColorFields.mixWhite(fill, 0.55f) & 0xFFFFFF, fill & 0xFFFFFF};
 	}
 
 	// ---------------------------------------------------------------- helpers ----
-
-	/**
-	 * Oklch target for Rainbow: bright enough to read on any background, vivid enough not to look
-	 * washed out, and low enough in lightness that most hues still have real chroma left inside
-	 * sRGB — at these values the gamut mapping keeps 0.13 to 0.20 of the requested 0.20.
-	 *
-	 * <p>Only lightness is held exactly constant, not chroma. sRGB simply cannot reach the same
-	 * chroma at every hue, and clamping every hue down to the weakest one would desaturate the
-	 * whole sweep to fix something the eye barely registers. Uneven lightness is what makes a
-	 * rainbow throb; uneven chroma does not.
-	 */
-	private static final double RAINBOW_LIGHTNESS = 0.72;
-	private static final double RAINBOW_CHROMA = 0.20;
 
 	/**
 	 * Oklch (perceptual lightness, chroma, hue in degrees) to opaque ARGB.
@@ -407,34 +439,6 @@ public final class NametagEffectEngine {
 		return c <= 0.0031308 ? 12.92 * c : 1.055 * Math.pow(c, 1 / 2.4) - 0.055;
 	}
 
-	/** CSS {@code hsl(h s% l%)} to opaque ARGB. */
-	public static int hsl(double hDegrees, double sPercent, double lPercent) {
-		double h = ((hDegrees % 360) + 360) % 360;
-		double s = clamp01(sPercent / 100.0);
-		double l = clamp01(lPercent / 100.0);
-		double c = (1 - Math.abs(2 * l - 1)) * s;
-		double x = c * (1 - Math.abs((h / 60.0) % 2 - 1));
-		double m = l - c / 2;
-		double r, g, b;
-		if (h < 60) {
-			r = c; g = x; b = 0;
-		} else if (h < 120) {
-			r = x; g = c; b = 0;
-		} else if (h < 180) {
-			r = 0; g = c; b = x;
-		} else if (h < 240) {
-			r = 0; g = x; b = c;
-		} else if (h < 300) {
-			r = x; g = 0; b = c;
-		} else {
-			r = c; g = 0; b = x;
-		}
-		return 0xFF000000
-			| (channel((float) (r + m)) << 16)
-			| (channel((float) (g + m)) << 8)
-			| channel((float) (b + m));
-	}
-
 	/** {@code exp(-(d/width)^2)} — the falloff every travelling highlight in the spec is built on. */
 	private static double gaussian(double d, double width) {
 		double k = d / width;
@@ -490,6 +494,11 @@ public final class NametagEffectEngine {
 	private static double bezierAxisSlope(double t, double a, double b) {
 		double u = 1 - t;
 		return 3 * u * u * a + 6 * u * t * (b - a) + 3 * t * t * (1 - b);
+	}
+
+	private static double smoothstep(double edge0, double edge1, double x) {
+		double t = clamp01((x - edge0) / (edge1 - edge0));
+		return t * t * (3 - 2 * t);
 	}
 
 	private static double clamp01(double v) {

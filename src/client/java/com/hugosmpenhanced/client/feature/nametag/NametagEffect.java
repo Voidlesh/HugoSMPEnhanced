@@ -12,6 +12,10 @@ package com.hugosmpenhanced.client.feature.nametag;
  * <p>{@link Scope#WORD} effects transform or filter the whole name as one unit; {@link Scope#LETTER}
  * effects run per glyph with a {@link #staggerSeconds()} phase offset, so the effect travels along
  * the word left to right.
+ *
+ * <p>The colour styles are the exception to the stagger: they are colour fields over the whole
+ * span ({@link NametagColorFields}), sampled per font pixel, so their {@link #periodSeconds()} is the
+ * scroll speed and their stagger is unused.
  */
 public enum NametagEffect {
 	// --- motion: any subset, all active at once ---
@@ -23,6 +27,13 @@ public enum NametagEffect {
 	 * add, since summing translations needs no conflict resolution.
 	 */
 	ITERATING(Group.MOTION, Scope.LETTER, "Iterating", 1.6, 0.10),
+	/**
+	 * Letters jump one after another under gravity, stretching while they move fast and squashing
+	 * on landing, with a small crouch before the next take-off.
+	 */
+	BOUNCING(Group.MOTION, Scope.LETTER, "Bouncing", 1.25, 0.07),
+	/** Each letter swings like a pendulum hung from its top edge, the swing travelling along the word. */
+	SWINGING(Group.MOTION, Scope.LETTER, "Swinging", 1.7, 0.11),
 	FLIPPING(Group.MOTION, Scope.WORD, "Flipping", 2.4, 0.0),
 	SKEWING(Group.MOTION, Scope.WORD, "Skewing", 1.6, 0.0),
 	GROWING(Group.MOTION, Scope.WORD, "Growing", 1.4, 0.0),
@@ -30,6 +41,8 @@ public enum NametagEffect {
 	// --- colour: at most one; turning one on turns the others off ---
 	GRADIENT(Group.COLOR, Scope.LETTER, "Gradient", 3.2, 0.15),
 	RAINBOW(Group.COLOR, Scope.LETTER, "Rainbow", 3.0, 0.18),
+	/** Slow, noise-driven curtains of teal, green and violet light. */
+	AURORA(Group.COLOR, Scope.LETTER, "Aurora", 7.0, 0.0),
 	METALLIC(Group.COLOR, Scope.LETTER, "Metallic", 2.6, 0.13),
 	FIRE(Group.COLOR, Scope.LETTER, "Fire", 1.4, 0.09),
 
@@ -42,6 +55,11 @@ public enum NametagEffect {
 	FADE(Group.OVERLAY, Scope.WORD, "Fade", 1.9, 0.0),
 	SHIMMER(Group.OVERLAY, Scope.LETTER, "Shimmer", 2.6, 0.07),
 	CHROMATIC(Group.OVERLAY, Scope.WORD, "Chromatic", 1.6, 0.0),
+	/**
+	 * Short digital-glitch bursts at irregular intervals: pixel rows tear sideways and an RGB split
+	 * flashes, in hard steps rather than smooth motion. The period is the average burst spacing.
+	 */
+	GLITCH(Group.OVERLAY, Scope.WORD, "Glitch", 1.15, 0.0),
 	/** Deliberately static — a stroke, not an animation, hence period 0. */
 	OUTLINE(Group.OVERLAY, Scope.WORD, "Outline", 0.0, 0.0),
 	GLOWING(Group.OVERLAY, Scope.WORD, "Glowing", 2.2, 0.0);

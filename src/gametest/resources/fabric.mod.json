@@ -1,0 +1,12 @@
+{
+	"schemaVersion": 1,
+	"id": "hugosmpenhanced-test",
+	"version": "1.0.0",
+	"name": "HugoSMP Enhanced Tests",
+	"environment": "client",
+	"entrypoints": {
+		"fabric-client-gametest": [
+			"com.hugosmpenhanced.test.NametagScreenshotGameTest"
+		]
+	}
+}
