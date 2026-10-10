@@ -75,7 +75,9 @@ public abstract class SecondNametagRenderMixin {
 		poseStack.scale(PIXEL * scale, -PIXEL * scale, PIXEL * scale);
 
 		float x = -font.width(text) / 2.0F;
-		int background = (int) (minecraft.options.getBackgroundOpacity(0.25F) * 255.0F) << 24;
+		int background = config.secondNametagBackground
+			? (int) (minecraft.options.getBackgroundOpacity(0.25F) * 255.0F) << 24
+			: 0;
 		int light = state.lightCoords;
 		if (!state.isDiscrete) {
 			collector.submitText(poseStack, x, 0, text, false, Font.DisplayMode.NORMAL,
