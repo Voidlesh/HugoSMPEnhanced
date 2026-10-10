@@ -45,4 +45,5 @@ public class ModConfig {
 	public String secondNametagText = "";
 	public SecondNametagPosition secondNametagPosition = SecondNametagPosition.ABOVE;
 	public double secondNametagScale = 1.0;
+	public boolean secondNametagBackground = true;
 }
