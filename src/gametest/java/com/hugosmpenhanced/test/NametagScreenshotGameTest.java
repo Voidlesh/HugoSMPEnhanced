@@ -2,6 +2,7 @@ package com.hugosmpenhanced.test;
 
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
@@ -14,6 +15,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.client.CameraType;
+import net.minecraft.network.chat.Component;
 
 /**
  * Renders the nametag previews and the in-world nametag for every style and saves screenshots, so
@@ -71,6 +73,29 @@ public class NametagScreenshotGameTest implements FabricClientGameTest {
 			useEffects(context, EnumSet.of(NametagEffect.FIRE, NametagEffect.OUTLINE, NametagEffect.BOUNCING));
 			context.waitTicks(10);
 			context.takeScreenshot("world-fire-outline-bounce");
+
+			// Close-ups: a narrow field of view magnifies the nametag without moving the camera.
+			context.runOnClient(client -> client.options.fov().set(30));
+			for (Set<NametagEffect> effects : List.of(
+				EnumSet.of(NametagEffect.OUTLINE),
+				EnumSet.of(NametagEffect.OUTLINE, NametagEffect.RAINBOW),
+				EnumSet.of(NametagEffect.GLOWING),
+				EnumSet.of(NametagEffect.RAINBOW))) {
+				useEffects(context, effects);
+				context.waitTicks(5);
+				context.takeScreenshot("closeup-" + effects.stream().map(e -> e.name().toLowerCase()).reduce((a, b) -> a + "+" + b).orElse(""));
+			}
+			context.runOnClient(client -> client.options.fov().set(70));
+
+			// Chat, where the name is overlaid on the line vanilla already drew.
+			context.runOnClient(client -> client.options.setCameraType(CameraType.FIRST_PERSON));
+			context.runOnClient(client -> client.gui.getChat().addMessage(
+				Component.literal("<" + client.player.getGameProfile().name() + "> Outline im Chat")));
+			for (Set<NametagEffect> effects : List.of(EnumSet.of(NametagEffect.OUTLINE), EnumSet.of(NametagEffect.RAINBOW))) {
+				useEffects(context, effects);
+				context.waitTicks(3);
+				context.takeScreenshot("chat-" + effects.iterator().next().name().toLowerCase());
+			}
 		}
 	}
 

@@ -27,8 +27,10 @@ import java.util.Set;
 public final class NametagEffectEngine {
 	/** Spec fill priority step 4: the base ink colour when nothing else claims the fill. */
 	public static final int BASE_COLOR = 0xFFE8E8EE;
-	public static final int OUTLINE_COLOR = 0xFFE8E8EE;
-	public static final float OUTLINE_WIDTH_EM = 0.055f;
+	/** Outline ring around light text: near-black with a hint of blue, so it reads as ink, not a hole. */
+	public static final int OUTLINE_DARK = 0xF0141420;
+	/** Outline ring around dark text. */
+	public static final int OUTLINE_LIGHT = 0xFFEDEDF3;
 	/** Spec fill priority step 3: Glowing with no colour style gives a solid white fill. */
 	public static final int GLOW_FILL_COLOR = 0xFFFFFFFF;
 
@@ -352,6 +354,20 @@ public final class NametagEffectEngine {
 			(float) (0.10 + 0.18 * k), (float) (0.45 + 0.45 * k),
 			(float) (0.22 + 0.43 * k), (float) (0.22 + 0.40 * k)
 		);
+	}
+
+	/**
+	 * The Outline ring colour for a glyph filled with {@code fill}: dark around light text, light
+	 * around dark text. The switch sits low, at a relative luminance of 0.06 (about {@code #474747},
+	 * using a gamma of 2 as a cheap stand-in for sRGB decoding): mid-tones such as a saturated red or
+	 * blue still read better with a dark ring, and only genuinely dark text gets a light one.
+	 */
+	public static int outlineColor(int fill) {
+		double r = ((fill >> 16) & 0xFF) / 255.0;
+		double g = ((fill >> 8) & 0xFF) / 255.0;
+		double b = (fill & 0xFF) / 255.0;
+		double luma = 0.2126 * r * r + 0.7152 * g * g + 0.0722 * b * b;
+		return luma < 0.06 ? OUTLINE_LIGHT : OUTLINE_DARK;
 	}
 
 	/**

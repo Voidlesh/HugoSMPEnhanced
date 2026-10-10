@@ -236,9 +236,13 @@ pixel rows, each band moved by one (rarely two) whole pixels or left in place. K
 that small on purpose: the name stays readable through a burst, and whole-pixel steps
 keep the torn edges as crisp as the font.
 
-**Outline** — deliberately static: a `0.055em` stroke in `#e8e8ee`. With no colour
-style active the fill goes transparent, giving hollow text. Over a colour style the
-fill stays coloured and the stroke sits around it.
+**Outline** — static: the glyph redrawn at its 8 neighbouring font pixels (sides and
+corners, exactly one texel each), under a solid fill, like vanilla's glowing sign text.
+The ring contrasts with the fill at the glyph's centre: `#141420` at 94% around light
+text, `#ededf3` around text darker than relative luminance 0.06. The outline replaces
+the drop shadow. Version 1 drew a 0.055em stroke around a transparent fill (hollow
+text); with a font whose strokes are a single pixel wide, the sub-pixel copies landed
+on the glyph's own pixels and the letters melted into a blob.
 
 **Glowing** — two layered halos whose radius and alpha breathe together. Each halo is
 approximated by redrawing the glyph on three concentric rings (8, 12 and 16 samples at
@@ -268,9 +272,8 @@ Fill colour resolves by this priority, highest first:
 
 1. an active colour style (a colour field)
 2. Shimmer → the glyph's own colour, which Shimmer then filters
-3. Outline → transparent fill
-4. Glowing → solid white fill
-5. the colour the text already has (in game, whatever the server sent)
+3. Glowing → solid white fill
+4. the colour the text already has (in game, whatever the server sent)
 
 Shimmer filters whatever fill wins, so it also applies on top of a colour style.
 
@@ -307,6 +310,7 @@ What changed against `effects.json` and `preview.html`, and why:
 - **Shimmer** dims the name between highlights, so the band is visible on white text.
 - **Fade** darkens instead of fading out, so the name never turns see-through.
 - **Glowing** takes the text's colour over coloured names and has a smaller outer halo.
+- **Outline** is a one-texel ring under a solid fill instead of hollow text.
 - **Iterating** is a single hop travelling along the letters instead of an opacity
   head, and shares `translateY` with Waving; translations add, so there is no
   conflict.
