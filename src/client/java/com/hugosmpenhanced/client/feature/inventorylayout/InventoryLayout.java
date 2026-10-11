@@ -14,15 +14,20 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * The saved inventory layout: one item id per player inventory slot (hotbar, main inventory,
- * armour, offhand), "" where the slot was empty and anything may go. While shown, empty slots get
- * a faded ghost of the item that belongs there and slots holding a different item are tinted red,
- * in every container screen that shows the player inventory.
+ * The saved inventory layouts: each holds one item id per player inventory slot (hotbar, main
+ * inventory, armour, offhand), "" where the slot was empty and anything may go. While one is shown
+ * (or previewed from the layout menu), empty slots get a faded ghost of the item that belongs there
+ * and slots holding a different item are tinted red, in every container screen that shows the
+ * player inventory.
  */
 public final class InventoryLayout {
+	public static final int MAX_LAYOUTS = 9;
 	/** Lays the slot background colour over the ghost item so it reads as transparent. */
 	private static final int GHOST_FADE = 0x608B8B8B;
 	private static final int WRONG_TINT = 0x60FF2020;
+
+	/** Layout hovered in the open layout menu, shown instead of the selected one; -1 for none. */
+	static int previewIndex = -1;
 
 	private static List<String> cachedSource;
 	private static Item[] expected = new Item[0];
@@ -30,29 +35,81 @@ public final class InventoryLayout {
 	private InventoryLayout() {
 	}
 
-	public static boolean hasLayout() {
-		for (String id : ModConfigManager.CONFIG.inventoryLayout) {
-			if (id != null && !id.isEmpty()) {
-				return true;
-			}
+	/** The saved layouts, after moving a layout from the first version of the feature over. */
+	public static List<SavedInventoryLayout> layouts() {
+		ModConfig config = ModConfigManager.CONFIG;
+		if (config.inventoryLayouts == null) {
+			config.inventoryLayouts = new ArrayList<>();
 		}
-		return false;
+		if (config.inventoryLayout != null) {
+			if (config.inventoryLayout.stream().anyMatch(id -> !id.isEmpty())) {
+				config.inventoryLayouts.add(new SavedInventoryLayout("Layout 1", config.inventoryLayout));
+				config.inventoryLayoutShownIndex = config.inventoryLayoutShown ? config.inventoryLayouts.size() - 1 : -1;
+			}
+			config.inventoryLayout = null;
+			config.inventoryLayoutShown = false;
+			ModConfigManager.save();
+		}
+		return config.inventoryLayouts;
 	}
 
-	/** Whether the saved layout already matches what the inventory holds now. */
-	public static boolean matches(Inventory inventory) {
-		return current(inventory).equals(ModConfigManager.CONFIG.inventoryLayout);
+	public static int shownIndex() {
+		int index = ModConfigManager.CONFIG.inventoryLayoutShownIndex;
+		return index >= 0 && index < layouts().size() ? index : -1;
 	}
 
-	public static void save(Inventory inventory) {
-		ModConfigManager.CONFIG.inventoryLayout = current(inventory);
+	public static void show(int index) {
+		ModConfigManager.CONFIG.inventoryLayoutShownIndex = index;
+		ModConfigManager.save();
+	}
+
+	/** Saves the inventory as a new layout and shows it; returns its index. */
+	public static int saveNew(Inventory inventory) {
+		List<SavedInventoryLayout> layouts = layouts();
+		layouts.add(new SavedInventoryLayout(freeName(), current(inventory)));
+		ModConfigManager.save();
+		return layouts.size() - 1;
+	}
+
+	public static void overwrite(int index, Inventory inventory) {
+		layouts().get(index).slots = current(inventory);
+		ModConfigManager.save();
+	}
+
+	public static void delete(int index) {
+		layouts().remove(index);
+		int shown = ModConfigManager.CONFIG.inventoryLayoutShownIndex;
+		if (shown == index) {
+			ModConfigManager.CONFIG.inventoryLayoutShownIndex = -1;
+		} else if (shown > index) {
+			ModConfigManager.CONFIG.inventoryLayoutShownIndex = shown - 1;
+		}
 		ModConfigManager.save();
 	}
 
 	public static void clear() {
-		ModConfigManager.CONFIG.inventoryLayout = new ArrayList<>();
-		ModConfigManager.CONFIG.inventoryLayoutShown = false;
+		layouts().clear();
+		ModConfigManager.CONFIG.inventoryLayoutShownIndex = -1;
 		ModConfigManager.save();
+	}
+
+	/** Whether a layout already matches what the inventory holds now. */
+	public static boolean matches(int index, Inventory inventory) {
+		return current(inventory).equals(layouts().get(index).slots);
+	}
+
+	public static boolean isEmpty(Inventory inventory) {
+		return current(inventory).stream().allMatch(String::isEmpty);
+	}
+
+	/** "Layout N" with the lowest N no saved layout is called. */
+	private static String freeName() {
+		for (int n = 1; ; n++) {
+			String name = "Layout " + n;
+			if (layouts().stream().noneMatch(layout -> name.equals(layout.name))) {
+				return name;
+			}
+		}
 	}
 
 	private static List<String> current(Inventory inventory) {
@@ -64,9 +121,8 @@ public final class InventoryLayout {
 		return ids;
 	}
 
-	/** The item the layout wants in a player inventory slot, or null when any item may go there. */
-	private static Item expectedAt(int index) {
-		List<String> source = ModConfigManager.CONFIG.inventoryLayout;
+	/** The item the drawn layout wants in a player inventory slot, or null when any item may go there. */
+	private static Item expectedAt(List<String> source, int index) {
 		if (source != cachedSource) {
 			cachedSource = source;
 			expected = new Item[source.size()];
@@ -79,11 +135,15 @@ public final class InventoryLayout {
 
 	/** Called after vanilla drew a slot, in the screen's slot coordinates. */
 	public static void renderSlot(GuiGraphics graphics, Slot slot) {
-		ModConfig config = ModConfigManager.CONFIG;
-		if (!config.inventoryLayoutEnabled || !config.inventoryLayoutShown || !(slot.container instanceof Inventory)) {
+		if (!ModConfigManager.CONFIG.inventoryLayoutEnabled || !(slot.container instanceof Inventory)) {
 			return;
 		}
-		Item want = expectedAt(slot.getContainerSlot());
+		List<SavedInventoryLayout> layouts = layouts();
+		int index = previewIndex >= 0 && previewIndex < layouts.size() ? previewIndex : shownIndex();
+		if (index < 0) {
+			return;
+		}
+		Item want = expectedAt(layouts.get(index).slots, slot.getContainerSlot());
 		if (want == null) {
 			return;
 		}

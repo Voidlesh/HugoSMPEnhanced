@@ -12,6 +12,15 @@ public class InventoryButton {
 	public InventoryButton() {
 	}
 
+	/** A built-in button (no action of its own) with its default spot. */
+	public static InventoryButton builtIn(String icon, InventoryButtonPosition position, int slot) {
+		InventoryButton button = new InventoryButton();
+		button.icon = icon;
+		button.position = position;
+		button.slot = slot;
+		return button;
+	}
+
 	public InventoryButton copy() {
 		InventoryButton copy = new InventoryButton();
 		copy.name = this.name;

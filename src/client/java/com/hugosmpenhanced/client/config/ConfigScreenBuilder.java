@@ -233,15 +233,16 @@ public final class ConfigScreenBuilder {
 		return OptionGroup.createBuilder()
 				.name(Component.literal("Inventar-Layout"))
 				.description(OptionDescription.of(Component.literal(
-						"Speichere, wie dein Inventar sortiert ist. Per Auge-Button im Inventar siehst du dann halbtransparent, "
-								+ "wo jedes Item hingehört, und falsch belegte Slots werden rot.")))
+						"Speichere, wie dein Inventar sortiert ist, auch mehrere Layouts. Per Auge-Button im Inventar siehst du "
+								+ "dann halbtransparent, wo jedes Item hingehört, und falsch belegte Slots werden rot. "
+								+ "Die Buttons lassen sich im Inventar per Ziehen verschieben.")))
 				.option(Option.<Boolean>createBuilder()
 						.name(Component.literal("Layout-Buttons im Inventar"))
 						.binding(true, () -> config.inventoryLayoutEnabled, v -> config.inventoryLayoutEnabled = v)
 						.controller(BooleanControllerBuilder::create)
 						.build())
 				.option(ButtonOption.createBuilder()
-						.name(Component.literal("Gespeichertes Layout löschen"))
+						.name(Component.literal("Alle gespeicherten Layouts löschen"))
 						.text(Component.literal("Löschen"))
 						.action((screen, option) -> InventoryLayout.clear())
 						.build())

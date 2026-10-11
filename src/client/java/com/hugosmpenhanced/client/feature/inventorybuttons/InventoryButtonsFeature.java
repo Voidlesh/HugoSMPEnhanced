@@ -6,6 +6,7 @@ import java.util.List;
 import com.hugosmpenhanced.client.config.InventoryButtonsScreen;
 import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.config.ModConfigManager;
+import com.hugosmpenhanced.client.feature.inventorylayout.InventoryLayoutFeature;
 import com.hugosmpenhanced.client.gui.HugoStyle;
 import com.hugosmpenhanced.client.mixin.AbstractContainerScreenAccessor;
 
@@ -24,7 +25,8 @@ import net.minecraft.network.chat.Component;
 
 /**
  * Adds the configured buttons to the player's own inventory, each on its spot to the right of or
- * above it (see {@link InventoryButtonSpots}), plus an edit button in the top-right corner. A click
+ * above it (see {@link InventoryButtonSpots}), plus an edit button in the top-right corner and the
+ * inventory layout buttons (see {@link InventoryLayoutFeature}), which move the same way. A click
  * (press and release on it) runs the button's action; dragging moves it to another spot, swapping with whatever is there.
  * Positions are refreshed every frame because opening the recipe book moves the inventory without
  * re-initialising the screen.
@@ -40,7 +42,8 @@ public final class InventoryButtonsFeature {
 
 	public static void register() {
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
-			if (screen instanceof InventoryScreen inventory && ModConfigManager.CONFIG.inventoryButtonsEnabled) {
+			ModConfig config = ModConfigManager.CONFIG;
+			if (screen instanceof InventoryScreen inventory && (config.inventoryButtonsEnabled || config.inventoryLayoutEnabled)) {
 				new Overlay(inventory).install();
 			}
 		});
@@ -49,10 +52,10 @@ public final class InventoryButtonsFeature {
 	/** The buttons of one open inventory screen and the drag in progress, if any. */
 	private static final class Overlay {
 		private final InventoryScreen screen;
-		private final List<Placed> placed = new ArrayList<>();
+		private final List<PlacedButton> placed = new ArrayList<>();
 		private IconButton edit;
 
-		private Placed pressed;
+		private PlacedButton pressed;
 		private double pressX;
 		private double pressY;
 		private boolean dragging;
@@ -63,29 +66,58 @@ public final class InventoryButtonsFeature {
 
 		private void install() {
 			ModConfig config = ModConfigManager.CONFIG;
-			InventoryButtonSpots.normalize(config.inventoryButtons);
 			List<AbstractWidget> widgets = Screens.getButtons(this.screen);
 
-			for (InventoryButton entry : config.inventoryButtons) {
-				if (entry.slot < 0) {
-					continue;
+			// Built-in buttons come first so they keep their spot when a custom button was put on it.
+			if (config.inventoryLayoutEnabled) {
+				for (PlacedButton p : InventoryLayoutFeature.install(this.screen)) {
+					this.add(p, widgets);
 				}
-				IconButton button = new IconButton(InventoryIcons.stack(entry.icon), Component.literal(entry.name),
-					b -> run(entry.action));
-				button.setTooltip(Tooltip.create(tooltip(entry)));
-				Placed p = new Placed(button, entry);
-				button.setPressHandler(b -> this.press(p));
-				this.placed.add(p);
-				widgets.add(button);
+			}
+			InventoryButtonSpots.normalize(this.spotted());
+			if (config.inventoryButtonsEnabled) {
+				for (InventoryButton entry : config.inventoryButtons) {
+					if (entry.slot < 0) {
+						continue;
+					}
+					IconButton button = new IconButton(InventoryIcons.stack(entry.icon), Component.literal(entry.name), b -> run(entry.action));
+					button.setTooltip(Tooltip.create(tooltip(entry)));
+					this.add(new PlacedButton(button, entry, () -> run(entry.action)), widgets);
+				}
 			}
 
-			this.edit = new IconButton("✎", Component.literal("Inventar-Buttons bearbeiten"),
-				b -> Minecraft.getInstance().setScreen(new InventoryButtonsScreen(this.screen)));
-			this.edit.setTooltip(Tooltip.create(Component.literal("Inventar-Buttons bearbeiten")
-				.append(Component.literal("\nButtons kannst du im Inventar per Ziehen verschieben.").withStyle(ChatFormatting.GRAY))));
-			widgets.add(this.edit);
+			if (config.inventoryButtonsEnabled) {
+				this.edit = new IconButton("✎", Component.literal("Inventar-Buttons bearbeiten"),
+					b -> Minecraft.getInstance().setScreen(new InventoryButtonsScreen(this.screen)));
+				this.edit.setTooltip(Tooltip.create(Component.literal("Inventar-Buttons bearbeiten")
+					.append(Component.literal("\nButtons kannst du im Inventar per Ziehen verschieben.").withStyle(ChatFormatting.GRAY))));
+				widgets.add(this.edit);
+			}
 
 			this.layout();
+			this.registerEvents();
+		}
+
+		private void add(PlacedButton p, List<AbstractWidget> widgets) {
+			p.button().setPressHandler(b -> this.press(p));
+			this.placed.add(p);
+			widgets.add(p.button());
+		}
+
+		/**
+		 * Every button that takes up a spot, built-in ones first. Hidden custom buttons are included
+		 * so they keep their spots while switched off.
+		 */
+		private List<InventoryButton> spotted() {
+			List<InventoryButton> all = new ArrayList<>();
+			for (PlacedButton p : this.placed) {
+				all.add(p.entry());
+			}
+			all.addAll(ModConfigManager.CONFIG.inventoryButtons);
+			return all;
+		}
+
+		private void registerEvents() {
 			ScreenEvents.beforeRender(this.screen).register((s, graphics, mouseX, mouseY, tickDelta) -> this.layout());
 			ScreenMouseEvents.allowMouseDrag(this.screen).register((s, event, dx, dy) -> this.onDrag(event));
 			ScreenMouseEvents.allowMouseRelease(this.screen).register((s, event) -> this.onRelease(event));
@@ -108,17 +140,19 @@ public final class InventoryButtonsFeature {
 			int left = this.left();
 			int top = this.top();
 			int width = this.imageWidth();
-			for (Placed p : this.placed) {
+			for (PlacedButton p : this.placed) {
 				if (this.dragging && p == this.pressed) {
 					continue;
 				}
-				p.button.setPosition(left + InventoryButtonSpots.x(p.entry.position, p.entry.slot, width),
-					top + InventoryButtonSpots.y(p.entry.position, p.entry.slot));
+				p.button().setPosition(left + InventoryButtonSpots.x(p.entry().position, p.entry().slot, width),
+					top + InventoryButtonSpots.y(p.entry().position, p.entry().slot));
 			}
-			this.edit.setPosition(left + width + 2, top - InventoryButtonSpots.STEP);
+			if (this.edit != null) {
+					this.edit.setPosition(left + width + 2, top - InventoryButtonSpots.STEP);
+			}
 		}
 
-		private void press(Placed p) {
+		private void press(PlacedButton p) {
 			Minecraft minecraft = Minecraft.getInstance();
 			this.pressed = p;
 			this.pressX = minecraft.mouseHandler.getScaledXPos(minecraft.getWindow());
@@ -133,9 +167,15 @@ public final class InventoryButtonsFeature {
 			}
 			if (!this.dragging && Math.hypot(event.x() - this.pressX, event.y() - this.pressY) > DRAG_THRESHOLD) {
 				this.dragging = true;
+				// Drawn last so it stays on top of the other buttons, and without its tooltip in the way.
+				IconButton button = this.pressed.button();
+				button.setTooltipHidden(true);
+				List<AbstractWidget> widgets = Screens.getButtons(this.screen);
+				widgets.remove(button);
+				widgets.add(button);
 			}
 			if (this.dragging) {
-				this.pressed.button.setPosition((int) event.x() - SIZE / 2, (int) event.y() - SIZE / 2);
+				this.pressed.button().setPosition((int) event.x() - SIZE / 2, (int) event.y() - SIZE / 2);
 			}
 			return false;
 		}
@@ -145,32 +185,33 @@ public final class InventoryButtonsFeature {
 			if (this.pressed == null) {
 				return true;
 			}
-			Placed released = this.pressed;
+			PlacedButton released = this.pressed;
 			boolean wasDragging = this.dragging;
 			this.pressed = null;
 			this.dragging = false;
+			released.button().setTooltipHidden(false);
 			if (wasDragging) {
 				this.drop(released, event.x(), event.y());
-			} else if (released.button.isMouseOver(event.x(), event.y())) {
-				run(released.entry.action);
+			} else if (released.button().isMouseOver(event.x(), event.y())) {
+				released.onClick().run();
 			}
 			this.layout();
 			return false;
 		}
 
-		private void drop(Placed p, double mouseX, double mouseY) {
+		private void drop(PlacedButton p, double mouseX, double mouseY) {
 			Spot target = this.spotAt(mouseX, mouseY);
 			if (target == null) {
 				return;
 			}
-			List<InventoryButton> buttons = ModConfigManager.CONFIG.inventoryButtons;
-			InventoryButton other = InventoryButtonSpots.at(buttons, target.side, target.slot);
-			if (other != null && other != p.entry) {
-				other.position = p.entry.position;
-				other.slot = p.entry.slot;
+			InventoryButton entry = p.entry();
+			InventoryButton other = InventoryButtonSpots.at(this.spotted(), target.side, target.slot);
+			if (other != null && other != entry) {
+				other.position = entry.position;
+				other.slot = entry.slot;
 			}
-			p.entry.position = target.side;
-			p.entry.slot = target.slot;
+			entry.position = target.side;
+			entry.slot = target.slot;
 			ModConfigManager.save();
 		}
 
@@ -229,9 +270,6 @@ public final class InventoryButtonsFeature {
 		} else {
 			connection.sendChat(text);
 		}
-	}
-
-	private record Placed(IconButton button, InventoryButton entry) {
 	}
 
 	private record Spot(InventoryButtonPosition side, int slot) {

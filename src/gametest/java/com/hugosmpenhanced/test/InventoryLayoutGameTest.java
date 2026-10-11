@@ -1,10 +1,17 @@
 package com.hugosmpenhanced.test;
 
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.function.Consumer;
 
 import com.hugosmpenhanced.client.config.ConfigScreenBuilder;
+import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.config.ModConfigManager;
+import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButton;
+import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonPosition;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonSpots;
+import com.hugosmpenhanced.client.feature.inventorylayout.InventoryLayout;
+import com.hugosmpenhanced.client.feature.inventorylayout.InventoryLayoutFeature;
 import com.hugosmpenhanced.client.mixin.AbstractContainerScreenAccessor;
 
 import org.lwjgl.glfw.GLFW;
@@ -16,15 +23,16 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.SimpleMenuProvider;
-import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.entity.player.Inventory;
+import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
 /**
- * Sorts an inventory, saves it as the layout with the book button, messes the inventory up and
- * turns the ghost view on with the eye button: empty slots must show faded ghosts, wrong ones red.
+ * Saves two inventory layouts with the book button (the second through its fold-out list), messes
+ * the inventory up, previews and picks a layout in the eye's fold-out list, asks to delete one, drags
+ * the eye onto another spot and shows the ghosts in a chest, with screenshots of each step.
  */
 @SuppressWarnings("UnstableApiUsage")
 public class InventoryLayoutGameTest implements FabricClientGameTest {
@@ -32,10 +40,25 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 	public void runTest(ClientGameTestContext context) {
 		context.runOnClient(client -> client.options.menuBackgroundBlurriness().set(0));
 		context.runOnClient(client -> {
-			ModConfigManager.CONFIG.inventoryLayoutEnabled = true;
-			ModConfigManager.CONFIG.inventoryLayoutShown = false;
-			ModConfigManager.CONFIG.inventoryLayout = new ArrayList<>();
-			ModConfigManager.CONFIG.inventoryButtonsEnabled = true;
+			ModConfig config = ModConfigManager.CONFIG;
+			config.inventoryLayoutEnabled = true;
+			config.inventoryButtonsEnabled = true;
+			config.inventoryButtons.clear();
+			InventoryButton home = InventoryButton.builtIn("minecraft:red_bed", InventoryButtonPosition.RIGHT, 0);
+			home.name = "Home";
+			home.action = "/home";
+			config.inventoryButtons.add(home);
+			config.inventoryLayoutShowButton = InventoryButton.builtIn("minecraft:ender_eye", InventoryButtonPosition.TOP, InventoryButtonSpots.CORNER_START);
+			config.inventoryLayoutSaveButton = InventoryButton.builtIn("minecraft:writable_book", InventoryButtonPosition.TOP, InventoryButtonSpots.CORNER_START + 1);
+
+			// A layout from the first version must become "Layout 1".
+			config.inventoryLayouts = new ArrayList<>();
+			config.inventoryLayout = new ArrayList<>(Collections.nCopies(41, ""));
+			config.inventoryLayout.set(0, "minecraft:diamond_sword");
+			config.inventoryLayoutShown = true;
+			System.out.println("INVLAYOUT migrated: " + InventoryLayout.layouts().size() + " " + InventoryLayout.layouts().get(0).name
+				+ " shown=" + InventoryLayout.shownIndex());
+			InventoryLayout.clear();
 		});
 
 		context.setScreen(() -> ConfigScreenBuilder.build(null));
@@ -48,8 +71,7 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
 			singleplayer.getClientWorld().waitForChunksRender();
-			singleplayer.getServer().runOnServer(server -> {
-				Inventory inv = server.getPlayerList().getPlayers().get(0).getInventory();
+			setInventory(context, singleplayer, inv -> {
 				inv.clearContent();
 				inv.setItem(0, new ItemStack(Items.DIAMOND_SWORD));
 				inv.setItem(1, new ItemStack(Items.DIAMOND_PICKAXE));
@@ -65,41 +87,81 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 				inv.setItem(39, new ItemStack(Items.DIAMOND_HELMET));
 				inv.setItem(40, new ItemStack(Items.SHIELD));
 			});
-			context.waitTicks(5);
 			context.setScreen(() -> new InventoryScreen(Minecraft.getInstance().player));
 			context.waitTicks(3);
-			shot(context, "invlayout-sorted");
-			hover(context, 1);
-			shot(context, "invlayout-save-tooltip");
+			shot(context, "invlayout-1-buttons");
 
-			click(context, 1); // book: save
-			context.waitTicks(5);
-			System.out.println("INVLAYOUT saved: " + context.computeOnClient(client -> ModConfigManager.CONFIG.inventoryLayout));
+			clickButton(context, InventoryButtonSpots.CORNER_START + 1); // book, no layouts yet: saves "Layout 1"
+			context.waitTicks(3);
 
-			// Mess it up: swap sword and bow, drop the logs, the pearls and the shield.
-			singleplayer.getServer().runOnServer(server -> {
-				Inventory inv = server.getPlayerList().getPlayers().get(0).getInventory();
+			// A second sorting for fighting, saved through the book's list.
+			setInventory(context, singleplayer, inv -> {
+				inv.setItem(1, new ItemStack(Items.ENDER_PEARL, 16));
+				inv.setItem(2, new ItemStack(Items.GOLDEN_APPLE, 8));
+				inv.setItem(27, new ItemStack(Items.DIAMOND_PICKAXE));
+				inv.setItem(28, new ItemStack(Items.DIAMOND_AXE));
+			});
+			clickButton(context, InventoryButtonSpots.CORNER_START + 1);
+			context.waitTicks(2);
+			hoverRow(context, 0, false);
+			shot(context, "invlayout-2-book-list");
+			clickRow(context, 0, false); // "+ Neues Layout"
+			context.waitTicks(3);
+			System.out.println("INVLAYOUT saved: " + context.computeOnClient(client -> InventoryLayout.layouts().size()));
+
+			// Mess it up and look at both layouts through the eye's list.
+			setInventory(context, singleplayer, inv -> {
 				inv.setItem(0, new ItemStack(Items.BOW));
 				inv.setItem(3, new ItemStack(Items.DIAMOND_SWORD));
 				inv.setItem(10, ItemStack.EMPTY);
-				inv.setItem(27, ItemStack.EMPTY);
 				inv.setItem(40, ItemStack.EMPTY);
 				inv.setItem(20, new ItemStack(Items.DIRT, 12));
 			});
-			context.waitTicks(5);
-			click(context, 0); // eye: show
+			clickButton(context, InventoryButtonSpots.CORNER_START);
+			context.waitTicks(2);
+			hoverRow(context, 0, false);
+			shot(context, "invlayout-3-eye-preview-layout1");
+			hoverRow(context, 1, false);
+			shot(context, "invlayout-4-eye-preview-layout2");
+			clickRow(context, 0, false); // show "Layout 1"
+			context.waitTicks(2);
+			context.getInput().setCursorPos(0, 0);
+			shot(context, "invlayout-5-ghosts");
+
+			// Deleting asks first; Escape closes the list again.
+			clickButton(context, InventoryButtonSpots.CORNER_START + 1);
+			context.waitTicks(2);
+			clickRow(context, 2, true);
+			context.waitTicks(2);
+			hoverRow(context, 2, true);
+			shot(context, "invlayout-6-delete-confirm");
+			context.getInput().pressKey(GLFW.GLFW_KEY_ESCAPE);
+			context.waitTicks(2);
+			System.out.println("INVLAYOUT after escape: screen=" + context.computeOnClient(client -> client.screen.getClass().getSimpleName())
+				+ " layouts=" + context.computeOnClient(client -> InventoryLayout.layouts().size()));
+
+			// Drag the eye onto the custom button's spot: the two swap.
+			double[] from = spotCenter(context, InventoryButtonPosition.TOP, InventoryButtonSpots.CORNER_START);
+			double[] to = spotCenter(context, InventoryButtonPosition.RIGHT, 0);
+			context.getInput().setCursorPos(from[0], from[1]);
+			context.waitTicks(1);
+			context.getInput().holdMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			context.waitTicks(2);
+			context.getInput().setCursorPos((from[0] + to[0]) / 2, (from[1] + to[1]) / 2);
+			context.waitTicks(2);
+			context.getInput().setCursorPos(to[0], to[1]);
+			context.waitTicks(2);
+			shot(context, "invlayout-7-dragging");
+			context.getInput().releaseMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
 			context.waitTicks(3);
 			context.getInput().setCursorPos(0, 0);
-			context.waitTicks(2);
-			shot(context, "invlayout-ghosts");
-			hover(context, 0);
-			shot(context, "invlayout-eye-tooltip");
-			System.out.println("INVLAYOUT shown: " + context.computeOnClient(client -> ModConfigManager.CONFIG.inventoryLayoutShown));
-
-			// Saving a different inventory asks for a second click.
-			click(context, 1);
-			context.waitTicks(3);
-			context.takeScreenshot("invlayout-confirm");
+			shot(context, "invlayout-8-moved");
+			System.out.println("INVLAYOUT placement: " + context.computeOnClient(client -> {
+				ModConfig config = ModConfigManager.CONFIG;
+				InventoryButton home = config.inventoryButtons.get(0);
+				return "eye=" + config.inventoryLayoutShowButton.position + ":" + config.inventoryLayoutShowButton.slot
+					+ " home=" + home.position + ":" + home.slot + " shown=" + InventoryLayout.shownIndex();
+			}));
 			context.setScreen(() -> null);
 			context.waitTicks(2);
 
@@ -108,39 +170,58 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 				new SimpleMenuProvider((id, inv, player) -> ChestMenu.threeRows(id, inv), Component.literal("Kiste"))));
 			context.waitTicks(5);
 			context.getInput().setCursorPos(0, 0);
-			shot(context, "invlayout-chest");
+			shot(context, "invlayout-9-chest");
 			context.setScreen(() -> null);
 		}
+	}
+
+	private static void setInventory(ClientGameTestContext context, TestSingleplayerContext singleplayer, Consumer<Inventory> change) {
+		singleplayer.getServer().runOnServer(server -> change.accept(server.getPlayerList().getPlayers().get(0).getInventory()));
+		context.waitTicks(5);
 	}
 
 	/** Clears the advancement and recipe toasts so they do not cover the buttons. */
 	private static void shot(ClientGameTestContext context, String name) {
 		context.runOnClient(client -> client.getToastManager().clear());
-		context.waitTicks(2);
+		context.waitTicks(3);
 		context.takeScreenshot(name);
 	}
 
-	private static void hover(ClientGameTestContext context, int index) {
-		double[] pos = center(context, index);
-		context.getInput().setCursorPos(pos[0], pos[1]);
-		context.waitTicks(3);
-	}
-
-	/** Clicks the layout button with the given index (0 eye, 1 book). */
-	private static void click(ClientGameTestContext context, int index) {
-		double[] pos = center(context, index);
+	private static void clickButton(ClientGameTestContext context, int topSlot) {
+		double[] pos = spotCenter(context, InventoryButtonPosition.TOP, topSlot);
 		context.getInput().setCursorPos(pos[0], pos[1]);
 		context.waitTicks(1);
 		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
 	}
 
-	private static double[] center(ClientGameTestContext context, int index) {
+	private static void hoverRow(ClientGameTestContext context, int row, boolean delete) {
+		double[] pos = rowCenter(context, row, delete);
+		context.getInput().setCursorPos(pos[0], pos[1]);
+		context.waitTicks(2);
+	}
+
+	private static void clickRow(ClientGameTestContext context, int row, boolean delete) {
+		hoverRow(context, row, delete);
+		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+	}
+
+	private static double[] rowCenter(ClientGameTestContext context, int row, boolean delete) {
+		return context.computeOnClient(client -> {
+			int[] gui = InventoryLayoutFeature.openRowCenter(row, delete);
+			if (gui == null) {
+				throw new AssertionError("Layout list is not open");
+			}
+			double scale = client.getWindow().getGuiScale();
+			return new double[] {gui[0] * scale, gui[1] * scale};
+		});
+	}
+
+	private static double[] spotCenter(ClientGameTestContext context, InventoryButtonPosition side, int slot) {
 		return context.computeOnClient(client -> {
 			AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.screen;
 			double scale = client.getWindow().getGuiScale();
-			int x = screen.hugosmpenhanced$getLeftPos() + screen.hugosmpenhanced$getImageWidth() + 2
-				+ InventoryButtonSpots.STEP * (index + 1) + 10;
-			int y = screen.hugosmpenhanced$getTopPos() - InventoryButtonSpots.STEP + 10;
+			int x = screen.hugosmpenhanced$getLeftPos() + InventoryButtonSpots.x(side, slot, screen.hugosmpenhanced$getImageWidth()) + 10;
+			int y = screen.hugosmpenhanced$getTopPos() + InventoryButtonSpots.y(side, slot) + 10;
 			return new double[] {x * scale, y * scale};
 		});
 	}

@@ -7,6 +7,7 @@ import com.hugosmpenhanced.client.gui.HugoStyle;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
@@ -24,6 +25,8 @@ public class IconButton extends Button {
 	private final String symbol;
 	private Consumer<IconButton> pressHandler;
 	private boolean selected;
+	private Tooltip tooltip;
+	private boolean tooltipHidden;
 
 	public IconButton(ItemStack icon, Component narration, OnPress onPress) {
 		this(icon, "", narration, onPress);
@@ -49,6 +52,18 @@ public class IconButton extends Button {
 
 	public void setSelected(boolean selected) {
 		this.selected = selected;
+	}
+
+	@Override
+	public void setTooltip(Tooltip tooltip) {
+		this.tooltip = tooltip;
+		super.setTooltip(this.tooltipHidden ? null : tooltip);
+	}
+
+	/** Hides the tooltip without forgetting it, e.g. while the button is dragged. */
+	public void setTooltipHidden(boolean hidden) {
+		this.tooltipHidden = hidden;
+		super.setTooltip(hidden ? null : this.tooltip);
 	}
 
 	@Override
