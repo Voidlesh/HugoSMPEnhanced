@@ -6,7 +6,9 @@ import java.util.List;
 import com.hugosmpenhanced.client.feature.inventorybuttons.IconButton;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButton;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonPosition;
+import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonSpots;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryIcons;
+import com.hugosmpenhanced.client.gui.StyledScreen;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -19,18 +21,24 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * Editor for the inventory buttons. Every change is written to the config immediately and saved
- * when the screen closes; the inventory picks the new buttons up the next time it is opened.
+ * Editor for the inventory buttons, one tab per side. The strip under the tabs shows that side's
+ * buttons in order; the selected one is edited below and can be moved earlier or later, which
+ * swaps spots with its neighbour. Every change is written to the config immediately and saved when
+ * the screen closes.
  */
-public class InventoryButtonsScreen extends Screen {
+public class InventoryButtonsScreen extends Screen implements StyledScreen {
 	public static final int MAX_BUTTONS = 12;
 	private static final int CONTROL_WIDTH = 300;
 	private static final int HALF_WIDTH = (CONTROL_WIDTH - 4) / 2;
+	private static final int QUARTER_WIDTH = (CONTROL_WIDTH - 12) / 4;
 	private static final int GRID_COLUMNS = 15;
 	private static final int GRID_ROWS = 2;
+	private static final int TOTAL_HEIGHT = 24 * 6 + GRID_ROWS * 20 + 4 + 14 + 20;
+
+	private static InventoryButtonPosition side = InventoryButtonPosition.RIGHT;
 
 	private final Screen parent;
-	private int selected;
+	private InventoryButton selected;
 	private final List<IconButton> grid = new ArrayList<>();
 	private List<Item> results = List.of();
 	private IconButton iconPreview;
@@ -41,45 +49,83 @@ public class InventoryButtonsScreen extends Screen {
 		this.parent = parent;
 	}
 
-	private List<InventoryButton> buttons() {
+	private static List<InventoryButton> all() {
 		return ModConfigManager.CONFIG.inventoryButtons;
 	}
 
 	@Override
 	protected void init() {
-		List<InventoryButton> buttons = this.buttons();
-		this.selected = Math.max(0, Math.min(this.selected, buttons.size() - 1));
+		InventoryButtonSpots.normalize(all());
+		List<InventoryButton> onSide = InventoryButtonSpots.onSide(all(), side);
+		if (!onSide.contains(this.selected)) {
+			this.selected = onSide.isEmpty() ? null : onSide.get(0);
+		}
 		this.grid.clear();
 
 		int left = this.width / 2 - CONTROL_WIDTH / 2;
 		int right = left + HALF_WIDTH + 4;
-		int y = Math.max(28, this.height / 2 - 96);
+		int y = Math.max(16, (this.height - TOTAL_HEIGHT) / 2 + 6);
 		this.headerY = y;
 
-		Button prev = this.addRenderableWidget(Button.builder(Component.literal("<"), b -> this.select(this.selected - 1))
-			.bounds(left, y, 20, 20).build());
-		Button next = this.addRenderableWidget(Button.builder(Component.literal(">"), b -> this.select(this.selected + 1))
-			.bounds(left + 148, y, 20, 20).build());
-		Button add = this.addRenderableWidget(Button.builder(Component.literal("+ Neu"), b -> this.addButton())
-			.bounds(left + 172, y, 62, 20).build());
-		Button remove = this.addRenderableWidget(Button.builder(Component.literal("Löschen"), b -> this.removeButton())
-			.bounds(left + 238, y, 62, 20).build());
-		prev.active = this.selected > 0;
-		next.active = this.selected < buttons.size() - 1;
-		add.active = buttons.size() < MAX_BUTTONS;
-		remove.active = !buttons.isEmpty();
-		y += 28;
+		for (InventoryButtonPosition tab : InventoryButtonPosition.values()) {
+			int count = InventoryButtonSpots.onSide(all(), tab).size();
+			String label = tab.displayName() + " (" + count + ")";
+			Button button = Button.builder(Component.literal(tab == side ? "» " + label + " «" : label), b -> {
+					side = tab;
+					this.selected = null;
+					this.rebuildWidgets();
+				})
+				.bounds(tab == InventoryButtonPosition.RIGHT ? left : right, y, HALF_WIDTH, 20).build();
+			this.addRenderableWidget(button);
+		}
+		y += 24;
 
+		int x = left;
+		for (InventoryButton entry : onSide) {
+			IconButton tile = new IconButton(InventoryIcons.stack(entry.icon), Component.literal(entry.name), b -> {
+				this.selected = entry;
+				this.rebuildWidgets();
+			});
+			tile.setPosition(x, y);
+			tile.setSelected(entry == this.selected);
+			tile.setTooltip(Tooltip.create(Component.literal(entry.name.isBlank() ? "Button" : entry.name)));
+			this.addRenderableWidget(tile);
+			x += 22;
+		}
+		IconButton add = new IconButton("+", Component.literal("Neuer Button"), b -> this.addButton());
+		add.setPosition(x, y);
+		add.setTooltip(Tooltip.create(Component.literal("Neuer Button")));
+		add.active = all().size() < MAX_BUTTONS && InventoryButtonSpots.firstFree(all(), side) >= 0;
+		this.addRenderableWidget(add);
+		y += 24;
+
+		int bottom = this.headerY + TOTAL_HEIGHT - 20;
 		this.addRenderableWidget(CycleButton.onOffBuilder(ModConfigManager.CONFIG.inventoryButtonsEnabled)
-			.create(left, y + 72 + GRID_ROWS * 20 + 24, HALF_WIDTH, 20, Component.literal("Im Inventar anzeigen"),
+			.create(left, bottom, HALF_WIDTH, 20, Component.literal("Im Inventar anzeigen"),
 				(button, value) -> ModConfigManager.CONFIG.inventoryButtonsEnabled = value));
 		this.addRenderableWidget(Button.builder(Component.literal("Fertig"), b -> this.onClose())
-			.bounds(right, y + 72 + GRID_ROWS * 20 + 24, HALF_WIDTH, 20).build());
+			.bounds(right, bottom, HALF_WIDTH, 20).build());
 
-		if (buttons.isEmpty()) {
+		if (this.selected == null) {
 			return;
 		}
-		InventoryButton entry = buttons.get(this.selected);
+		InventoryButton entry = this.selected;
+		int index = onSide.indexOf(entry);
+
+		Button earlier = this.addRenderableWidget(Button.builder(Component.literal("◀ Früher"), b -> this.move(-1))
+			.bounds(left, y, QUARTER_WIDTH, 20).build());
+		Button later = this.addRenderableWidget(Button.builder(Component.literal("Später ▶"), b -> this.move(1))
+			.bounds(left + (QUARTER_WIDTH + 4), y, QUARTER_WIDTH, 20).build());
+		earlier.active = index > 0;
+		later.active = index < onSide.size() - 1;
+		InventoryButtonPosition otherSide = side == InventoryButtonPosition.TOP ? InventoryButtonPosition.RIGHT : InventoryButtonPosition.TOP;
+		Button switchSide = this.addRenderableWidget(Button.builder(Component.literal("Nach " + otherSide.displayName().toLowerCase()),
+				b -> this.switchSide(otherSide))
+			.bounds(left + 2 * (QUARTER_WIDTH + 4), y, QUARTER_WIDTH, 20).build());
+		switchSide.active = InventoryButtonSpots.firstFree(all(), otherSide) >= 0;
+		this.addRenderableWidget(Button.builder(Component.literal("Löschen"), b -> this.removeButton())
+			.bounds(left + 3 * (QUARTER_WIDTH + 4), y, CONTROL_WIDTH - 3 * (QUARTER_WIDTH + 4), 20).build());
+		y += 24;
 
 		EditBox name = new EditBox(this.font, left, y, CONTROL_WIDTH, 20, Component.literal("Name"));
 		name.setMaxLength(64);
@@ -87,7 +133,6 @@ public class InventoryButtonsScreen extends Screen {
 		name.setHint(Component.literal("Name (Tooltip), z. B. Home"));
 		name.setResponder(value -> entry.name = value);
 		this.addRenderableWidget(name);
-		this.setInitialFocus(name);
 		y += 24;
 
 		EditBox action = new EditBox(this.font, left, y, CONTROL_WIDTH, 20, Component.literal("Aktion"));
@@ -98,28 +143,22 @@ public class InventoryButtonsScreen extends Screen {
 		this.addRenderableWidget(action);
 		y += 24;
 
-		this.addRenderableWidget(CycleButton.<InventoryButtonPosition>builder(
-				value -> Component.literal(value.displayName()), entry.position)
-			.withValues(InventoryButtonPosition.values())
-			.create(left, y, HALF_WIDTH, 20, Component.literal("Position"), (button, value) -> entry.position = value));
-
-		EditBox icon = new EditBox(this.font, right, y, HALF_WIDTH - 24, 20, Component.literal("Icon"));
+		EditBox icon = new EditBox(this.font, left, y, CONTROL_WIDTH - 24, 20, Component.literal("Icon"));
 		icon.setMaxLength(128);
 		icon.setValue(entry.icon);
 		icon.setHint(Component.literal("Item suchen"));
 		this.addRenderableWidget(icon);
 		this.iconPreview = this.addRenderableWidget(new IconButton(InventoryIcons.stack(entry.icon),
 			Component.literal("Icon"), b -> { }));
-		this.iconPreview.setPosition(right + HALF_WIDTH - 20, y);
+		this.iconPreview.setPosition(left + CONTROL_WIDTH - 20, y);
 		y += 24;
 
 		for (int i = 0; i < GRID_COLUMNS * GRID_ROWS; i++) {
 			final int slot = i;
 			IconButton cell = new IconButton(ItemStack.EMPTY, Component.literal("Item"), b -> {
 				if (slot < this.results.size()) {
-					Item item = this.results.get(slot);
-					entry.icon = InventoryIcons.id(item);
-					this.iconPreview.setIcon(new ItemStack(item));
+					entry.icon = InventoryIcons.id(this.results.get(slot));
+					this.rebuildWidgets();
 				}
 			});
 			cell.setPosition(left + (i % GRID_COLUMNS) * 20, y + (i / GRID_COLUMNS) * 20);
@@ -144,32 +183,58 @@ public class InventoryButtonsScreen extends Screen {
 			boolean used = i < this.results.size();
 			cell.visible = used;
 			if (used) {
-				ItemStack stack = new ItemStack(this.results.get(i));
-				cell.setIcon(stack);
+				cell.setIcon(new ItemStack(this.results.get(i)));
 				cell.setTooltip(Tooltip.create(Component.literal(InventoryIcons.id(this.results.get(i)))));
 			}
 		}
 	}
 
-	private void select(int index) {
-		this.selected = index;
+	/** Swaps spots with the previous or next button on the same side. */
+	private void move(int direction) {
+		List<InventoryButton> onSide = InventoryButtonSpots.onSide(all(), side);
+		int index = onSide.indexOf(this.selected);
+		int other = index + direction;
+		if (index < 0 || other < 0 || other >= onSide.size()) {
+			return;
+		}
+		InventoryButton neighbour = onSide.get(other);
+		int slot = this.selected.slot;
+		this.selected.slot = neighbour.slot;
+		neighbour.slot = slot;
+		this.rebuildWidgets();
+	}
+
+	private void switchSide(InventoryButtonPosition target) {
+		int slot = InventoryButtonSpots.firstFree(all(), target);
+		if (slot < 0) {
+			return;
+		}
+		this.selected.position = target;
+		this.selected.slot = slot;
+		side = target;
 		this.rebuildWidgets();
 	}
 
 	private void addButton() {
-		if (this.buttons().size() >= MAX_BUTTONS) {
+		int slot = InventoryButtonSpots.firstFree(all(), side);
+		if (all().size() >= MAX_BUTTONS || slot < 0) {
 			return;
 		}
-		this.buttons().add(new InventoryButton());
-		this.select(this.buttons().size() - 1);
+		InventoryButton button = new InventoryButton();
+		button.position = side;
+		button.slot = slot;
+		all().add(button);
+		this.selected = button;
+		this.rebuildWidgets();
 	}
 
 	private void removeButton() {
-		if (this.buttons().isEmpty()) {
-			return;
-		}
-		this.buttons().remove(this.selected);
-		this.select(this.selected - 1);
+		List<InventoryButton> onSide = InventoryButtonSpots.onSide(all(), side);
+		int index = onSide.indexOf(this.selected);
+		all().remove(this.selected);
+		onSide.remove(this.selected);
+		this.selected = onSide.isEmpty() ? null : onSide.get(Math.max(0, Math.min(index, onSide.size() - 1)));
+		this.rebuildWidgets();
 	}
 
 	@Override
@@ -181,19 +246,14 @@ public class InventoryButtonsScreen extends Screen {
 	@Override
 	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
 		super.render(graphics, mouseX, mouseY, partialTick);
-		graphics.drawCenteredString(this.font, "— INVENTAR-BUTTONS —", this.width / 2, this.headerY - 16, 0xFFAAAAAA);
+		graphics.drawCenteredString(this.font, "— INVENTAR-BUTTONS —", this.width / 2, this.headerY - 12, 0xFFAAAAAA);
 
-		int left = this.width / 2 - CONTROL_WIDTH / 2;
-		List<InventoryButton> buttons = this.buttons();
-		String label = buttons.isEmpty() ? "Keine Buttons" : "Button " + (this.selected + 1) + " / " + buttons.size();
-		graphics.drawCenteredString(this.font, label, left + 84, this.headerY + 6, 0xFFFFFFFF);
-
-		if (buttons.isEmpty()) {
-			graphics.drawCenteredString(this.font, "Klick auf \"+ Neu\", um einen Button anzulegen.",
+		int hintY = this.headerY + TOTAL_HEIGHT - 20 - 12;
+		if (this.selected == null) {
+			graphics.drawCenteredString(this.font, "Noch keine Buttons hier. Klick auf +, um einen anzulegen.",
 				this.width / 2, this.headerY + 60, 0xFF888888);
-		} else {
-			graphics.drawCenteredString(this.font, "Mit / am Anfang: Command, sonst Chatnachricht",
-				this.width / 2, this.headerY + 28 + 72 + GRID_ROWS * 20 + 7, 0xFF888888);
 		}
+		graphics.drawCenteredString(this.font, "/ am Anfang = Command · Im Inventar ziehen zum Verschieben",
+			this.width / 2, hintY, 0xFF888888);
 	}
 }
