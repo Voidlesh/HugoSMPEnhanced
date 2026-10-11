@@ -1,7 +1,9 @@
 package com.hugosmpenhanced.client;
 
 import com.hugosmpenhanced.client.feature.auction.PricePerItemFeature;
+import com.hugosmpenhanced.client.feature.gallery.GalleryFeature;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonsFeature;
+import com.hugosmpenhanced.client.feature.keyboard.KeyboardFeature;
 import com.hugosmpenhanced.client.feature.mentions.MentionHighlightFeature;
 import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
 import com.hugosmpenhanced.client.util.ServerCheck;
@@ -21,6 +23,8 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		TpaKeybinds.register();
 		ConfigCommand.register();
 		InventoryButtonsFeature.register();
+		KeyboardFeature.register();
+		GalleryFeature.register();
 		LOGGER.info("HugoSMP Enhanced loaded");
 	}
 }
