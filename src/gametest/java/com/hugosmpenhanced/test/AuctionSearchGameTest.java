@@ -1,6 +1,5 @@
 package com.hugosmpenhanced.test;
 
-import com.hugosmpenhanced.client.config.ConfigScreenBuilder;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.auction.AuctionLore;
 import com.hugosmpenhanced.client.feature.auction.AuctionMarket;
@@ -12,6 +11,7 @@ import com.hugosmpenhanced.client.feature.notes.NotesHudPositionScreen;
 
 import org.lwjgl.glfw.GLFW;
 
+import com.hugosmpenhanced.client.settings.SettingsScreen;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
@@ -193,7 +193,7 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 				ModConfigManager.CONFIG.notesHudY = 4;
 			});
 
-			context.setScreen(() -> ConfigScreenBuilder.build(null));
+			context.setScreen(() -> new SettingsScreen(null).select("Inventar & Handel", "Auktionshaus"));
 			context.waitTicks(5);
 			context.takeScreenshot("auction-config");
 			context.setScreen(() -> null);

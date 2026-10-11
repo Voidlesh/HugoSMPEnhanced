@@ -8,7 +8,6 @@ import java.net.http.HttpResponse;
 import java.util.UUID;
 
 import com.google.gson.JsonParser;
-import com.hugosmpenhanced.client.config.ConfigScreenBuilder;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.hugoguard.HgProfileScreen;
 import com.hugosmpenhanced.client.feature.hugoguard.HugoGuard;
@@ -18,6 +17,7 @@ import com.mojang.authlib.GameProfile;
 
 import org.lwjgl.glfw.GLFW;
 
+import com.hugosmpenhanced.client.settings.SettingsScreen;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
@@ -121,9 +121,30 @@ public class QolGameTest implements FabricClientGameTest {
 			context.takeScreenshot("qol-hg-unlisted");
 
 			// The config screen must still open with the new options.
-			context.setScreen(() -> ConfigScreenBuilder.build(null));
+			context.setScreen(() -> new SettingsScreen(null).select("Werkzeuge", "Notizen"));
 			context.waitTicks(5);
 			context.takeScreenshot("qol-config");
+			context.setScreen(() -> null);
+			context.waitTicks(2);
+
+			// O opens the settings in game, O closes them again; the pause menu has the logo button.
+			context.getInput().pressKey(GLFW.GLFW_KEY_O);
+			context.waitTicks(3);
+			context.runOnClient(client -> {
+				if (!(client.screen instanceof SettingsScreen)) {
+					throw new AssertionError("Key O did not open the settings, screen is " + client.screen);
+				}
+			});
+			context.getInput().pressKey(GLFW.GLFW_KEY_O);
+			context.waitTicks(3);
+			context.runOnClient(client -> {
+				if (client.screen != null) {
+					throw new AssertionError("Key O did not close the settings, screen is " + client.screen);
+				}
+			});
+			context.getInput().pressKey(GLFW.GLFW_KEY_ESCAPE);
+			context.waitTicks(5);
+			context.takeScreenshot("qol-pause-buttons");
 			context.setScreen(() -> null);
 		}
 		ModConfigManager.CONFIG.notes.clear();

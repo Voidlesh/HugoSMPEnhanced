@@ -1,6 +1,6 @@
 package com.hugosmpenhanced.client;
 
-import com.hugosmpenhanced.client.config.ConfigScreenBuilder;
+import com.hugosmpenhanced.client.settings.SettingsScreen;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.minecraft.client.Minecraft;
@@ -16,7 +16,7 @@ public final class ConfigCommand {
 							Minecraft client = Minecraft.getInstance();
 							// Deferred: the chat screen closes itself right after dispatching this
 							// command, which would immediately undo a setScreen() called inline here.
-							client.execute(() -> client.setScreen(ConfigScreenBuilder.build(client.screen)));
+							client.execute(() -> client.setScreen(new SettingsScreen(client.screen)));
 							return 1;
 						})));
 	}

@@ -7,8 +7,8 @@ import net.minecraft.resources.Identifier;
 
 /**
  * The mod's widget look: a translucent dark field with a thin grey border that lightens on hover,
- * like a dark search bar. Vanilla widget sprites are swapped for it on the mod's own screens and
- * on YACL screens (see {@code GuiGraphicsStyleMixin}).
+ * like a dark search bar. Vanilla widget sprites are swapped for it on the mod's own screens
+ * (see {@code GuiGraphicsStyleMixin}).
  */
 public final class HugoStyle {
 	private static final int FILL = 0xB0181818;
@@ -55,7 +55,7 @@ public final class HugoStyle {
 
 	/** Whether the screen being shown should use this style instead of the vanilla sprites. */
 	public static boolean activeFor(Screen screen) {
-		return screen instanceof StyledScreen || (screen != null && screen.getClass().getName().startsWith("dev.isxander.yacl3."));
+		return screen instanceof StyledScreen;
 	}
 
 	/**

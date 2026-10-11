@@ -1,9 +1,9 @@
 package com.hugosmpenhanced.client.feature.mainmenu;
 
-import dev.isxander.yacl3.api.NameableEnum;
+import com.hugosmpenhanced.client.settings.Labeled;
 import net.minecraft.network.chat.Component;
 
-public enum SplashColor implements NameableEnum {
+public enum SplashColor implements Labeled {
 	YELLOW("Gelb", 0xFFFFFF00),
 	WHITE("Weiß", 0xFFFFFFFF),
 	GOLD("Gold", 0xFFFFAA00),
