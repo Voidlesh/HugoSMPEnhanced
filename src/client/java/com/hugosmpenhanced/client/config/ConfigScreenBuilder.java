@@ -14,6 +14,7 @@ import dev.isxander.yacl3.api.controller.DoubleSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.EnumControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
+import com.hugosmpenhanced.client.feature.inventorylayout.InventoryLayout;
 import com.hugosmpenhanced.client.feature.mainmenu.MainMenuLayout;
 import com.hugosmpenhanced.client.feature.mainmenu.SplashAnimation;
 import com.hugosmpenhanced.client.feature.mainmenu.SplashColor;
@@ -41,6 +42,7 @@ public final class ConfigScreenBuilder {
 						.group(nametagStyleGroup())
 						.group(secondNametagGroup())
 						.group(inventoryButtonsGroup(config))
+						.group(inventoryLayoutGroup(config))
 						.group(chatGroup(config))
 						.group(chatFilterGroup(config))
 						.group(mainMenuGroup(config))
@@ -223,6 +225,25 @@ public final class ConfigScreenBuilder {
 						.name(Component.literal("Inventar-Buttons bearbeiten"))
 						.text(Component.literal("Öffnen"))
 						.action((screen, option) -> Minecraft.getInstance().setScreen(new InventoryButtonsScreen(screen)))
+						.build())
+				.build();
+	}
+
+	private static OptionGroup inventoryLayoutGroup(ModConfig config) {
+		return OptionGroup.createBuilder()
+				.name(Component.literal("Inventar-Layout"))
+				.description(OptionDescription.of(Component.literal(
+						"Speichere, wie dein Inventar sortiert ist. Per Auge-Button im Inventar siehst du dann halbtransparent, "
+								+ "wo jedes Item hingehört, und falsch belegte Slots werden rot.")))
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Layout-Buttons im Inventar"))
+						.binding(true, () -> config.inventoryLayoutEnabled, v -> config.inventoryLayoutEnabled = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.option(ButtonOption.createBuilder()
+						.name(Component.literal("Gespeichertes Layout löschen"))
+						.text(Component.literal("Löschen"))
+						.action((screen, option) -> InventoryLayout.clear())
 						.build())
 				.build();
 	}

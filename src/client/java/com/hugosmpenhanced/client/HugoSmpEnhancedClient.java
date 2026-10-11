@@ -7,6 +7,7 @@ import com.hugosmpenhanced.client.feature.hugoguard.HugoGuard;
 import com.hugosmpenhanced.client.feature.hugoguard.HugoGuardGlowLayer;
 import com.hugosmpenhanced.client.feature.hugoguard.HgCommand;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonsFeature;
+import com.hugosmpenhanced.client.feature.inventorylayout.InventoryLayoutFeature;
 import com.hugosmpenhanced.client.feature.keyboard.KeyboardFeature;
 import com.hugosmpenhanced.client.feature.mentions.MentionHighlightFeature;
 import com.hugosmpenhanced.client.feature.notes.NotesFeature;
@@ -29,6 +30,7 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		TpaKeybinds.register();
 		ConfigCommand.register();
 		InventoryButtonsFeature.register();
+		InventoryLayoutFeature.register();
 		KeyboardFeature.register();
 		GalleryFeature.register();
 		NotesFeature.register();
