@@ -11,7 +11,8 @@
 			"com.hugosmpenhanced.test.KeyboardGalleryGameTest",
 			"com.hugosmpenhanced.test.HugoGuardGameTest",
 			"com.hugosmpenhanced.test.QolGameTest",
-			"com.hugosmpenhanced.test.MainMenuGameTest"
+			"com.hugosmpenhanced.test.MainMenuGameTest",
+			"com.hugosmpenhanced.test.AuctionSearchGameTest"
 		]
 	}
 }
