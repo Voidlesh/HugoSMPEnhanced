@@ -85,4 +85,9 @@ public class ModConfig {
 	// Inventar-Buttons
 	public boolean inventoryButtonsEnabled = true;
 	public List<InventoryButton> inventoryButtons = new ArrayList<>();
+	// Inventar-Layout
+	public boolean inventoryLayoutEnabled = true;
+	public boolean inventoryLayoutShown = false;
+	/** Item id per player inventory slot, "" for slots that may hold anything. */
+	public List<String> inventoryLayout = new ArrayList<>();
 }
