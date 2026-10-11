@@ -16,20 +16,21 @@ public final class PricePerItemFeature {
 
 	public static void register() {
 		ItemTooltipCallback.EVENT.register((stack, context, flag, lines) -> {
-			if (!ModConfigManager.CONFIG.pricePerItemEnabled || !ServerCheck.isHugoSmp()) {
+			if (!ServerCheck.isHugoSmp()) {
 				return;
 			}
 
 			int count = stack.getCount();
-			if (count <= 1) {
-				return;
-			}
-
 			for (int i = 0; i < lines.size(); i++) {
 				Optional<Double> price = AuctionLore.parsePrice(lines.get(i).getString());
 				if (price.isPresent()) {
-					double perItem = price.get() / count;
-					lines.add(i + 1, pricePerItemLine(perItem));
+					double perItem = price.get() / Math.max(1, count);
+					if (ModConfigManager.CONFIG.auctionPriceMemoryEnabled) {
+						AuctionPriceMemory.record(stack, perItem);
+					}
+					if (ModConfigManager.CONFIG.pricePerItemEnabled && count > 1) {
+						lines.add(i + 1, pricePerItemLine(perItem));
+					}
 					return;
 				}
 			}

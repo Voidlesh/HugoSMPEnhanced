@@ -13,6 +13,7 @@ import dev.isxander.yacl3.api.controller.BooleanControllerBuilder;
 import dev.isxander.yacl3.api.controller.DoubleSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.EnumControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
+import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
 import com.hugosmpenhanced.client.feature.mainmenu.MainMenuLayout;
 import com.hugosmpenhanced.client.feature.mainmenu.SplashAnimation;
 import com.hugosmpenhanced.client.feature.mainmenu.SplashColor;
@@ -84,6 +85,27 @@ public final class ConfigScreenBuilder {
 				.option(Option.<Boolean>createBuilder()
 						.name(Component.literal("Preis pro Item anzeigen"))
 						.binding(true, () -> config.pricePerItemEnabled, v -> config.pricePerItemEnabled = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Eigenes Suchmenü statt Schild"))
+						.description(OptionDescription.of(Component.literal(
+								"Ersetzt das Schild der AH-Suche durch ein Suchfenster mit Item-Vorschlägen, letzten Suchen und Favoriten.")))
+						.binding(true, () -> config.auctionSearchEnabled, v -> config.auctionSearchEnabled = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.option(Option.<AuctionSearchLanguage>createBuilder()
+						.name(Component.literal("Vorschläge senden Namen in"))
+						.description(OptionDescription.of(Component.literal(
+								"Welcher Itemname beim Klick auf einen Vorschlag an die AH-Suche geht. Selbst Getipptes wird immer genau so gesendet.")))
+						.binding(AuctionSearchLanguage.GAME, () -> config.auctionSearchLanguage, v -> config.auctionSearchLanguage = v)
+						.controller(opt -> EnumControllerBuilder.create(opt).enumClass(AuctionSearchLanguage.class))
+						.build())
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Gesehene Preise merken"))
+						.description(OptionDescription.of(Component.literal(
+								"Merkt sich Preise, über die du im AH mit der Maus fährst, und zeigt den niedrigsten der letzten Tage in der Suche.")))
+						.binding(true, () -> config.auctionPriceMemoryEnabled, v -> config.auctionPriceMemoryEnabled = v)
 						.controller(BooleanControllerBuilder::create)
 						.build())
 				.build();

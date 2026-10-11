@@ -22,7 +22,8 @@
 		"GuiGraphicsStyleMixin",
 		"HugoGuardNametagMixin",
 		"HugoGuardChatMixin",
-		"ChatCalculatorMixin"
+		"ChatCalculatorMixin",
+		"AuctionSearchSignMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
