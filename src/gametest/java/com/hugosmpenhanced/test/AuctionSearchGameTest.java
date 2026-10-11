@@ -2,20 +2,27 @@ package com.hugosmpenhanced.test;
 
 import com.hugosmpenhanced.client.config.ConfigScreenBuilder;
 import com.hugosmpenhanced.client.config.ModConfigManager;
+import com.hugosmpenhanced.client.feature.auction.AuctionLore;
+import com.hugosmpenhanced.client.feature.auction.AuctionMarket;
 import com.hugosmpenhanced.client.feature.auction.AuctionPriceMemory;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearch;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchScreen;
+import com.hugosmpenhanced.client.feature.notes.Note;
+import com.hugosmpenhanced.client.feature.notes.NotesHudPositionScreen;
 
 import org.lwjgl.glfw.GLFW;
 
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.Registries;
+import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.enchantment.Enchantment;
@@ -45,6 +52,15 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 		ModConfigManager.CONFIG.auctionSearchFavorites.clear();
 		ModConfigManager.CONFIG.auctionSearchFavorites.add("Diamant");
 
+		// Prices as HugoSMP writes them: dots group thousands.
+		checkPrice("Preis: $7.000", 7000);
+		checkPrice("Preis: $7,000", 7000);
+		checkPrice("Preis: $1.234.567", 1234567);
+		checkPrice("Preis: $12,50", 12.5);
+		checkPrice("Preis: $7.000,50", 7000.5);
+		checkPrice("Preis: $150", 150);
+		checkPrice("Preis pro Stück: $2.500", 2500);
+
 		try (TestSingleplayerContext singleplayer = context.worldBuilder()
 			// A flat world loads fast enough on slow machines; the sign is all this test needs.
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
@@ -52,17 +68,19 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 			.create()) {
 			singleplayer.getClientWorld().waitForChunksRender();
 			context.runOnClient(client -> {
-				AuctionPriceMemory.record(new ItemStack(Items.DIAMOND), 152.5);
-				AuctionPriceMemory.record(new ItemStack(Items.DIAMOND_SWORD), 900);
-				AuctionPriceMemory.record(new ItemStack(Items.ELYTRA), 25_000);
-				AuctionPriceMemory.record(new ItemStack(Items.NETHERITE_INGOT), 4_200);
+				AuctionPriceMemory.record(new ItemStack(Items.DIAMOND), 152.5, AuctionMarket.AUCTION);
+				AuctionPriceMemory.record(new ItemStack(Items.DIAMOND_SWORD), 900, AuctionMarket.AUCTION);
+				AuctionPriceMemory.record(new ItemStack(Items.ELYTRA), 25_000, AuctionMarket.AUCTION);
+				AuctionPriceMemory.record(new ItemStack(Items.NETHERITE_INGOT), 4_200, AuctionMarket.AUCTION);
 				Holder<Enchantment> mending = client.level.registryAccess().lookupOrThrow(Registries.ENCHANTMENT)
 					.getOrThrow(Enchantments.MENDING);
 				ItemStack book = new ItemStack(Items.ENCHANTED_BOOK);
 				ItemEnchantments.Mutable stored = new ItemEnchantments.Mutable(ItemEnchantments.EMPTY);
 				stored.set(mending, 1);
 				book.set(DataComponents.STORED_ENCHANTMENTS, stored.toImmutable());
-				AuctionPriceMemory.record(book, 3_000);
+				AuctionPriceMemory.record(book, 3_000, AuctionMarket.AUCTION);
+				AuctionPriceMemory.record(new ItemStack(Items.DIAMOND), 120, AuctionMarket.ORDERS);
+				AuctionPriceMemory.record(new ItemStack(Items.DIAMOND), 140, AuctionMarket.ORDERS);
 			});
 
 			BlockPos pos = context.computeOnClient(client -> client.player.blockPosition().offset(0, 0, 2));
@@ -138,6 +156,43 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 			context.takeScreenshot("auction-search-fallback");
 			context.setScreen(() -> null);
 
+			// The same sign opened from the orders menu becomes the order search.
+			context.runOnClient(client -> {
+				var inventory = client.player.getInventory();
+				client.setScreen(new ContainerScreen(ChestMenu.sixRows(0, inventory), inventory, Component.literal("Orders")));
+			});
+			context.waitTicks(3);
+			openSign(singleplayer, pos);
+			context.waitTicks(10);
+			context.getInput().typeChars("diaman");
+			context.waitTicks(3);
+			context.takeScreenshot("auction-search-orders");
+			context.setScreen(() -> null);
+			context.waitTicks(5);
+
+			// Pinned notes moved to the right side.
+			context.runOnClient(client -> {
+				ModConfigManager.CONFIG.notes.clear();
+				Note note = new Note();
+				note.title = "Einkauf";
+				note.text = "- 3 Stacks Eisen\n- Elytra reparieren";
+				note.pinned = true;
+				ModConfigManager.CONFIG.notes.add(note);
+				ModConfigManager.CONFIG.notesHudX = 2000;
+				ModConfigManager.CONFIG.notesHudY = 60;
+			});
+			context.setScreen(() -> new NotesHudPositionScreen(null));
+			context.waitTicks(3);
+			context.takeScreenshot("notes-position");
+			context.setScreen(() -> null);
+			context.waitTicks(3);
+			context.takeScreenshot("notes-position-hud");
+			context.runOnClient(client -> {
+				ModConfigManager.CONFIG.notes.clear();
+				ModConfigManager.CONFIG.notesHudX = 4;
+				ModConfigManager.CONFIG.notesHudY = 4;
+			});
+
 			context.setScreen(() -> ConfigScreenBuilder.build(null));
 			context.waitTicks(5);
 			context.takeScreenshot("auction-config");
@@ -155,6 +210,14 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 		});
 		context.waitFor(client -> client.getOverlay() == null, 1200);
 		context.waitTicks(5);
+	}
+
+	private static void checkPrice(String line, double expected) {
+		double got = AuctionLore.parsePrice(line).orElse(-1.0);
+		System.out.println("AUCTION price '" + line + "' -> " + got);
+		if (Math.abs(got - expected) > 1e-9) {
+			throw new AssertionError(line + " parsed as " + got + ", expected " + expected);
+		}
 	}
 
 	private static void clear(ClientGameTestContext context) {

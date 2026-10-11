@@ -24,11 +24,11 @@ import net.minecraft.world.item.enchantment.ItemEnchantments;
 import net.fabricmc.loader.api.FabricLoader;
 
 /**
- * Remembers the auction prices seen in item tooltips (per single item), so the auction search can
+ * Remembers the auction and order prices seen in item tooltips (per single item), so the search can
  * show what an item went for recently. Kept in its own file next to the config.
  */
 public final class AuctionPriceMemory {
-	/** A lowest price older than this is replaced by the next price seen. */
+	/** A lowest or highest price older than this is replaced by the next price seen. */
 	private static final long MIN_MAX_AGE_MS = 3L * 24 * 60 * 60 * 1000;
 	private static final Path PATH = FabricLoader.getInstance().getConfigDir().resolve("hugosmpenhanced-prices.json");
 	private static final Gson GSON = new Gson();
@@ -40,6 +40,8 @@ public final class AuctionPriceMemory {
 	public static final class Seen {
 		public double min;
 		public long minAt;
+		public double max;
+		public long maxAt;
 		public double last;
 		public long lastAt;
 	}
@@ -63,11 +65,12 @@ public final class AuctionPriceMemory {
 		return BuiltInRegistries.ITEM.getKey(stack.getItem()).toString();
 	}
 
-	public static void record(ItemStack stack, double perItem) {
+	public static void record(ItemStack stack, double perItem, AuctionMarket market) {
 		String key = keyOf(stack);
 		if (key == null || perItem <= 0) {
 			return;
 		}
+		key = market.keyPrefix + key;
 		long now = System.currentTimeMillis();
 		Seen seen = all().computeIfAbsent(key, k -> new Seen());
 		if (seen.last == perItem && now - seen.lastAt < 60_000) {
@@ -79,11 +82,15 @@ public final class AuctionPriceMemory {
 			seen.min = perItem;
 			seen.minAt = now;
 		}
+		if (seen.maxAt == 0 || perItem > seen.max || now - seen.maxAt > MIN_MAX_AGE_MS) {
+			seen.max = perItem;
+			seen.maxAt = now;
+		}
 		dirty = true;
 	}
 
-	public static Seen get(String key) {
-		return key == null ? null : all().get(key);
+	public static Seen get(String key, AuctionMarket market) {
+		return key == null ? null : all().get(market.keyPrefix + key);
 	}
 
 	private static Map<String, Seen> all() {

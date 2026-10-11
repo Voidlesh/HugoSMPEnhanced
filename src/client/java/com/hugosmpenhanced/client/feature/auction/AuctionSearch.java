@@ -23,8 +23,8 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 
 /**
- * Replaces HugoSMP's auction search sign ("Suchbegriff (min. 3 Zeichen)") with
- * {@link AuctionSearchScreen}, and knows the item and enchantment names it suggests.
+ * Replaces HugoSMP's search sign ("Suchbegriff (min. 3 Zeichen)") for the auction house and for
+ * orders with {@link AuctionSearchScreen}, and knows the item and enchantment names it suggests.
  */
 public final class AuctionSearch {
 	public static final int MIN_LENGTH = 3;
@@ -57,6 +57,7 @@ public final class AuctionSearch {
 	}
 
 	public static void register() {
+		AuctionMarket.register();
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			AuctionPriceMemory.saveIfDirty();
 			// Enchantments come from the server's registries.
@@ -73,7 +74,7 @@ public final class AuctionSearch {
 		if (!isSearchSign(sign, front)) {
 			return false;
 		}
-		Minecraft.getInstance().setScreen(new AuctionSearchScreen(sign, front));
+		Minecraft.getInstance().setScreen(new AuctionSearchScreen(sign, front, AuctionMarket.recent()));
 		return true;
 	}
 

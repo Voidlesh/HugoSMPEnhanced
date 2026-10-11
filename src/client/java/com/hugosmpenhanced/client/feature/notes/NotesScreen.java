@@ -92,18 +92,22 @@ public class NotesScreen extends Screen implements StyledScreen {
 		text.setValueListener(value -> note.text = value);
 		this.addRenderableWidget(text);
 
-		int third = (editorWidth - 2 * 4) / 3;
+		int quarter = (editorWidth - 3 * 4) / 4;
 		Button pin = this.addRenderableWidget(Button.builder(
 				Component.literal(note.pinned ? "Angeheftet ✔" : "Anheften"), b -> {
 					note.pinned = !note.pinned;
 					this.rebuildWidgets();
 				})
-			.bounds(editorLeft, buttonsY, third, ROW).build());
-		pin.setTooltip(Tooltip.create(Component.literal("Angeheftete Notizen bleiben beim Spielen oben links sichtbar.")));
+			.bounds(editorLeft, buttonsY, quarter, ROW).build());
+		pin.setTooltip(Tooltip.create(Component.literal("Angeheftete Notizen bleiben beim Spielen sichtbar.")));
+		Button move = this.addRenderableWidget(Button.builder(Component.literal("Verschieben"),
+				b -> this.minecraft.setScreen(new NotesHudPositionScreen(this)))
+			.bounds(editorLeft + quarter + 4, buttonsY, quarter, ROW).build());
+		move.setTooltip(Tooltip.create(Component.literal("Legt fest, wo angeheftete Notizen auf dem Bildschirm stehen.")));
 		this.addRenderableWidget(Button.builder(Component.literal(this.deleteArmed ? "Wirklich?" : "Löschen"), b -> this.delete())
-			.bounds(editorLeft + third + 4, buttonsY, third, ROW).build());
+			.bounds(editorLeft + 2 * (quarter + 4), buttonsY, quarter, ROW).build());
 		this.addRenderableWidget(Button.builder(Component.literal("Fertig"), b -> this.onClose())
-			.bounds(editorLeft + 2 * (third + 4), buttonsY, editorWidth - 2 * (third + 4), ROW).build());
+			.bounds(editorLeft + 3 * (quarter + 4), buttonsY, editorWidth - 3 * (quarter + 4), ROW).build());
 
 		this.setInitialFocus(note.title.isBlank() && note.text.isBlank() ? title : text);
 	}
