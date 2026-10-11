@@ -80,6 +80,8 @@ public class ModConfig {
 	public boolean chatCalculatorEnabled = true;
 	// Notizblock
 	public List<Note> notes = new ArrayList<>();
+	public int notesHudX = 4;
+	public int notesHudY = 4;
 	// Inventar-Buttons
 	public boolean inventoryButtonsEnabled = true;
 	public List<InventoryButton> inventoryButtons = new ArrayList<>();

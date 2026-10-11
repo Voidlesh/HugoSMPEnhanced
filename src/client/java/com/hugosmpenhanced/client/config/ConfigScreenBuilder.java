@@ -90,7 +90,7 @@ public final class ConfigScreenBuilder {
 				.option(Option.<Boolean>createBuilder()
 						.name(Component.literal("Eigenes Suchmenü statt Schild"))
 						.description(OptionDescription.of(Component.literal(
-								"Ersetzt das Schild der AH-Suche durch ein Suchfenster mit Item-Vorschlägen, letzten Suchen und Favoriten.")))
+								"Ersetzt das Such-Schild im AH und bei Orders durch ein Suchfenster mit Item-Vorschlägen, letzten Suchen und Favoriten.")))
 						.binding(true, () -> config.auctionSearchEnabled, v -> config.auctionSearchEnabled = v)
 						.controller(BooleanControllerBuilder::create)
 						.build())
@@ -104,7 +104,7 @@ public final class ConfigScreenBuilder {
 				.option(Option.<Boolean>createBuilder()
 						.name(Component.literal("Gesehene Preise merken"))
 						.description(OptionDescription.of(Component.literal(
-								"Merkt sich Preise, über die du im AH mit der Maus fährst, und zeigt den niedrigsten der letzten Tage in der Suche.")))
+								"Merkt sich Preise, über die du im AH oder bei Orders mit der Maus fährst. Die Suche zeigt im AH den niedrigsten, bei Orders den höchsten der letzten Tage.")))
 						.binding(true, () -> config.auctionPriceMemoryEnabled, v -> config.auctionPriceMemoryEnabled = v)
 						.controller(BooleanControllerBuilder::create)
 						.build())

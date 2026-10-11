@@ -1,6 +1,5 @@
 package com.hugosmpenhanced.client.feature.auction;
 
-import java.util.Locale;
 import java.util.Optional;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
@@ -22,13 +21,14 @@ public final class PricePerItemFeature {
 
 			int count = stack.getCount();
 			for (int i = 0; i < lines.size(); i++) {
-				Optional<Double> price = AuctionLore.parsePrice(lines.get(i).getString());
+				Optional<AuctionLore.Price> price = AuctionLore.parse(lines.get(i).getString());
 				if (price.isPresent()) {
-					double perItem = price.get() / Math.max(1, count);
+					boolean alreadyPerItem = price.get().perItem();
+					double perItem = alreadyPerItem ? price.get().amount() : price.get().amount() / Math.max(1, count);
 					if (ModConfigManager.CONFIG.auctionPriceMemoryEnabled) {
-						AuctionPriceMemory.record(stack, perItem);
+						AuctionPriceMemory.record(stack, perItem, AuctionMarket.current());
 					}
-					if (ModConfigManager.CONFIG.pricePerItemEnabled && count > 1) {
+					if (ModConfigManager.CONFIG.pricePerItemEnabled && count > 1 && !alreadyPerItem) {
 						lines.add(i + 1, pricePerItemLine(perItem));
 					}
 					return;
@@ -40,7 +40,7 @@ public final class PricePerItemFeature {
 	private static MutableComponent pricePerItemLine(double perItem) {
 		return Component.literal("Pro Item: ")
 				.withStyle(ChatFormatting.GRAY)
-				.append(Component.literal(String.format(Locale.US, "$%,.2f", perItem))
+				.append(Component.literal(AuctionSearchScreen.formatPrice(perItem))
 						.withStyle(ChatFormatting.GOLD));
 	}
 }
