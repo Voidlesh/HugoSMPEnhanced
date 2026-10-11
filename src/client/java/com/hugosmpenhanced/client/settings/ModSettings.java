@@ -12,6 +12,7 @@ import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.config.NametagStyleScreen;
 import com.hugosmpenhanced.client.config.SecondNametagScreen;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
+import com.hugosmpenhanced.client.feature.auction.CustomItems;
 import com.hugosmpenhanced.client.feature.entityheatmap.EntityHeatmap;
 import com.hugosmpenhanced.client.feature.gallery.GalleryFeature;
 import com.hugosmpenhanced.client.feature.gallery.GalleryScreen;
@@ -200,7 +201,20 @@ public final class ModSettings {
 					ButtonOption.danger("Suchverlauf löschen", null, "Löschen", () -> {
 						ModConfigManager.CONFIG.auctionSearchHistory.clear();
 						ModConfigManager.save();
-					}))));
+					})),
+				new SettingsSection("HugoSMP-Items",
+					toggle("Eigene Items merken und suchbar machen", "Items aus AH, Orders und Inventar mit Name, Farbe und Modell",
+						c -> c.customItemsEnabled, (c, v) -> c.customItemsEnabled = v).keywords("custom ah suche"),
+					new InfoOption("Bekannte Items", null, () -> CustomItems.count() + (CustomItems.count() == 1 ? " Item" : " Items")),
+					ButtonOption.danger("Bekannte Items vergessen", null, "Löschen", CustomItems::clear)),
+				new SettingsSection("Limitierte Items",
+					toggle("Preis pro Stunde anzeigen", "Restlaufzeit und Preis pro Stunde im Tooltip, Übersicht unter dem Menü",
+						c -> c.limitedItemsPerHour, (c, v) -> c.limitedItemsPerHour = v).keywords("ah limitiert ablauf zeit"),
+					toggle("Bestes Angebot markieren", "Goldener Rahmen um das günstigste pro Stunde jeder Sorte",
+						c -> c.limitedItemsHighlightBest, (c, v) -> c.limitedItemsHighlightBest = v).keywords("ah limitiert"),
+					SliderOption.ofInt("Lebensdauer", "Ab Erstelldatum", 1, 168,
+						v -> (int) v + " Std" + ((int) v % 24 == 0 ? " (" + (int) v / 24 + " T)" : ""),
+						c -> c.limitedItemsLifetimeHours, (c, v) -> c.limitedItemsLifetimeHours = v).keywords("limitiert tage"))));
 	}
 
 	private static SettingsCategory tools() {

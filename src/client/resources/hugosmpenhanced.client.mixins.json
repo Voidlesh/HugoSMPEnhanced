@@ -24,7 +24,8 @@
 		"HugoGuardChatMixin",
 		"ChatCalculatorMixin",
 		"AuctionSearchSignMixin",
-		"InventoryLayoutSlotMixin"
+		"InventoryLayoutSlotMixin",
+		"LimitedOfferSlotMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
