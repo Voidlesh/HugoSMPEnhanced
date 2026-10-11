@@ -17,7 +17,9 @@
 		"SecondNametagShowOwnNameMixin",
 		"SecondNametagRenderMixin",
 		"AbstractContainerScreenAccessor",
-		"GuiGraphicsStyleMixin"
+		"GuiGraphicsStyleMixin",
+		"HugoGuardNametagMixin",
+		"HugoGuardChatMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

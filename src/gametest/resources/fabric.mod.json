@@ -8,7 +8,8 @@
 		"fabric-client-gametest": [
 			"com.hugosmpenhanced.test.NametagScreenshotGameTest",
 			"com.hugosmpenhanced.test.InventoryButtonsGameTest",
-			"com.hugosmpenhanced.test.KeyboardGalleryGameTest"
+			"com.hugosmpenhanced.test.KeyboardGalleryGameTest",
+			"com.hugosmpenhanced.test.HugoGuardGameTest"
 		]
 	}
 }

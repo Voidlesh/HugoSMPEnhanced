@@ -2,6 +2,7 @@ package com.hugosmpenhanced.client;
 
 import com.hugosmpenhanced.client.feature.auction.PricePerItemFeature;
 import com.hugosmpenhanced.client.feature.gallery.GalleryFeature;
+import com.hugosmpenhanced.client.feature.hugoguard.HugoGuard;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonsFeature;
 import com.hugosmpenhanced.client.feature.keyboard.KeyboardFeature;
 import com.hugosmpenhanced.client.feature.mentions.MentionHighlightFeature;
@@ -25,6 +26,7 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		InventoryButtonsFeature.register();
 		KeyboardFeature.register();
 		GalleryFeature.register();
+		HugoGuard.register();
 		LOGGER.info("HugoSMP Enhanced loaded");
 	}
 }

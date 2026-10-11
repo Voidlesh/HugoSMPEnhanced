@@ -31,6 +31,7 @@ public final class ConfigScreenBuilder {
 						.group(mentionTriggersGroup(config))
 						.group(priceGroup(config))
 						.group(tpaGroup(config))
+						.group(hugoGuardGroup(config))
 						.group(tabListGroup(config))
 						.group(nametagStyleGroup())
 						.group(secondNametagGroup())
@@ -78,6 +79,34 @@ public final class ConfigScreenBuilder {
 				.option(Option.<Boolean>createBuilder()
 						.name(Component.literal("Preis pro Item anzeigen"))
 						.binding(true, () -> config.pricePerItemEnabled, v -> config.pricePerItemEnabled = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.build();
+	}
+
+	private static OptionGroup hugoGuardGroup(ModConfig config) {
+		return OptionGroup.createBuilder()
+				.name(Component.literal("HugoGuard-Scammer-Warnung"))
+				.description(OptionDescription.of(Component.literal(
+						"Markiert Spieler, die auf hugoguard.net als Scammer gelistet sind. Die Liste wird alle 10 Minuten neu geladen.")))
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Aktiviert"))
+						.binding(true, () -> config.hugoGuardEnabled, v -> config.hugoGuardEnabled = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Über dem Kopf"))
+						.binding(true, () -> config.hugoGuardOverhead, v -> config.hugoGuardOverhead = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Im Chat"))
+						.binding(true, () -> config.hugoGuardChat, v -> config.hugoGuardChat = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Bei TPA-Anfragen"))
+						.binding(true, () -> config.hugoGuardTpa, v -> config.hugoGuardTpa = v)
 						.controller(BooleanControllerBuilder::create)
 						.build())
 				.build();
