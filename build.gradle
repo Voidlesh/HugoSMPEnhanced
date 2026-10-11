@@ -13,10 +13,6 @@ repositories {
 		name = "Modrinth"
 		url = "https://api.modrinth.com/maven"
 	}
-	maven {
-		name = "Quilt"
-		url = "https://maven.quiltmc.org/repository/release/"
-	}
 }
 
 loom {
@@ -39,11 +35,6 @@ dependencies {
 	// Fabric API. This is technically optional, but you probably want it anyway.
 	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
 
-	modImplementation "maven.modrinth:yacl:${project.yacl_version}"
-	// The Modrinth YACL jar only ships its JSON parsers as nested jars, which the dev
-	// runtime does not load. In production YACL brings them along itself.
-	runtimeOnly "org.quiltmc.parsers:json:${project.quilt_parsers_version}"
-	runtimeOnly "org.quiltmc.parsers:gson:${project.quilt_parsers_version}"
 	modImplementation "maven.modrinth:modmenu:${project.modmenu_version}"
 }
 

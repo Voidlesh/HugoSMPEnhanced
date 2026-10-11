@@ -1,9 +1,9 @@
 package com.hugosmpenhanced.client.feature.mainmenu;
 
-import dev.isxander.yacl3.api.NameableEnum;
+import com.hugosmpenhanced.client.settings.Labeled;
 import net.minecraft.network.chat.Component;
 
-public enum SplashAnimation implements NameableEnum {
+public enum SplashAnimation implements Labeled {
 	PULSE("Pulsieren"),
 	WOBBLE("Wackeln"),
 	RAINBOW("Regenbogen"),

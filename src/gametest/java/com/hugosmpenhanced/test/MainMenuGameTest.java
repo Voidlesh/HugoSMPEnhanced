@@ -1,6 +1,6 @@
 package com.hugosmpenhanced.test;
 
-import com.hugosmpenhanced.client.config.ConfigScreenBuilder;
+import com.hugosmpenhanced.client.settings.SettingsScreen;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.mainmenu.HugoTitleScreen;
 import com.hugosmpenhanced.client.feature.mainmenu.MainMenuLayout;
@@ -62,7 +62,7 @@ public class MainMenuGameTest implements FabricClientGameTest {
 		context.waitTicks(15);
 		context.takeScreenshot("menu-classic-wobble");
 
-		context.setScreen(() -> ConfigScreenBuilder.build(null));
+		context.setScreen(() -> new SettingsScreen(null).select("Allgemein", "Hauptmenü"));
 		context.waitTicks(3);
 		context.runOnClient(client -> {
 			for (int i = 0; i < 60; i++) {

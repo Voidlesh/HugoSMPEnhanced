@@ -2,7 +2,6 @@ package com.hugosmpenhanced.test;
 
 import java.util.List;
 
-import com.hugosmpenhanced.client.config.ConfigScreenBuilder;
 import com.hugosmpenhanced.client.config.InventoryButtonsScreen;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.config.SecondNametagScreen;
@@ -11,6 +10,7 @@ import com.hugosmpenhanced.client.mixin.AbstractContainerScreenAccessor;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButton;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonPosition;
 
+import com.hugosmpenhanced.client.settings.SettingsScreen;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
@@ -36,7 +36,7 @@ public class InventoryButtonsGameTest implements FabricClientGameTest {
 			ModConfigManager.CONFIG.inventoryButtonsEnabled = true;
 		});
 
-		context.setScreen(() -> ConfigScreenBuilder.build(null));
+		context.setScreen(() -> new SettingsScreen(null).select("Inventar & Handel", "Inventar"));
 		context.waitTicks(3);
 		context.takeScreenshot("invbuttons-config");
 
