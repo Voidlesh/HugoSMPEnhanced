@@ -7,6 +7,8 @@
 		"PersistentChatMixin",
 		"CompactTabListMixin",
 		"TitleScreenQuickJoinMixin",
+		"MinecraftTitleScreenMixin",
+		"ScreenAccessor",
 		"ChatFilterMixin",
 		"GuiGraphicsRenderStateMixin",
 		"NametagTabListMixin",
