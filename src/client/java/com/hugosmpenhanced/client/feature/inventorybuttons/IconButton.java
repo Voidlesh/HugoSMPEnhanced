@@ -1,24 +1,29 @@
 package com.hugosmpenhanced.client.feature.inventorybuttons;
 
+import java.util.function.Consumer;
+
+import com.hugosmpenhanced.client.gui.HugoStyle;
+
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 
 /**
- * A square button in the style of a dark search field: a translucent dark fill with a thin grey
- * border that lightens on hover. Shows an item, or a short text symbol when no item is set.
+ * A square button in {@link HugoStyle} showing an item, or a short text symbol when no item is
+ * set. With a press handler, a mouse click hands the button to that handler (which decides between
+ * click and drag) instead of pressing it right away.
  */
 public class IconButton extends Button {
-	private static final int FILL = 0xB0181818;
-	private static final int FILL_HOVER = 0xC0303030;
-	private static final int BORDER = 0xFF555555;
-	private static final int BORDER_HOVER = 0xFFB0B0B0;
 	private static final int TEXT = 0xFFE0E0E0;
+	private static final int SELECTED = 0xFFFFFFFF;
 
 	private ItemStack icon;
 	private final String symbol;
+	private Consumer<IconButton> pressHandler;
+	private boolean selected;
 
 	public IconButton(ItemStack icon, Component narration, OnPress onPress) {
 		this(icon, "", narration, onPress);
@@ -38,20 +43,33 @@ public class IconButton extends Button {
 		this.icon = icon;
 	}
 
+	public void setPressHandler(Consumer<IconButton> pressHandler) {
+		this.pressHandler = pressHandler;
+	}
+
+	public void setSelected(boolean selected) {
+		this.selected = selected;
+	}
+
+	@Override
+	public void onClick(MouseButtonEvent event, boolean doubleClick) {
+		if (this.pressHandler != null) {
+			this.pressHandler.accept(this);
+		} else {
+			super.onClick(event, doubleClick);
+		}
+	}
+
 	@Override
 	protected void renderContents(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
 		int x = this.getX();
 		int y = this.getY();
-		int right = x + this.width;
-		int bottom = y + this.height;
-		boolean highlighted = this.active && this.isHoveredOrFocused();
-
-		graphics.fill(x + 1, y + 1, right - 1, bottom - 1, highlighted ? FILL_HOVER : FILL);
-		int border = highlighted ? BORDER_HOVER : BORDER;
-		graphics.fill(x, y, right, y + 1, border);
-		graphics.fill(x, bottom - 1, right, bottom, border);
-		graphics.fill(x, y + 1, x + 1, bottom - 1, border);
-		graphics.fill(right - 1, y + 1, right, bottom - 1, border);
+		HugoStyle.State state = !this.active ? HugoStyle.State.DISABLED
+			: this.isHoveredOrFocused() ? HugoStyle.State.HOVER : HugoStyle.State.NORMAL;
+		HugoStyle.drawBox(graphics, x, y, this.width, this.height, state);
+		if (this.selected) {
+			HugoStyle.drawOutline(graphics, x, y, this.width, this.height, SELECTED);
+		}
 
 		if (!this.icon.isEmpty()) {
 			graphics.renderItem(this.icon, x + (this.width - 16) / 2, y + (this.height - 16) / 2);

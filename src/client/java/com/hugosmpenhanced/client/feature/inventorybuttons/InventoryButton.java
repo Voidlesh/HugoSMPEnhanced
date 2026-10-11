@@ -6,6 +6,8 @@ public class InventoryButton {
 	public String action = "";
 	public String icon = "minecraft:compass";
 	public InventoryButtonPosition position = InventoryButtonPosition.RIGHT;
+	/** Spot on its side, see {@link InventoryButtonSpots}; -1 means not placed yet. */
+	public int slot = -1;
 
 	public InventoryButton() {
 	}
@@ -16,6 +18,7 @@ public class InventoryButton {
 		copy.action = this.action;
 		copy.icon = this.icon;
 		copy.position = this.position;
+		copy.slot = this.slot;
 		return copy;
 	}
 }
