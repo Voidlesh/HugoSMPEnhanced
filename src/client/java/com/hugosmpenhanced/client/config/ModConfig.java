@@ -7,6 +7,9 @@ import java.util.Set;
 
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButton;
+import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonPosition;
+import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonSpots;
+import com.hugosmpenhanced.client.feature.inventorylayout.SavedInventoryLayout;
 import com.hugosmpenhanced.client.feature.mainmenu.MainMenuLayout;
 import com.hugosmpenhanced.client.feature.mainmenu.SplashAnimation;
 import com.hugosmpenhanced.client.feature.mainmenu.SplashColor;
@@ -85,9 +88,16 @@ public class ModConfig {
 	// Inventar-Buttons
 	public boolean inventoryButtonsEnabled = true;
 	public List<InventoryButton> inventoryButtons = new ArrayList<>();
-	// Inventar-Layout
+	// Inventar-Layouts
 	public boolean inventoryLayoutEnabled = true;
-	public boolean inventoryLayoutShown = false;
-	/** Item id per player inventory slot, "" for slots that may hold anything. */
-	public List<String> inventoryLayout = new ArrayList<>();
+	public List<SavedInventoryLayout> inventoryLayouts = new ArrayList<>();
+	/** Index of the layout shown as ghosts, -1 for none. */
+	public int inventoryLayoutShownIndex = -1;
+	public InventoryButton inventoryLayoutShowButton = InventoryButton.builtIn("minecraft:ender_eye",
+		InventoryButtonPosition.TOP, InventoryButtonSpots.CORNER_START);
+	public InventoryButton inventoryLayoutSaveButton = InventoryButton.builtIn("minecraft:writable_book",
+		InventoryButtonPosition.TOP, InventoryButtonSpots.CORNER_START + 1);
+	/** Single layout of the first version, moved into {@link #inventoryLayouts} on first use. */
+	public List<String> inventoryLayout;
+	public boolean inventoryLayoutShown;
 }

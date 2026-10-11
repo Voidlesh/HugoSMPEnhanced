@@ -9,8 +9,9 @@ import java.util.Set;
 /**
  * The spots buttons snap to, relative to the inventory's top-left corner. Right of the inventory
  * there are two columns of seven spots (numbered down the first column, then the second); above it
- * two rows of eight (numbered along the lower row, then the upper one). The corner above the
- * right column holds the edit button.
+ * two rows of eight (numbered along the lower row, then the upper one), followed by a few corner
+ * spots in line with the edit button, which sits in the corner above the right column. The corner
+ * spots are where the inventory layout buttons start out.
  */
 public final class InventoryButtonSpots {
 	public static final int STEP = InventoryButtonsFeature.SIZE + 2;
@@ -18,16 +19,22 @@ public final class InventoryButtonSpots {
 	private static final int RIGHT_COLUMNS = 2;
 	private static final int TOP_COLUMNS = 8;
 	private static final int TOP_ROWS = 2;
+	/** First top slot that is a corner spot right of the edit button. */
+	public static final int CORNER_START = TOP_COLUMNS * TOP_ROWS;
+	private static final int CORNER_SPOTS = 3;
 
 	private InventoryButtonSpots() {
 	}
 
 	public static int count(InventoryButtonPosition side) {
-		return side == InventoryButtonPosition.TOP ? TOP_COLUMNS * TOP_ROWS : RIGHT_COLUMNS * RIGHT_ROWS;
+		return side == InventoryButtonPosition.TOP ? CORNER_START + CORNER_SPOTS : RIGHT_COLUMNS * RIGHT_ROWS;
 	}
 
 	/** Offset of a spot from the inventory's top-left corner. */
 	public static int x(InventoryButtonPosition side, int slot, int imageWidth) {
+		if (side == InventoryButtonPosition.TOP && slot >= CORNER_START) {
+			return imageWidth + 2 + (slot - CORNER_START + 1) * STEP;
+		}
 		if (side == InventoryButtonPosition.TOP) {
 			return (slot % TOP_COLUMNS) * STEP;
 		}
@@ -35,6 +42,9 @@ public final class InventoryButtonSpots {
 	}
 
 	public static int y(InventoryButtonPosition side, int slot) {
+		if (side == InventoryButtonPosition.TOP && slot >= CORNER_START) {
+			return -STEP;
+		}
 		if (side == InventoryButtonPosition.TOP) {
 			return -STEP - (slot / TOP_COLUMNS) * STEP;
 		}
