@@ -37,7 +37,7 @@ public final class AuctionLore {
 	 * Reads "7.000", "7,000", "7.000,50", "1,234.5" and "12,50". A separator followed by exactly
 	 * three digits groups thousands; otherwise the last separator is the decimal point.
 	 */
-	static Double parseAmount(String text) {
+	public static Double parseAmount(String text) {
 		text = text.replaceAll("[.,]+$", "");
 		if (text.isEmpty()) {
 			return null;
