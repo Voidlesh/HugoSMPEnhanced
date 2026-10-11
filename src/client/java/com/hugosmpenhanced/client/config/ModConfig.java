@@ -1,8 +1,10 @@
 package com.hugosmpenhanced.client.config;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
@@ -16,6 +18,10 @@ import com.hugosmpenhanced.client.feature.mainmenu.SplashColor;
 import com.hugosmpenhanced.client.feature.nametag.NametagEffect;
 import com.hugosmpenhanced.client.feature.notes.Note;
 import com.hugosmpenhanced.client.feature.secondnametag.SecondNametagPosition;
+import com.hugosmpenhanced.client.feature.sell.SellAutostart;
+import com.hugosmpenhanced.client.feature.sell.SellHudPosition;
+import com.hugosmpenhanced.client.feature.sell.SellRule;
+import com.hugosmpenhanced.client.feature.sell.SellSpeed;
 
 public class ModConfig {
 	// Mention-Highlighting
@@ -115,4 +121,23 @@ public class ModConfig {
 	/** Single layout of the first version, moved into {@link #inventoryLayouts} on first use. */
 	public List<String> inventoryLayout;
 	public boolean inventoryLayoutShown;
+	// Verkaufs-Assistent
+	public boolean sellEnabled = false;
+	public List<SellRule> sellRules = new ArrayList<>();
+	/** Player inventory indices (0-35) that are never sold from. */
+	public Set<Integer> sellLockedSlots = new LinkedHashSet<>();
+	public boolean sellFullStacksOnly = false;
+	public boolean sellConfirm = true;
+	/** Rules the preview was last confirmed for, see SellPlan#rulesKey. */
+	public String sellConfirmedRules = "";
+	public SellSpeed sellSpeed = SellSpeed.NORMAL;
+	public int sellCustomDelay = 3;
+	public int sellCustomClicks = 3;
+	public int sellThreshold = 90;
+	public SellAutostart sellAutostart = SellAutostart.IF_WAS_ON;
+	public boolean sellAfkWasOn = false;
+	public SellHudPosition sellHudPosition = SellHudPosition.TOP_CENTER;
+	/** /sell price per single item, learned from sales of one item type. */
+	public Map<String, Double> sellPrices = new HashMap<>();
+	public String sellCommand = "sell";
 }

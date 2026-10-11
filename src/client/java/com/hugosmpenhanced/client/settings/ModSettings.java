@@ -24,6 +24,11 @@ import com.hugosmpenhanced.client.feature.mainmenu.SplashColor;
 import com.hugosmpenhanced.client.feature.notes.NotesFeature;
 import com.hugosmpenhanced.client.feature.notes.NotesHudPositionScreen;
 import com.hugosmpenhanced.client.feature.notes.NotesScreen;
+import com.hugosmpenhanced.client.feature.sell.SellAutostart;
+import com.hugosmpenhanced.client.feature.sell.SellFeature;
+import com.hugosmpenhanced.client.feature.sell.SellHudPosition;
+import com.hugosmpenhanced.client.feature.sell.SellRulesOption;
+import com.hugosmpenhanced.client.feature.sell.SellSpeed;
 import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
 import com.hugosmpenhanced.client.settings.option.ButtonOption;
 import com.hugosmpenhanced.client.settings.option.CycleOption;
@@ -173,7 +178,7 @@ public final class ModSettings {
 	}
 
 	private static SettingsCategory inventory() {
-		return new SettingsCategory("Inventar & Handel", "inventory", "Inventar-Buttons, Layouts und Auktionshaus",
+		return new SettingsCategory("Inventar & Handel", "inventory", "Inventar-Buttons, Layouts, Auktionshaus und Verkaufen",
 			new SettingsTab("Inventar",
 				new SettingsSection("Inventar-Buttons",
 					toggle("Im Inventar anzeigen", "Buttons neben und über dem Inventar, die einen Befehl ausführen",
@@ -214,7 +219,45 @@ public final class ModSettings {
 						c -> c.limitedItemsHighlightBest, (c, v) -> c.limitedItemsHighlightBest = v).keywords("ah limitiert"),
 					SliderOption.ofInt("Lebensdauer", "Ab Erstelldatum", 1, 168,
 						v -> (int) v + " Std" + ((int) v % 24 == 0 ? " (" + (int) v / 24 + " T)" : ""),
-						c -> c.limitedItemsLifetimeHours, (c, v) -> c.limitedItemsLifetimeHours = v).keywords("limitiert tage"))));
+						c -> c.limitedItemsLifetimeHours, (c, v) -> c.limitedItemsLifetimeHours = v).keywords("limitiert tage"))),
+			sellTab());
+	}
+
+	private static SettingsTab sellTab() {
+		return new SettingsTab("Verkaufen",
+			new SettingsSection("Verkaufs-Assistent",
+				toggle("Verkaufs-Assistent", "Nur auf HugoSMP. Verkauft per /sell, was deine Regeln erlauben.",
+					c -> c.sellEnabled, (c, v) -> c.sellEnabled = v).keywords("sell makro macro afk"),
+				new KeyBindOption("Jetzt verkaufen", "Verkauft einmal alles nach deinen Regeln", () -> SellFeature.sellKey),
+				new KeyBindOption("AFK-Farm an/aus", "Ohne eigene Taste: Shift + Verkaufen-Taste", () -> SellFeature.afkKey),
+				toggle("Vorher bestätigen", "Zeigt die Vorschau mit Rückfrage beim ersten Mal und nach jeder Regeländerung",
+					c -> c.sellConfirm, (c, v) -> c.sellConfirm = v)),
+			new SettingsSection("Regeln", new SellRulesOption()),
+			new SettingsSection("Schutz",
+				new InfoOption("Wird nie verkauft", "Umbenannte, verzauberte, gefüllte, beschädigte oder sonst veränderte Items, "
+					+ "die Hotbar, Offhand, Rüstung und gesperrte Slots", () -> "immer aktiv").keywords("schutz"),
+				new InfoOption("Gesperrte Slots", "Alt + Rechtsklick auf einen Slot im Inventar sperrt ihn",
+					() -> String.valueOf(ModConfigManager.CONFIG.sellLockedSlots.size())),
+				ButtonOption.danger("Alle Slots entsperren", null, "Entsperren", () -> {
+					ModConfigManager.CONFIG.sellLockedSlots.clear();
+					ModConfigManager.save();
+				}),
+				toggle("Nur volle Stapel", "Angefangene Stapel bleiben im Inventar",
+					c -> c.sellFullStacksOnly, (c, v) -> c.sellFullStacksOnly = v)),
+			new SettingsSection("Tempo",
+				new CycleOption<>("Geschwindigkeit", "Normal ist menschennah, Schnell so schnell wie ein Shift-Doppelklick",
+					SellSpeed.class, c -> c.sellSpeed, (c, v) -> c.sellSpeed = v).keywords("tempo speed"),
+				SliderOption.ofInt("Pause zwischen Klicks", "Nur bei Eigene, 20 Ticks = 1 s", 1, 20, v -> (int) v + " Ticks",
+					c -> c.sellCustomDelay, (c, v) -> c.sellCustomDelay = v),
+				SliderOption.ofInt("Klicks pro Schritt", "Nur bei Eigene", 1, 27, v -> String.valueOf((int) v),
+					c -> c.sellCustomClicks, (c, v) -> c.sellCustomClicks = v)),
+			new SettingsSection("AFK-Farm",
+				SliderOption.ofInt("Verkaufen ab", "Sammelt im Verkaufsmenü, bis es so voll ist", 0, 100, v -> (int) v + " %",
+					c -> c.sellThreshold, (c, v) -> c.sellThreshold = v),
+				new CycleOption<>("Beim Join starten", "Startet die AFK-Farm 10 s nach dem Betreten von HugoSMP",
+					SellAutostart.class, c -> c.sellAutostart, (c, v) -> c.sellAutostart = v).keywords("autostart rejoin"),
+				new CycleOption<>("Status-Anzeige", "Nur solange die AFK-Farm läuft oder pausiert",
+					SellHudPosition.class, c -> c.sellHudPosition, (c, v) -> c.sellHudPosition = v).keywords("hud")));
 	}
 
 	private static SettingsCategory tools() {

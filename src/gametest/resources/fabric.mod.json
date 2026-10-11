@@ -16,7 +16,11 @@
 			"com.hugosmpenhanced.test.AuctionCustomItemsGameTest",
 			"com.hugosmpenhanced.test.InventoryLayoutGameTest",
 			"com.hugosmpenhanced.test.EntityHeatmapGameTest",
-			"com.hugosmpenhanced.test.SettingsGameTest"
+			"com.hugosmpenhanced.test.SettingsGameTest",
+			"com.hugosmpenhanced.test.SellGameTest"
+		],
+		"main": [
+			"com.hugosmpenhanced.test.TestSellServer"
 		]
 	}
 }
