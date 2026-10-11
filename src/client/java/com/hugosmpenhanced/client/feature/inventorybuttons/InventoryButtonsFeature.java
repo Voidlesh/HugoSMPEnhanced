@@ -13,7 +13,6 @@ import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.multiplayer.ClientPacketListener;
@@ -60,17 +59,16 @@ public final class InventoryButtonsFeature {
 			widgets.add(button);
 		}
 
-		Button edit = Button.builder(Component.literal("✎"), b -> Minecraft.getInstance().setScreen(new InventoryButtonsScreen(screen)))
-			.size(SIZE, SIZE)
-			.tooltip(Tooltip.create(Component.literal("Inventar-Buttons bearbeiten")))
-			.build();
+		IconButton edit = new IconButton("✎", Component.literal("Inventar-Buttons bearbeiten"),
+			b -> Minecraft.getInstance().setScreen(new InventoryButtonsScreen(screen)));
+		edit.setTooltip(Tooltip.create(Component.literal("Inventar-Buttons bearbeiten")));
 		widgets.add(edit);
 
 		layout(screen, placed, edit);
 		ScreenEvents.beforeRender(screen).register((s, graphics, mouseX, mouseY, tickDelta) -> layout(screen, placed, edit));
 	}
 
-	private static void layout(InventoryScreen screen, List<Placed> placed, Button edit) {
+	private static void layout(InventoryScreen screen, List<Placed> placed, IconButton edit) {
 		AbstractContainerScreenAccessor accessor = (AbstractContainerScreenAccessor) screen;
 		int left = accessor.hugosmpenhanced$getLeftPos();
 		int topPos = accessor.hugosmpenhanced$getTopPos();
