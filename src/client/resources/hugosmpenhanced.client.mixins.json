@@ -15,7 +15,8 @@
 		"NametagChatMixin$Background",
 		"NametagChatMixin$Focused",
 		"SecondNametagShowOwnNameMixin",
-		"SecondNametagRenderMixin"
+		"SecondNametagRenderMixin",
+		"AbstractContainerScreenAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1

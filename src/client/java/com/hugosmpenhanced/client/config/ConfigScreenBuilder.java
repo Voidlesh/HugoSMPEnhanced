@@ -34,6 +34,7 @@ public final class ConfigScreenBuilder {
 						.group(tabListGroup(config))
 						.group(nametagStyleGroup())
 						.group(secondNametagGroup())
+						.group(inventoryButtonsGroup(config))
 						.group(chatGroup(config))
 						.group(chatFilterGroup(config))
 						.group(mainMenuGroup(config))
@@ -136,6 +137,24 @@ public final class ConfigScreenBuilder {
 						.name(Component.literal("Zweiten Nametag bearbeiten"))
 						.text(Component.literal("Öffnen"))
 						.action((screen, option) -> Minecraft.getInstance().setScreen(SecondNametagScreen.build(screen)))
+						.build())
+				.build();
+	}
+
+	private static OptionGroup inventoryButtonsGroup(ModConfig config) {
+		return OptionGroup.createBuilder()
+				.name(Component.literal("Inventar-Buttons"))
+				.description(OptionDescription.of(Component.literal(
+						"Buttons rechts neben und über deinem Inventar, die einen Command ausführen oder eine Chatnachricht senden.")))
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Im Inventar anzeigen"))
+						.binding(true, () -> config.inventoryButtonsEnabled, v -> config.inventoryButtonsEnabled = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.option(ButtonOption.createBuilder()
+						.name(Component.literal("Inventar-Buttons bearbeiten"))
+						.text(Component.literal("Öffnen"))
+						.action((screen, option) -> Minecraft.getInstance().setScreen(new InventoryButtonsScreen(screen)))
 						.build())
 				.build();
 	}
