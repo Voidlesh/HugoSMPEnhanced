@@ -14,7 +14,8 @@
 			"com.hugosmpenhanced.test.MainMenuGameTest",
 			"com.hugosmpenhanced.test.AuctionSearchGameTest",
 			"com.hugosmpenhanced.test.InventoryLayoutGameTest",
-			"com.hugosmpenhanced.test.EntityHeatmapGameTest"
+			"com.hugosmpenhanced.test.EntityHeatmapGameTest",
+			"com.hugosmpenhanced.test.SettingsGameTest"
 		]
 	}
 }

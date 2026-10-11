@@ -39,6 +39,9 @@ public class ModConfig {
 	// Chat beim Weltwechsel erhalten
 	public boolean persistentChatEnabled = true;
 
+	// Einstellungsmenü: Logo-Knopf im Pausemenü
+	public boolean pauseMenuSettingsButton = true;
+
 	// Hauptmenü-Button zum direkten Beitreten
 	public boolean mainMenuButtonEnabled = true;
 

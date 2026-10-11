@@ -2,9 +2,9 @@ package com.hugosmpenhanced.test;
 
 import java.util.List;
 
-import com.hugosmpenhanced.client.config.ConfigScreenBuilder;
 import com.hugosmpenhanced.client.feature.entityheatmap.EntityHeatmap;
 
+import com.hugosmpenhanced.client.settings.SettingsScreen;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
@@ -70,10 +70,7 @@ public class EntityHeatmapGameTest implements FabricClientGameTest {
 			context.takeScreenshot("heatmap-wall");
 			context.runOnClient(client -> EntityHeatmap.shown = false);
 
-			context.setScreen(() -> ConfigScreenBuilder.build(null));
-			context.waitTicks(3);
-			context.getInput().setCursorPos(150, 200);
-			context.getInput().scroll(-60);
+			context.setScreen(() -> new SettingsScreen(null).select("Werkzeuge", "Heatmap"));
 			context.waitTicks(3);
 			context.takeScreenshot("heatmap-config");
 			context.setScreen(() -> null);

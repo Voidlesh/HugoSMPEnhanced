@@ -12,6 +12,7 @@ import com.hugosmpenhanced.client.feature.keyboard.KeyboardFeature;
 import com.hugosmpenhanced.client.feature.mentions.MentionHighlightFeature;
 import com.hugosmpenhanced.client.feature.notes.NotesFeature;
 import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
+import com.hugosmpenhanced.client.settings.SettingsFeature;
 import com.hugosmpenhanced.client.util.ServerCheck;
 import net.fabricmc.api.ClientModInitializer;
 import org.slf4j.Logger;
@@ -29,6 +30,7 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		MentionHighlightFeature.register();
 		TpaKeybinds.register();
 		ConfigCommand.register();
+		SettingsFeature.register();
 		InventoryButtonsFeature.register();
 		KeyboardFeature.register();
 		GalleryFeature.register();

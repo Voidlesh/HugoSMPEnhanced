@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.function.Consumer;
 
-import com.hugosmpenhanced.client.config.ConfigScreenBuilder;
 import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButton;
@@ -16,6 +15,7 @@ import com.hugosmpenhanced.client.mixin.AbstractContainerScreenAccessor;
 
 import org.lwjgl.glfw.GLFW;
 
+import com.hugosmpenhanced.client.settings.SettingsScreen;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
@@ -61,7 +61,7 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 			InventoryLayout.clear();
 		});
 
-		context.setScreen(() -> ConfigScreenBuilder.build(null));
+		context.setScreen(() -> new SettingsScreen(null).select("Inventar & Handel", "Layouts"));
 		context.waitTicks(3);
 		context.takeScreenshot("invlayout-config");
 		context.setScreen(() -> null);
