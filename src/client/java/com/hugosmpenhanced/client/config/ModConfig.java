@@ -48,6 +48,11 @@ public class ModConfig {
 	public double secondNametagScale = 1.0;
 	public boolean secondNametagBackground = true;
 
+	// HugoGuard-Scammer-Warnung
+	public boolean hugoGuardEnabled = true;
+	public boolean hugoGuardOverhead = true;
+	public boolean hugoGuardChat = true;
+	public boolean hugoGuardTpa = true;
 	// Inventar-Buttons
 	public boolean inventoryButtonsEnabled = true;
 	public List<InventoryButton> inventoryButtons = new ArrayList<>();
