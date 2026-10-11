@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButton;
 import com.hugosmpenhanced.client.feature.nametag.NametagEffect;
 import com.hugosmpenhanced.client.feature.secondnametag.SecondNametagPosition;
 
@@ -46,4 +47,8 @@ public class ModConfig {
 	public SecondNametagPosition secondNametagPosition = SecondNametagPosition.ABOVE;
 	public double secondNametagScale = 1.0;
 	public boolean secondNametagBackground = true;
+
+	// Inventar-Buttons
+	public boolean inventoryButtonsEnabled = true;
+	public List<InventoryButton> inventoryButtons = new ArrayList<>();
 }
