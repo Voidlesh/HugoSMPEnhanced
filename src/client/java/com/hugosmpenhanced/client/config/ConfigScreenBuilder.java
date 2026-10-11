@@ -86,12 +86,24 @@ public final class ConfigScreenBuilder {
 
 	private static OptionGroup hugoGuardGroup(ModConfig config) {
 		return OptionGroup.createBuilder()
-				.name(Component.literal("HugoGuard-Scammer-Warnung"))
+				.name(Component.literal("HugoGuard"))
 				.description(OptionDescription.of(Component.literal(
-						"Markiert Spieler, die auf hugoguard.net als Scammer gelistet sind. Die Liste wird alle 10 Minuten neu geladen.")))
+						"Markiert Spieler, die auf hugoguard.net als Scammer oder vertrauenswürdig gelistet sind. Die Listen werden alle 10 Minuten neu geladen.")))
 				.option(Option.<Boolean>createBuilder()
 						.name(Component.literal("Aktiviert"))
 						.binding(true, () -> config.hugoGuardEnabled, v -> config.hugoGuardEnabled = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Trusted-Spieler markieren"))
+						.binding(true, () -> config.hugoGuardTrusted, v -> config.hugoGuardTrusted = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Leuchten (nur in Sicht)"))
+						.description(OptionDescription.of(Component.literal(
+								"Roter bzw. grüner Schimmer um den Spieler. Wird von Wänden verdeckt, ist also kein Durch-die-Wand-Sehen.")))
+						.binding(true, () -> config.hugoGuardGlow, v -> config.hugoGuardGlow = v)
 						.controller(BooleanControllerBuilder::create)
 						.build())
 				.option(Option.<Boolean>createBuilder()
@@ -194,6 +206,13 @@ public final class ConfigScreenBuilder {
 				.option(Option.<Boolean>createBuilder()
 						.name(Component.literal("Chat beim Weltwechsel erhalten"))
 						.binding(true, () -> config.persistentChatEnabled, v -> config.persistentChatEnabled = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Chat-Rechner"))
+						.description(OptionDescription.of(Component.literal(
+								"Zeigt beim Tippen das Ergebnis einer Rechnung am Ende der Eingabe, z. B. 64*3,5 oder 1,5k+200. Tab setzt das Ergebnis ein.")))
+						.binding(true, () -> config.chatCalculatorEnabled, v -> config.chatCalculatorEnabled = v)
 						.controller(BooleanControllerBuilder::create)
 						.build())
 				.build();

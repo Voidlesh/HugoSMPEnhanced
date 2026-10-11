@@ -23,8 +23,8 @@ import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
 import net.minecraft.util.Util;
 
 /**
- * Keeps the list of players HugoGuard (hugoguard.net) has marked as scammers. The whole list is
- * fetched page by page from the public, keyless API while connected to HugoSMP and refreshed every
+ * Keeps the lists of players HugoGuard (hugoguard.net) has marked as scammers or as trusted. Both
+ * lists are fetched page by page from the public, keyless API while connected to HugoSMP and refreshed every
  * ten minutes, so seeing a player never triggers a request of its own. Uses the {@code /api/public}
  * path: the plain {@code /public} path sits behind a Cloudflare challenge (as in the voidbot
  * client).
@@ -37,8 +37,13 @@ public final class HugoGuard {
 	private static final long REFRESH_MS = 10 * 60 * 1000L;
 	private static final long RETRY_MS = 60 * 1000L;
 
-	/** One listed scammer: name, report count and the admin label HugoGuard shows, if any. */
-	public record Entry(String username, UUID uuid, int reports, String label) {
+	/** Which HugoGuard list a player is on. */
+	public enum Status {
+		SCAMMER, TRUSTED
+	}
+
+	/** One listed player: name, list, report count, reputation and the admin label HugoGuard shows, if any. */
+	public record Entry(String username, UUID uuid, Status status, int reports, int repScore, String label) {
 		public String profileUrl() {
 			return "https://hugoguard.net/players/" + this.uuid.toString().replace("-", "");
 		}
@@ -77,12 +82,46 @@ public final class HugoGuard {
 		return ModConfigManager.CONFIG.hugoGuardEnabled && (forceActive || ServerCheck.isHugoSmp());
 	}
 
-	public static Entry scammer(UUID uuid) {
+	/** The player's entry on either list, or null. */
+	public static Entry lookup(UUID uuid) {
 		return active() && uuid != null ? byUuid.get(uuid) : null;
 	}
 
-	public static Entry scammer(String name) {
+	/** The player's entry on either list, or null. */
+	public static Entry lookup(String name) {
 		return active() && name != null ? byName.get(name.toLowerCase(Locale.ROOT)) : null;
+	}
+
+	public static Entry scammer(UUID uuid) {
+		return only(lookup(uuid), Status.SCAMMER);
+	}
+
+	public static Entry scammer(String name) {
+		return only(lookup(name), Status.SCAMMER);
+	}
+
+	public static Entry trusted(UUID uuid) {
+		return only(lookup(uuid), Status.TRUSTED);
+	}
+
+	public static Entry trusted(String name) {
+		return only(lookup(name), Status.TRUSTED);
+	}
+
+	/** The entry to mark the player with: scammers always, trusted players only if that is turned on. */
+	public static Entry shown(UUID uuid) {
+		Entry entry = lookup(uuid);
+		return entry != null && (entry.status() == Status.SCAMMER || ModConfigManager.CONFIG.hugoGuardTrusted) ? entry : null;
+	}
+
+	/** Same as {@link #shown(UUID)}, by name. */
+	public static Entry shown(String name) {
+		Entry entry = lookup(name);
+		return entry != null && (entry.status() == Status.SCAMMER || ModConfigManager.CONFIG.hugoGuardTrusted) ? entry : null;
+	}
+
+	private static Entry only(Entry entry, Status status) {
+		return entry != null && entry.status() == status ? entry : null;
 	}
 
 	/** Loads the whole list now, blocking; returns false if it could not be loaded. */
@@ -90,19 +129,22 @@ public final class HugoGuard {
 		Map<UUID, Entry> uuids = new HashMap<>();
 		Map<String, Entry> names = new HashMap<>();
 		try {
-			for (int page = 1; page <= MAX_PAGES; page++) {
-				JsonObject body = get(API + "/players?status=SCAMMER&page=" + page + "&pageSize=" + PAGE_SIZE);
-				JsonArray results = body.has("results") && body.get("results").isJsonArray() ? body.getAsJsonArray("results") : new JsonArray();
-				for (JsonElement element : results) {
-					Entry entry = parse(element.getAsJsonObject());
-					if (entry != null) {
-						uuids.put(entry.uuid(), entry);
-						names.put(entry.username().toLowerCase(Locale.ROOT), entry);
+			// Trusted first, so a player somehow on both lists ends up marked as scammer.
+			for (Status status : new Status[] {Status.TRUSTED, Status.SCAMMER}) {
+				for (int page = 1; page <= MAX_PAGES; page++) {
+					JsonObject body = get(API + "/players?status=" + status + "&page=" + page + "&pageSize=" + PAGE_SIZE);
+					JsonArray results = body.has("results") && body.get("results").isJsonArray() ? body.getAsJsonArray("results") : new JsonArray();
+					for (JsonElement element : results) {
+						Entry entry = parse(element.getAsJsonObject(), status);
+						if (entry != null) {
+							uuids.put(entry.uuid(), entry);
+							names.put(entry.username().toLowerCase(Locale.ROOT), entry);
+						}
 					}
-				}
-				int total = body.has("total") ? body.get("total").getAsInt() : 0;
-				if (results.isEmpty() || page * PAGE_SIZE >= total) {
-					break;
+					int total = body.has("total") ? body.get("total").getAsInt() : 0;
+					if (results.isEmpty() || page * PAGE_SIZE >= total) {
+						break;
+					}
 				}
 			}
 		} catch (Exception e) {
@@ -111,8 +153,24 @@ public final class HugoGuard {
 		}
 		byUuid = Map.copyOf(uuids);
 		byName = Map.copyOf(names);
-		HugoSmpEnhancedClient.LOGGER.info("HugoGuard: {} scammers loaded", uuids.size());
+		HugoSmpEnhancedClient.LOGGER.info("HugoGuard: {} listed players loaded", uuids.size());
 		return true;
+	}
+
+	/**
+	 * Everything HugoGuard knows about one player ({@code player}, {@code reports}, ...), blocking.
+	 * Returns null if HugoGuard does not know the name; throws if the request fails.
+	 */
+	public static JsonObject fetchPlayer(String name) throws Exception {
+		String encoded = java.net.URLEncoder.encode(name, java.nio.charset.StandardCharsets.UTF_8).replace("+", "%20");
+		try {
+			return get(API + "/players/by-username/" + encoded);
+		} catch (IllegalStateException e) {
+			if ("HTTP 404".equals(e.getMessage())) {
+				return null;
+			}
+			throw e;
+		}
 	}
 
 	private static JsonObject get(String url) throws Exception {
@@ -128,7 +186,7 @@ public final class HugoGuard {
 		return JsonParser.parseString(response.body()).getAsJsonObject();
 	}
 
-	private static Entry parse(JsonObject player) {
+	private static Entry parse(JsonObject player, Status status) {
 		String name = string(player, "username");
 		String rawUuid = string(player, "uuid");
 		if (name == null || rawUuid == null || rawUuid.replace("-", "").length() != 32) {
@@ -138,7 +196,8 @@ public final class HugoGuard {
 		UUID uuid = new UUID(Long.parseUnsignedLong(hex.substring(0, 16), 16), Long.parseUnsignedLong(hex.substring(16), 16));
 		int reports = player.has("approvedReportCount") && player.get("approvedReportCount").isJsonPrimitive()
 			? player.get("approvedReportCount").getAsInt() : 0;
-		return new Entry(name, uuid, reports, string(player, "adminLabel"));
+		int repScore = player.has("repScore") && player.get("repScore").isJsonPrimitive() ? player.get("repScore").getAsInt() : 0;
+		return new Entry(name, uuid, status, reports, repScore, string(player, "adminLabel"));
 	}
 
 	private static String string(JsonObject object, String key) {

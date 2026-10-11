@@ -3,9 +3,12 @@ package com.hugosmpenhanced.client;
 import com.hugosmpenhanced.client.feature.auction.PricePerItemFeature;
 import com.hugosmpenhanced.client.feature.gallery.GalleryFeature;
 import com.hugosmpenhanced.client.feature.hugoguard.HugoGuard;
+import com.hugosmpenhanced.client.feature.hugoguard.HugoGuardGlowLayer;
+import com.hugosmpenhanced.client.feature.hugoguard.HgCommand;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonsFeature;
 import com.hugosmpenhanced.client.feature.keyboard.KeyboardFeature;
 import com.hugosmpenhanced.client.feature.mentions.MentionHighlightFeature;
+import com.hugosmpenhanced.client.feature.notes.NotesFeature;
 import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
 import com.hugosmpenhanced.client.util.ServerCheck;
 import net.fabricmc.api.ClientModInitializer;
@@ -26,7 +29,10 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		InventoryButtonsFeature.register();
 		KeyboardFeature.register();
 		GalleryFeature.register();
+		NotesFeature.register();
 		HugoGuard.register();
+		HugoGuardGlowLayer.register();
+		HgCommand.register();
 		LOGGER.info("HugoSMP Enhanced loaded");
 	}
 }

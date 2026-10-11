@@ -7,6 +7,7 @@ import java.util.Set;
 
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButton;
 import com.hugosmpenhanced.client.feature.nametag.NametagEffect;
+import com.hugosmpenhanced.client.feature.notes.Note;
 import com.hugosmpenhanced.client.feature.secondnametag.SecondNametagPosition;
 
 public class ModConfig {
@@ -53,6 +54,12 @@ public class ModConfig {
 	public boolean hugoGuardOverhead = true;
 	public boolean hugoGuardChat = true;
 	public boolean hugoGuardTpa = true;
+	public boolean hugoGuardTrusted = true;
+	public boolean hugoGuardGlow = true;
+	// Chat-Rechner
+	public boolean chatCalculatorEnabled = true;
+	// Notizblock
+	public List<Note> notes = new ArrayList<>();
 	// Inventar-Buttons
 	public boolean inventoryButtonsEnabled = true;
 	public List<InventoryButton> inventoryButtons = new ArrayList<>();

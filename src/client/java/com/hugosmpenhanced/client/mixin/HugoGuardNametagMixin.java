@@ -24,7 +24,8 @@ import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.phys.Vec3;
 
 /**
- * Puts a red "⚠ SCAMMER" line above the nametag of players HugoGuard lists as scammers, drawn the
+ * Puts a red "⚠ SCAMMER" or green "✔ TRUSTED" line above the nametag of players on a HugoGuard
+ * list, drawn the
  * same way as {@link SecondNametagRenderMixin} draws the second nametag (visible through walls
  * unless the player sneaks).
  */
@@ -46,7 +47,8 @@ public abstract class HugoGuardNametagMixin {
 			return;
 		}
 		Entity entity = minecraft.level.getEntity(state.id);
-		if (!(entity instanceof Player player) || player == minecraft.player || HugoGuard.scammer(player.getUUID()) == null) {
+		HugoGuard.Entry entry = entity instanceof Player player && player != minecraft.player ? HugoGuard.shown(player.getUUID()) : null;
+		if (entry == null) {
 			return;
 		}
 
@@ -61,7 +63,9 @@ public abstract class HugoGuardNametagMixin {
 		poseStack.scale(PIXEL, -PIXEL, PIXEL);
 
 		Font font = minecraft.font;
-		FormattedCharSequence text = Component.literal("⚠ SCAMMER ⚠").withStyle(ChatFormatting.RED, ChatFormatting.BOLD).getVisualOrderText();
+		FormattedCharSequence text = (entry.status() == HugoGuard.Status.SCAMMER
+			? Component.literal("⚠ SCAMMER ⚠").withStyle(ChatFormatting.RED, ChatFormatting.BOLD)
+			: Component.literal("✔ TRUSTED ✔").withStyle(ChatFormatting.GREEN, ChatFormatting.BOLD)).getVisualOrderText();
 		float x = -font.width(text) / 2.0F;
 		int background = (int) (minecraft.options.getBackgroundOpacity(0.25F) * 255.0F) << 24;
 		int light = state.lightCoords;
