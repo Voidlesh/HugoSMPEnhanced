@@ -2,6 +2,7 @@ package com.hugosmpenhanced.client;
 
 import com.hugosmpenhanced.client.feature.auction.AuctionSearch;
 import com.hugosmpenhanced.client.feature.auction.PricePerItemFeature;
+import com.hugosmpenhanced.client.feature.entityheatmap.EntityHeatmap;
 import com.hugosmpenhanced.client.feature.gallery.GalleryFeature;
 import com.hugosmpenhanced.client.feature.hugoguard.HugoGuard;
 import com.hugosmpenhanced.client.feature.hugoguard.HugoGuardGlowLayer;
@@ -35,6 +36,7 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		HugoGuard.register();
 		HugoGuardGlowLayer.register();
 		HgCommand.register();
+		EntityHeatmap.register();
 		LOGGER.info("HugoSMP Enhanced loaded");
 	}
 }

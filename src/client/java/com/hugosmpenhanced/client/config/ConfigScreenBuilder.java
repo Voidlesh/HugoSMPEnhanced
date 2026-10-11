@@ -12,6 +12,7 @@ import dev.isxander.yacl3.api.YetAnotherConfigLib;
 import dev.isxander.yacl3.api.controller.BooleanControllerBuilder;
 import dev.isxander.yacl3.api.controller.DoubleSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.EnumControllerBuilder;
+import dev.isxander.yacl3.api.controller.IntegerSliderControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
 import com.hugosmpenhanced.client.feature.inventorylayout.InventoryLayout;
@@ -41,6 +42,7 @@ public final class ConfigScreenBuilder {
 						.group(tabListGroup(config))
 						.group(nametagStyleGroup())
 						.group(secondNametagGroup())
+						.group(entityHeatmapGroup(config))
 						.group(inventoryButtonsGroup(config))
 						.group(inventoryLayoutGroup(config))
 						.group(chatGroup(config))
@@ -225,6 +227,51 @@ public final class ConfigScreenBuilder {
 						.name(Component.literal("Inventar-Buttons bearbeiten"))
 						.text(Component.literal("Öffnen"))
 						.action((screen, option) -> Minecraft.getInstance().setScreen(new InventoryButtonsScreen(screen)))
+						.build())
+				.build();
+	}
+
+	private static OptionGroup entityHeatmapGroup(ModConfig config) {
+		return OptionGroup.createBuilder()
+				.name(Component.literal("Entity-Heatmap (Farmen)"))
+				.description(OptionDescription.of(Component.literal(
+						"Per Taste (Standard H) bekommt jeder Block mit Mobs oder Items eine farbige Kachel mit der Anzahl, "
+								+ "bei mehreren Typen auch welche. Grün, gelb ab zwei Drittel, rot ab dem Cramming-Limit. "
+								+ "Durch Glas sichtbar, durch Wände nicht.")))
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Aktiviert"))
+						.binding(true, () -> config.entityHeatmapEnabled, v -> config.entityHeatmapEnabled = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.option(Option.<Integer>createBuilder()
+						.name(Component.literal("Radius"))
+						.binding(16, () -> config.entityHeatmapRadius, v -> config.entityHeatmapRadius = v)
+						.controller(opt -> IntegerSliderControllerBuilder.create(opt)
+								.range(4, 64)
+								.step(1)
+								.valueFormatter(v -> Component.literal(v + " Blöcke")))
+						.build())
+				.option(Option.<Integer>createBuilder()
+						.name(Component.literal("Cramming-Limit"))
+						.description(OptionDescription.of(Component.literal(
+								"Gamerule maxEntityCramming des Servers, Standard 24. Ab hier wird die Kachel rot.")))
+						.binding(24, () -> config.entityHeatmapCrammingLimit, v -> config.entityHeatmapCrammingLimit = v)
+						.controller(opt -> IntegerSliderControllerBuilder.create(opt)
+								.range(2, 100)
+								.step(1))
+						.build())
+				.option(Option.<Integer>createBuilder()
+						.name(Component.literal("Anzeigen ab"))
+						.binding(1, () -> config.entityHeatmapMinCount, v -> config.entityHeatmapMinCount = v)
+						.controller(opt -> IntegerSliderControllerBuilder.create(opt)
+								.range(1, 20)
+								.step(1)
+								.valueFormatter(v -> Component.literal(v + (v == 1 ? " Entität" : " Entitäten"))))
+						.build())
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Items mitzählen"))
+						.binding(true, () -> config.entityHeatmapItems, v -> config.entityHeatmapItems = v)
+						.controller(BooleanControllerBuilder::create)
 						.build())
 				.build();
 	}
