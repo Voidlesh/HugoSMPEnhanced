@@ -1,0 +1,325 @@
+package com.hugosmpenhanced.client.feature.auction;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+
+import com.hugosmpenhanced.client.config.ModConfigManager;
+import com.hugosmpenhanced.client.gui.HugoStyle;
+import com.hugosmpenhanced.client.gui.StyledScreen;
+
+import org.lwjgl.glfw.GLFW;
+
+import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.components.Button;
+import net.minecraft.client.gui.components.EditBox;
+import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
+import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
+import net.minecraft.world.level.block.entity.SignBlockEntity;
+
+/**
+ * The auction search that replaces HugoSMP's search sign: a search field, live suggestions for
+ * items and enchantments (with the lowest price seen recently), recent searches and favourites.
+ * Enter sends the selected row as line 1 of the sign, Escape sends an empty sign like the vanilla
+ * editor would.
+ */
+public class AuctionSearchScreen extends Screen implements StyledScreen {
+	private static final int ROW = 23;
+	private static final int FIELD = 20;
+	private static final int MAX_SUGGESTIONS = 8;
+	private static final int STAR = 16;
+
+	private final SignBlockEntity sign;
+	private final boolean front;
+	private final List<Row> rows = new ArrayList<>();
+	private EditBox field;
+	private int selected;
+	private boolean sent;
+	private long tooShortUntil;
+
+	private int left;
+	private int panelWidth;
+	private int rowsTop;
+	private int visibleRows;
+
+	private enum Kind {
+		QUERY, ITEM, FAVORITE, HISTORY
+	}
+
+	private record Row(Kind kind, String send, String title, String subtitle, ItemStack icon, String priceKey, int highlight,
+		int highlightLength) {
+	}
+
+	public AuctionSearchScreen(SignBlockEntity sign, boolean front) {
+		super(Component.literal("Auktionshaus-Suche"));
+		this.sign = sign;
+		this.front = front;
+	}
+
+	@Override
+	protected void init() {
+		this.panelWidth = Math.min(this.width - 20, 300);
+		this.left = (this.width - this.panelWidth) / 2;
+		int bottomReserve = 46;
+		int maxRows = MAX_SUGGESTIONS + 1;
+		int top = Math.max(18, (this.height - (FIELD + 6 + maxRows * ROW + bottomReserve)) / 2 + 10);
+		this.rowsTop = top + FIELD + 6;
+		this.visibleRows = Math.max(1, Math.min(maxRows, (this.height - bottomReserve - this.rowsTop) / ROW));
+
+		String previous = this.field != null ? this.field.getValue() : "";
+		this.field = new EditBox(this.font, this.left, top, this.panelWidth, FIELD, Component.literal("Suchbegriff"));
+		this.field.setMaxLength(48);
+		this.field.setHint(Component.literal("Suchbegriff, z. B. Diamant (min. 3 Zeichen)"));
+		this.field.setValue(previous);
+		this.field.setResponder(value -> this.refresh());
+		this.addRenderableWidget(this.field);
+		this.setInitialFocus(this.field);
+
+		int buttonWidth = 110;
+		Button signButton = this.addRenderableWidget(Button.builder(Component.literal("Schild benutzen"), b -> this.useSign())
+			.bounds(this.left + this.panelWidth - buttonWidth, this.height - 26, buttonWidth, 20).build());
+		signButton.setTooltip(Tooltip.create(Component.literal("Öffnet das normale Schild vom Server, falls hier etwas nicht klappt.")));
+		this.refresh();
+	}
+
+	private void refresh() {
+		String query = this.field.getValue().strip();
+		Kind previousKind = this.rows.isEmpty() || this.selected >= this.rows.size() ? null : this.rows.get(this.selected).kind();
+		this.rows.clear();
+		if (query.isEmpty()) {
+			for (String favorite : ModConfigManager.CONFIG.auctionSearchFavorites) {
+				this.rows.add(this.termRow(Kind.FAVORITE, favorite));
+			}
+			for (String recent : ModConfigManager.CONFIG.auctionSearchHistory) {
+				if (!AuctionSearch.isFavorite(recent)) {
+					this.rows.add(this.termRow(Kind.HISTORY, recent));
+				}
+			}
+		} else {
+			this.rows.add(new Row(Kind.QUERY, query, "„" + query + "“ suchen", null, new ItemStack(Items.SPYGLASS), null, -1, 0));
+			for (AuctionSearch.Match match : AuctionSearch.search(query, MAX_SUGGESTIONS)) {
+				AuctionSearch.Entry entry = match.entry();
+				String subtitle = entry.enchantment() ? "Verzauberung" : null;
+				if (!entry.englishName().equalsIgnoreCase(entry.gameName())) {
+					subtitle = subtitle == null ? entry.englishName() : subtitle + " · " + entry.englishName();
+				}
+				this.rows.add(new Row(Kind.ITEM, entry.sendName(), entry.gameName(), subtitle, entry.icon(), entry.priceKey(),
+					match.highlight(), query.length()));
+			}
+		}
+		while (this.rows.size() > this.visibleRows) {
+			this.rows.remove(this.rows.size() - 1);
+		}
+		if (previousKind != Kind.ITEM || this.selected >= this.rows.size()) {
+			this.selected = 0;
+		}
+	}
+
+	private Row termRow(Kind kind, String term) {
+		AuctionSearch.Entry entry = AuctionSearch.exact(term);
+		ItemStack icon = entry != null ? entry.icon() : new ItemStack(kind == Kind.FAVORITE ? Items.NETHER_STAR : Items.PAPER);
+		return new Row(kind, term, term, kind == Kind.FAVORITE ? "Favorit" : "Letzte Suche", icon,
+			entry != null ? entry.priceKey() : null, -1, 0);
+	}
+
+	private void submit(String query) {
+		query = query.strip();
+		if (query.length() < AuctionSearch.MIN_LENGTH) {
+			this.tooShortUntil = System.currentTimeMillis() + 2000;
+			return;
+		}
+		AuctionSearch.remember(query);
+		this.sent = true;
+		AuctionSearch.send(this.sign, this.front, query);
+		this.minecraft.setScreen(null);
+	}
+
+	private void useSign() {
+		this.sent = true;
+		AuctionSearch.openVanilla(this.sign, this.front);
+	}
+
+	@Override
+	public void onClose() {
+		this.minecraft.setScreen(null);
+	}
+
+	@Override
+	public void removed() {
+		// The server waits for the sign; closing without a search answers with an empty line, like vanilla.
+		if (!this.sent) {
+			this.sent = true;
+			AuctionSearch.send(this.sign, this.front, "");
+		}
+		AuctionPriceMemory.saveIfDirty();
+	}
+
+	@Override
+	public boolean keyPressed(KeyEvent event) {
+		int key = event.key();
+		if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+			this.submit(this.rows.isEmpty() ? this.field.getValue() : this.rows.get(this.selected).send());
+			return true;
+		}
+		if ((key == GLFW.GLFW_KEY_DOWN || key == GLFW.GLFW_KEY_UP) && !this.rows.isEmpty()) {
+			int step = key == GLFW.GLFW_KEY_DOWN ? 1 : -1;
+			this.selected = Math.floorMod(this.selected + step, this.rows.size());
+			return true;
+		}
+		if (key == GLFW.GLFW_KEY_TAB) {
+			Row row = this.tabTarget();
+			if (row != null) {
+				this.field.setValue(row.send());
+				this.field.moveCursorToEnd(false);
+			}
+			return true;
+		}
+		return super.keyPressed(event);
+	}
+
+	/** The row Tab completes to: the selected one, or the first suggestion. */
+	private Row tabTarget() {
+		if (this.rows.isEmpty()) {
+			return null;
+		}
+		Row row = this.rows.get(this.selected);
+		if (row.kind() == Kind.QUERY && this.rows.size() > 1) {
+			return this.rows.get(1);
+		}
+		return row;
+	}
+
+	@Override
+	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
+		int index = this.rowAt(event.x(), event.y());
+		if (index >= 0 && event.button() == 0) {
+			Row row = this.rows.get(index);
+			if (row.kind() != Kind.QUERY && event.x() >= this.starX()) {
+				AuctionSearch.toggleFavorite(row.send());
+				this.refresh();
+			} else {
+				this.submit(row.send());
+			}
+			return true;
+		}
+		return super.mouseClicked(event, doubleClick);
+	}
+
+	private int rowAt(double x, double y) {
+		if (x < this.left || x >= this.left + this.panelWidth || y < this.rowsTop) {
+			return -1;
+		}
+		int index = (int) ((y - this.rowsTop) / ROW);
+		return index < this.rows.size() ? index : -1;
+	}
+
+	private int starX() {
+		return this.left + this.panelWidth - STAR - 4;
+	}
+
+	@Override
+	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+		super.render(graphics, mouseX, mouseY, partialTick);
+		graphics.drawCenteredString(this.font, "— AUKTIONSHAUS-SUCHE —", this.width / 2, this.field.getY() - 12, 0xFFAAAAAA);
+
+		int hovered = this.rowAt(mouseX, mouseY);
+		for (int i = 0; i < this.rows.size(); i++) {
+			this.renderRow(graphics, this.rows.get(i), this.rowsTop + i * ROW, i == this.selected || i == hovered, i == hovered && mouseX >= this.starX());
+		}
+		if (this.rows.isEmpty()) {
+			graphics.drawCenteredString(this.font, "Tippe, um Items zu finden. Letzte Suchen erscheinen hier.", this.width / 2,
+				this.rowsTop + 8, 0xFF777777);
+		} else if (this.field.getValue().strip().length() > 0 && this.rows.size() == 1) {
+			graphics.drawCenteredString(this.font, "Kein passendes Item, du kannst trotzdem danach suchen.", this.width / 2,
+				this.rowsTop + ROW + 8, 0xFF777777);
+		}
+
+		int footerY = this.height - 20;
+		if (System.currentTimeMillis() < this.tooShortUntil) {
+			graphics.drawString(this.font, "Mindestens " + AuctionSearch.MIN_LENGTH + " Zeichen.", this.left, footerY, 0xFFFF5555);
+		} else {
+			graphics.drawString(this.font, "Enter sucht · Tab übernimmt", this.left, footerY, 0xFF777777);
+		}
+	}
+
+	private void renderRow(GuiGraphics graphics, Row row, int y, boolean active, boolean starHovered) {
+		int x = this.left;
+		int height = ROW - 2;
+		HugoStyle.drawBox(graphics, x, y, this.panelWidth, height, active ? HugoStyle.State.HOVER : HugoStyle.State.NORMAL);
+		graphics.renderItem(row.icon(), x + 4, y + (height - 16) / 2);
+
+		int textX = x + 25;
+		int right = x + this.panelWidth - 6;
+		if (row.kind() != Kind.QUERY) {
+			right = this.starX() - 4;
+			boolean favorite = AuctionSearch.isFavorite(row.send());
+			int starColor = favorite ? 0xFFFFD84A : starHovered ? 0xFFDDDDDD : 0xFF666666;
+			graphics.drawString(this.font, favorite ? "★" : "☆", this.starX() + 4, y + (height - 8) / 2, starColor);
+		}
+
+		String priceText = null;
+		String ageText = null;
+		AuctionPriceMemory.Seen seen = AuctionPriceMemory.get(row.priceKey());
+		if (seen != null) {
+			priceText = "ab " + formatPrice(seen.min);
+			ageText = age(seen.minAt);
+			int priceWidth = Math.max(this.font.width(priceText), this.font.width(ageText));
+			graphics.drawString(this.font, priceText, right - this.font.width(priceText), y + 3, 0xFFFFAA00);
+			graphics.drawString(this.font, ageText, right - this.font.width(ageText), y + 12, 0xFF777777);
+			right -= priceWidth + 6;
+		}
+
+		int titleY = row.subtitle() == null ? y + (height - 8) / 2 : y + 3;
+		String title = this.font.plainSubstrByWidth(row.title(), right - textX);
+		int color = row.kind() == Kind.QUERY ? 0xFFFFFFFF : 0xFFE0E0E0;
+		if (row.highlight() >= 0 && row.highlight() + row.highlightLength() <= title.length()) {
+			String before = title.substring(0, row.highlight());
+			String match = title.substring(row.highlight(), row.highlight() + row.highlightLength());
+			int at = textX;
+			graphics.drawString(this.font, before, at, titleY, color);
+			at += this.font.width(before);
+			graphics.drawString(this.font, match, at, titleY, 0xFFFFFF55);
+			at += this.font.width(match);
+			graphics.drawString(this.font, title.substring(row.highlight() + row.highlightLength()), at, titleY, color);
+		} else {
+			graphics.drawString(this.font, title, textX, titleY, color);
+		}
+		if (row.subtitle() != null) {
+			graphics.drawString(this.font, this.font.plainSubstrByWidth(row.subtitle(), right - textX), textX, y + 12, 0xFF888888);
+		}
+	}
+
+	static String formatPrice(double price) {
+		return price >= 100 ? String.format(Locale.US, "$%,.0f", price) : String.format(Locale.US, "$%,.2f", price);
+	}
+
+	private static String age(long at) {
+		long minutes = Math.max(0, (System.currentTimeMillis() - at) / 60_000);
+		if (minutes < 60) {
+			return minutes <= 1 ? "gerade eben" : "vor " + minutes + " Min.";
+		}
+		long hours = minutes / 60;
+		if (hours < 24) {
+			return "vor " + hours + " Std.";
+		}
+		long days = hours / 24;
+		return days == 1 ? "vor 1 Tag" : "vor " + days + " Tagen";
+	}
+
+	@Override
+	public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+		super.renderBackground(graphics, mouseX, mouseY, partialTick);
+		// Dim the world so the rows and the hint stay readable over the HUD.
+		graphics.fill(0, 0, this.width, this.height, 0x90000000);
+	}
+
+	@Override
+	public boolean isPauseScreen() {
+		return false;
+	}
+}

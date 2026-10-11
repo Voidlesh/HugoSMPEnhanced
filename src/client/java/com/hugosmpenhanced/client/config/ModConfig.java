@@ -5,6 +5,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
 
+import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButton;
 import com.hugosmpenhanced.client.feature.mainmenu.MainMenuLayout;
 import com.hugosmpenhanced.client.feature.mainmenu.SplashAnimation;
@@ -21,6 +22,13 @@ public class ModConfig {
 
 	// Preis pro Item
 	public boolean pricePerItemEnabled = true;
+
+	// Auktionshaus-Suche statt Schild
+	public boolean auctionSearchEnabled = true;
+	public AuctionSearchLanguage auctionSearchLanguage = AuctionSearchLanguage.GAME;
+	public boolean auctionPriceMemoryEnabled = true;
+	public List<String> auctionSearchHistory = new ArrayList<>();
+	public List<String> auctionSearchFavorites = new ArrayList<>();
 
 	// TPA-Toast
 	public boolean tpaToastEnabled = true;
