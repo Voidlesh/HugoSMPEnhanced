@@ -9,6 +9,8 @@ import com.hugosmpenhanced.client.feature.nametag.NametagEffect;
 import com.hugosmpenhanced.client.feature.nametag.NametagStyleRenderer;
 import com.hugosmpenhanced.client.feature.secondnametag.SecondNametag;
 
+import com.hugosmpenhanced.client.gui.StyledScreen;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
@@ -25,7 +27,7 @@ import net.minecraft.network.chat.Component;
  * <p>The grid adapts to the window: as many columns as fit, and the preview gives up height first
  * when the screen is short, so the screen stays usable at large GUI scales.
  */
-public class NametagStyleScreen extends Screen {
+public class NametagStyleScreen extends Screen implements StyledScreen {
 	private static final int MIN_CELL_WIDTH = 62;
 	private static final int MAX_CELL_WIDTH = 120;
 	private static final int MAX_COLUMNS = 6;

@@ -2,6 +2,8 @@ package com.hugosmpenhanced.client.config;
 
 import com.hugosmpenhanced.client.feature.secondnametag.SecondNametagPosition;
 
+import com.hugosmpenhanced.client.gui.StyledScreen;
+
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
@@ -15,7 +17,7 @@ import net.minecraft.network.chat.Component;
  * background is written to the config immediately and shows up in the preview on the next frame.
  * The preview is the shared {@link NametagPreview}.
  */
-public class SecondNametagScreen extends Screen {
+public class SecondNametagScreen extends Screen implements StyledScreen {
 	private static final int CONTROL_WIDTH = 300;
 	private static final int HALF_WIDTH = (CONTROL_WIDTH - 4) / 2;
 	private static final int PREVIEW_TOP = 32;
