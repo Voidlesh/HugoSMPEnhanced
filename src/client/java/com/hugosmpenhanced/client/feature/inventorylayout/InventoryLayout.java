@@ -21,7 +21,7 @@ import net.minecraft.world.item.ItemStack;
  */
 public final class InventoryLayout {
 	/** Lays the slot background colour over the ghost item so it reads as transparent. */
-	private static final int GHOST_FADE = 0x998B8B8B;
+	private static final int GHOST_FADE = 0x608B8B8B;
 	private static final int WRONG_TINT = 0x60FF2020;
 
 	private static List<String> cachedSource;
