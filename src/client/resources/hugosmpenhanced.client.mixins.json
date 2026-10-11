@@ -1,0 +1,24 @@
+{
+	"required": true,
+	"minVersion": "0.8",
+	"package": "com.hugosmpenhanced.client.mixin",
+	"mixins": [
+		"TpaSystemChatMixin",
+		"PersistentChatMixin",
+		"CompactTabListMixin",
+		"TitleScreenQuickJoinMixin",
+		"ChatFilterMixin",
+		"GuiGraphicsRenderStateMixin",
+		"NametagTabListMixin",
+		"NametagScoreboardMixin",
+		"NametagWorldTextMixin",
+		"NametagChatMixin$Background",
+		"NametagChatMixin$Focused",
+		"SecondNametagShowOwnNameMixin",
+		"SecondNametagRenderMixin",
+		"AbstractContainerScreenAccessor"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

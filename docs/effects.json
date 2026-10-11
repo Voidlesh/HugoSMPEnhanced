@@ -1,0 +1,245 @@
+{
+  "version": 1,
+  "source": "Voidlesh nametag style preview",
+  "unit": "em, where 1em = the nametag's rendered text height",
+  "time": "t runs 0..1 across one period and every curve is seamless at the loop point",
+  "stagger": {
+    "appliesTo": "effects with scope 'letter'",
+    "formula": "phaseOffsetSeconds_i = (n - 1 - i) * staggerSeconds, with i the letter index and n the letter count",
+    "meaning": "letter i is advanced by that much, so the effect travels left to right"
+  },
+  "composition": {
+    "motion": "Free to stack. Each motion effect owns one transform and they multiply, outer to inner: shake, flip, skew, grow. Letter-scope motion (wave) applies inside that, per letter.",
+    "color": "Exactly one at a time - a glyph can only carry one colour. Selecting another replaces the current one.",
+    "overlay": "Free to stack. Each overlay owns a property nothing else writes (opacity, filter, stroke), so they never collide.",
+    "fillPriority": [
+      "an active colour style (animated per letter)",
+      "outline -> transparent fill",
+      "glow -> solid white fill",
+      "base #e8e8ee"
+    ]
+  },
+  "groups": {
+    "motion": [
+      "shake",
+      "wave",
+      "iterate",
+      "flip",
+      "skew",
+      "grow"
+    ],
+    "color": [
+      "gradient",
+      "rainbow",
+      "metallic",
+      "fire"
+    ],
+    "overlay": [
+      "fade",
+      "shimmer",
+      "chromatic",
+      "outline",
+      "glow"
+    ]
+  },
+  "effects": {
+    "shake": {
+      "group": "motion",
+      "label": "Shaking",
+      "scope": "word",
+      "animates": "transform",
+      "periodSeconds": 0.55,
+      "easing": "linear",
+      "formula": {
+        "translateX_em": "0.085 * (0.60*sin(2pi*3t) + 0.30*sin(2pi*5t + 1.7) + 0.20*sin(2pi*7t + 0.6))",
+        "translateY_em": "0.022 * sin(2pi*5t + 2.1)",
+        "rotateZ_deg": "1.5 * (0.45*sin(2pi*3t + 0.9) + 0.20*sin(2pi*5t))"
+      },
+      "notes": "Harmonics 3/5/7 complete whole cycles per period, so the jitter never seams."
+    },
+    "flip": {
+      "group": "motion",
+      "label": "Flipping",
+      "scope": "word",
+      "animates": "transform",
+      "periodSeconds": 2.4,
+      "easing": "cubic-bezier(0.62, 0, 0.38, 1)",
+      "formula": {
+        "rotateX_deg": "0 -> 360 across the first 52% of the period, then hold at 360"
+      },
+      "notes": "Perspective 40em. The hold is what makes it read as a deliberate flip, not a tumble."
+    },
+    "skew": {
+      "group": "motion",
+      "label": "Skewing",
+      "scope": "word",
+      "animates": "transform",
+      "periodSeconds": 1.6,
+      "easing": "linear",
+      "formula": {
+        "skewX_deg": "14 * sin(2pi*t)"
+      }
+    },
+    "grow": {
+      "group": "motion",
+      "label": "Growing",
+      "scope": "word",
+      "animates": "transform",
+      "periodSeconds": 1.4,
+      "easing": "linear",
+      "formula": {
+        "scale": "1.14 + 0.14*sin(2pi*t - pi/2)   # 1.00 .. 1.28"
+      }
+    },
+    "wave": {
+      "group": "motion",
+      "label": "Waving",
+      "scope": "letter",
+      "animates": "transform",
+      "periodSeconds": 1.8,
+      "easing": "linear",
+      "staggerSeconds": 0.13,
+      "formula": {
+        "translateY_em": "-0.15 * sin(2pi*t)"
+      }
+    },
+    "iterate": {
+      "group": "motion",
+      "label": "Iterating",
+      "scope": "letter",
+      "animates": "opacity",
+      "periodSeconds": 1.6,
+      "easing": "linear",
+      "staggerSeconds": 0.1,
+      "formula": {
+        "d": "min(t, 1-t)",
+        "opacity": "0.26 + 0.74*exp(-(d/0.085)^2)"
+      },
+      "notes": "A bright head running along the word. Opacity, not colour, so it layers over any colour style."
+    },
+    "gradient": {
+      "group": "color",
+      "label": "Gradient",
+      "scope": "letter",
+      "animates": "color",
+      "periodSeconds": 3.2,
+      "easing": "linear",
+      "staggerSeconds": 0.15,
+      "formula": {
+        "k": "(1 - cos(2pi*t)) / 2",
+        "hsl": "hue = 258 + 72k,  sat = 84 + 4k,  light = 66 - 4k"
+      },
+      "notes": "Violet <-> pink, interpolated in HSL so the midpoint stays vivid instead of going muddy."
+    },
+    "rainbow": {
+      "group": "color",
+      "label": "Rainbow",
+      "scope": "letter",
+      "animates": "color",
+      "periodSeconds": 3.0,
+      "easing": "linear",
+      "staggerSeconds": 0.18,
+      "formula": {
+        "hsl": "hue = 360*t,  sat = 96,  light = 63"
+      },
+      "notes": "Full hue circle per letter with a stagger, so a chroma wave travels along the word."
+    },
+    "metallic": {
+      "group": "color",
+      "label": "Metallic",
+      "scope": "letter",
+      "animates": "color",
+      "periodSeconds": 2.6,
+      "easing": "linear",
+      "staggerSeconds": 0.13,
+      "formula": {
+        "d": "min(t, 1-t)",
+        "sheen": "exp(-(d/0.11)^2)",
+        "base": "(1 - cos(2pi*t)) / 2",
+        "hsl": "hue = 228,  sat = 9 + 6*(1-sheen),  light = min(44 + 16*base + 40*sheen, 100)"
+      }
+    },
+    "fire": {
+      "group": "color",
+      "label": "Fire",
+      "scope": "letter",
+      "animates": "color",
+      "periodSeconds": 1.4,
+      "easing": "linear",
+      "staggerSeconds": 0.09,
+      "formula": {
+        "f": "clamp01(0.50 + 0.30*sin(2pi*t) + 0.14*sin(4pi*t + 1.1) + 0.06*sin(6pi*t + 2.3))",
+        "hsl": "hue = 4 + 44f,  sat = 100,  light = 46 + 20f"
+      },
+      "notes": "Stacked harmonics give an organic flicker that still loops seamlessly."
+    },
+    "fade": {
+      "group": "overlay",
+      "label": "Fade",
+      "scope": "word",
+      "animates": "opacity",
+      "periodSeconds": 1.9,
+      "easing": "linear",
+      "formula": {
+        "opacity": "0.59 - 0.41*cos(2pi*t)   # 0.18 .. 1.00"
+      }
+    },
+    "shimmer": {
+      "group": "overlay",
+      "label": "Shimmer",
+      "scope": "letter",
+      "animates": "filter",
+      "periodSeconds": 2.6,
+      "easing": "linear",
+      "staggerSeconds": 0.07,
+      "formula": {
+        "d": "min(t, 1-t)",
+        "g": "exp(-(d/0.045)^2)                     # the specular band",
+        "dim": "0.13 * exp(-((d-0.105)/0.05)^2)     # short dip either side sharpens the edge",
+        "brightness": "1 - dim + 1.65*g",
+        "saturate": "1 - 0.40*g                     # a real highlight runs toward white",
+        "contrast": "1 + 0.30*g",
+        "whiteGlow": "blur = (0.015 + 0.17*g) em, alpha = 0.90*g"
+      },
+      "notes": "Multiplies whatever colour is underneath instead of replacing it, which is why it belongs in overlays."
+    },
+    "chromatic": {
+      "group": "overlay",
+      "label": "Chromatic",
+      "scope": "word",
+      "animates": "filter",
+      "periodSeconds": 1.6,
+      "easing": "linear",
+      "formula": {
+        "x_em": "0.085 * sin(2pi*t)",
+        "y_em": "0.022 * sin(4pi*t)",
+        "shadows": "drop-shadow(-x, -y, #ff3b6b) + drop-shadow(+x, +y, #3bd6ff)"
+      },
+      "notes": "drop-shadow follows the glyph outline, unlike a rectangular text-shadow offset."
+    },
+    "outline": {
+      "group": "overlay",
+      "label": "Outline",
+      "scope": "word",
+      "animates": "nothing (static)",
+      "formula": {
+        "stroke": "0.055em solid #e8e8ee",
+        "fill": "transparent when no colour style is active"
+      },
+      "notes": "Deliberately static. Over a colour style the fill stays coloured and the stroke sits around it."
+    },
+    "glow": {
+      "group": "overlay",
+      "label": "Glowing",
+      "scope": "word",
+      "animates": "filter",
+      "periodSeconds": 2.2,
+      "easing": "linear",
+      "formula": {
+        "k": "(1 - cos(2pi*t)) / 2",
+        "inner": "blur = (0.10 + 0.22k) em, colour = rgba(255,255,255, 0.45 + 0.45k)",
+        "outer": "blur = (0.26 + 0.70k) em, colour = rgba(168,150,255, 0.18 + 0.42k)"
+      }
+    }
+  }
+}
