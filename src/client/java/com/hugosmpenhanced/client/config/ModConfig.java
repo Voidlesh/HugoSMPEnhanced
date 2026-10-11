@@ -33,6 +33,12 @@ public class ModConfig {
 	public List<String> auctionSearchHistory = new ArrayList<>();
 	public List<String> auctionSearchFavorites = new ArrayList<>();
 
+	// HugoSMP-Items und limitierte Items im Auktionshaus
+	public boolean customItemsEnabled = true;
+	public boolean limitedItemsPerHour = true;
+	public boolean limitedItemsHighlightBest = true;
+	public int limitedItemsLifetimeHours = 72;
+
 	// TPA-Toast
 	public boolean tpaToastEnabled = true;
 

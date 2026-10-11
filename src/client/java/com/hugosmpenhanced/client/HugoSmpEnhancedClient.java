@@ -1,6 +1,7 @@
 package com.hugosmpenhanced.client;
 
 import com.hugosmpenhanced.client.feature.auction.AuctionSearch;
+import com.hugosmpenhanced.client.feature.auction.LimitedOffers;
 import com.hugosmpenhanced.client.feature.auction.PricePerItemFeature;
 import com.hugosmpenhanced.client.feature.entityheatmap.EntityHeatmap;
 import com.hugosmpenhanced.client.feature.gallery.GalleryFeature;
@@ -27,6 +28,7 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		ServerCheck.register();
 		PricePerItemFeature.register();
 		AuctionSearch.register();
+		LimitedOffers.register();
 		MentionHighlightFeature.register();
 		TpaKeybinds.register();
 		ConfigCommand.register();
