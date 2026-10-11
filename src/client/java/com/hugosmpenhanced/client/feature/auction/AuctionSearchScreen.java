@@ -23,8 +23,9 @@ import net.minecraft.world.item.Items;
 import net.minecraft.world.level.block.entity.SignBlockEntity;
 
 /**
- * The auction search that replaces HugoSMP's search sign: a search field, live suggestions for
- * items and enchantments (with the lowest price seen recently), recent searches and favourites.
+ * The search that replaces HugoSMP's search sign in the auction house and for orders: a search
+ * field, live suggestions for items and enchantments (with the lowest auction or highest order
+ * price seen recently), recent searches and favourites.
  * Enter sends the selected row as line 1 of the sign, Escape sends an empty sign like the vanilla
  * editor would.
  */
@@ -36,6 +37,7 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 
 	private final SignBlockEntity sign;
 	private final boolean front;
+	private final AuctionMarket market;
 	private final List<Row> rows = new ArrayList<>();
 	private EditBox field;
 	private int selected;
@@ -55,10 +57,11 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 		int highlightLength) {
 	}
 
-	public AuctionSearchScreen(SignBlockEntity sign, boolean front) {
-		super(Component.literal("Auktionshaus-Suche"));
+	public AuctionSearchScreen(SignBlockEntity sign, boolean front, AuctionMarket market) {
+		super(Component.literal(market.title));
 		this.sign = sign;
 		this.front = front;
+		this.market = market;
 	}
 
 	@Override
@@ -225,7 +228,7 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 	@Override
 	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
 		super.render(graphics, mouseX, mouseY, partialTick);
-		graphics.drawCenteredString(this.font, "— AUKTIONSHAUS-SUCHE —", this.width / 2, this.field.getY() - 12, 0xFFAAAAAA);
+		graphics.drawCenteredString(this.font, "— " + this.market.heading + " —", this.width / 2, this.field.getY() - 12, 0xFFAAAAAA);
 
 		int hovered = this.rowAt(mouseX, mouseY);
 		for (int i = 0; i < this.rows.size(); i++) {
@@ -264,10 +267,12 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 
 		String priceText = null;
 		String ageText = null;
-		AuctionPriceMemory.Seen seen = AuctionPriceMemory.get(row.priceKey());
+		AuctionPriceMemory.Seen seen = AuctionPriceMemory.get(row.priceKey(), this.market);
 		if (seen != null) {
-			priceText = "ab " + formatPrice(seen.min);
-			ageText = age(seen.minAt);
+			// Buying in the auction house, the cheapest offer counts; selling to orders, the best one.
+			boolean orders = this.market == AuctionMarket.ORDERS;
+			priceText = orders ? "bis " + formatPrice(seen.max) : "ab " + formatPrice(seen.min);
+			ageText = age(orders ? seen.maxAt : seen.minAt);
 			int priceWidth = Math.max(this.font.width(priceText), this.font.width(ageText));
 			graphics.drawString(this.font, priceText, right - this.font.width(priceText), y + 3, 0xFFFFAA00);
 			graphics.drawString(this.font, ageText, right - this.font.width(ageText), y + 12, 0xFF777777);
@@ -295,7 +300,8 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 	}
 
 	static String formatPrice(double price) {
-		return price >= 100 ? String.format(Locale.US, "$%,.0f", price) : String.format(Locale.US, "$%,.2f", price);
+		// Grouped like HugoSMP writes prices: $7.000, $12,50.
+		return price >= 100 ? String.format(Locale.GERMANY, "$%,.0f", price) : String.format(Locale.GERMANY, "$%,.2f", price);
 	}
 
 	private static String age(long at) {
