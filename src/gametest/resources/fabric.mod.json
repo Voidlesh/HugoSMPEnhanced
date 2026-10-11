@@ -13,7 +13,8 @@
 			"com.hugosmpenhanced.test.QolGameTest",
 			"com.hugosmpenhanced.test.MainMenuGameTest",
 			"com.hugosmpenhanced.test.AuctionSearchGameTest",
-			"com.hugosmpenhanced.test.InventoryLayoutGameTest"
+			"com.hugosmpenhanced.test.InventoryLayoutGameTest",
+			"com.hugosmpenhanced.test.EntityHeatmapGameTest"
 		]
 	}
 }

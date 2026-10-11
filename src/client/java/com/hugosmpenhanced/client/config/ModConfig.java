@@ -85,6 +85,12 @@ public class ModConfig {
 	public List<Note> notes = new ArrayList<>();
 	public int notesHudX = 4;
 	public int notesHudY = 4;
+	// Entity-Heatmap
+	public boolean entityHeatmapEnabled = true;
+	public int entityHeatmapRadius = 16;
+	public int entityHeatmapCrammingLimit = 24;
+	public int entityHeatmapMinCount = 1;
+	public boolean entityHeatmapItems = true;
 	// Inventar-Buttons
 	public boolean inventoryButtonsEnabled = true;
 	public List<InventoryButton> inventoryButtons = new ArrayList<>();
