@@ -46,9 +46,9 @@ public final class TpaRequestHandler {
 	private static void trigger(String player, Item icon, String titleKey, String subtitleKey) {
 		TpaState.set(player, TpaState.TPA_TTL_MS);
 
-		HugoGuard.Entry scammer = ModConfigManager.CONFIG.hugoGuardTpa ? HugoGuard.scammer(player) : null;
-		if (scammer != null) {
-			warnScammer(scammer);
+		HugoGuard.Entry listed = ModConfigManager.CONFIG.hugoGuardTpa ? HugoGuard.shown(player) : null;
+		if (listed != null && listed.status() == HugoGuard.Status.SCAMMER) {
+			warnScammer(listed);
 			return;
 		}
 
@@ -56,6 +56,9 @@ public final class TpaRequestHandler {
 
 		Component title = Component.translatable(titleKey, player).withStyle(ChatFormatting.BOLD);
 		Component subtitle = Component.translatable(subtitleKey, keyName);
+		if (listed != null) {
+			subtitle = Component.literal("✔ HugoGuard: vertrauenswürdig").withStyle(ChatFormatting.GREEN);
+		}
 
 		TpaToast.show(title, subtitle, new ItemStack(icon), 5000);
 	}
