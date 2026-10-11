@@ -6,6 +6,9 @@ import java.util.List;
 import java.util.Set;
 
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButton;
+import com.hugosmpenhanced.client.feature.mainmenu.MainMenuLayout;
+import com.hugosmpenhanced.client.feature.mainmenu.SplashAnimation;
+import com.hugosmpenhanced.client.feature.mainmenu.SplashColor;
 import com.hugosmpenhanced.client.feature.nametag.NametagEffect;
 import com.hugosmpenhanced.client.feature.notes.Note;
 import com.hugosmpenhanced.client.feature.secondnametag.SecondNametagPosition;
@@ -27,6 +30,15 @@ public class ModConfig {
 
 	// Hauptmenü-Button zum direkten Beitreten
 	public boolean mainMenuButtonEnabled = true;
+
+	// Eigenes Hauptmenü
+	public boolean mainMenuCustom = true;
+	public MainMenuLayout mainMenuLayout = MainMenuLayout.CLASSIC;
+	public boolean mainMenuServerCard = true;
+	public List<String> splashTexts = new ArrayList<>(List.of(
+			"Willkommen auf HugoSMP!", "Jetzt mit Notizblock!", "Hugo war hier", "Kein Hack-Client!", "Diamanten > Gold"));
+	public SplashAnimation splashAnimation = SplashAnimation.PULSE;
+	public SplashColor splashColor = SplashColor.YELLOW;
 
 	// Chat-Filter
 	public boolean publicChatEnabled = true;
