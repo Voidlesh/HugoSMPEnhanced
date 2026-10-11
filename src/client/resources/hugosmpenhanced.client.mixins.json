@@ -19,7 +19,8 @@
 		"AbstractContainerScreenAccessor",
 		"GuiGraphicsStyleMixin",
 		"HugoGuardNametagMixin",
-		"HugoGuardChatMixin"
+		"HugoGuardChatMixin",
+		"ChatCalculatorMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
