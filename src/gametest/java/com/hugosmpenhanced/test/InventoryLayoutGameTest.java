@@ -14,6 +14,9 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.world.SimpleMenuProvider;
+import net.minecraft.world.inventory.ChestMenu;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -65,7 +68,9 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 			context.waitTicks(5);
 			context.setScreen(() -> new InventoryScreen(Minecraft.getInstance().player));
 			context.waitTicks(3);
-			context.takeScreenshot("invlayout-sorted");
+			shot(context, "invlayout-sorted");
+			hover(context, 1);
+			shot(context, "invlayout-save-tooltip");
 
 			click(context, 1); // book: save
 			context.waitTicks(5);
@@ -86,7 +91,9 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 			context.waitTicks(3);
 			context.getInput().setCursorPos(0, 0);
 			context.waitTicks(2);
-			context.takeScreenshot("invlayout-ghosts");
+			shot(context, "invlayout-ghosts");
+			hover(context, 0);
+			shot(context, "invlayout-eye-tooltip");
 			System.out.println("INVLAYOUT shown: " + context.computeOnClient(client -> ModConfigManager.CONFIG.inventoryLayoutShown));
 
 			// Saving a different inventory asks for a second click.
@@ -94,12 +101,41 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 			context.waitTicks(3);
 			context.takeScreenshot("invlayout-confirm");
 			context.setScreen(() -> null);
+			context.waitTicks(2);
+
+			// The ghosts also show in the player part of a chest.
+			singleplayer.getServer().runOnServer(server -> server.getPlayerList().getPlayers().get(0).openMenu(
+				new SimpleMenuProvider((id, inv, player) -> ChestMenu.threeRows(id, inv), Component.literal("Kiste"))));
+			context.waitTicks(5);
+			context.getInput().setCursorPos(0, 0);
+			shot(context, "invlayout-chest");
+			context.setScreen(() -> null);
 		}
+	}
+
+	/** Clears the advancement and recipe toasts so they do not cover the buttons. */
+	private static void shot(ClientGameTestContext context, String name) {
+		context.runOnClient(client -> client.getToastManager().clear());
+		context.waitTicks(2);
+		context.takeScreenshot(name);
+	}
+
+	private static void hover(ClientGameTestContext context, int index) {
+		double[] pos = center(context, index);
+		context.getInput().setCursorPos(pos[0], pos[1]);
+		context.waitTicks(3);
 	}
 
 	/** Clicks the layout button with the given index (0 eye, 1 book). */
 	private static void click(ClientGameTestContext context, int index) {
-		double[] pos = context.computeOnClient(client -> {
+		double[] pos = center(context, index);
+		context.getInput().setCursorPos(pos[0], pos[1]);
+		context.waitTicks(1);
+		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+	}
+
+	private static double[] center(ClientGameTestContext context, int index) {
+		return context.computeOnClient(client -> {
 			AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.screen;
 			double scale = client.getWindow().getGuiScale();
 			int x = screen.hugosmpenhanced$getLeftPos() + screen.hugosmpenhanced$getImageWidth() + 2
@@ -107,8 +143,5 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 			int y = screen.hugosmpenhanced$getTopPos() - InventoryButtonSpots.STEP + 10;
 			return new double[] {x * scale, y * scale};
 		});
-		context.getInput().setCursorPos(pos[0], pos[1]);
-		context.waitTicks(1);
-		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
 	}
 }
