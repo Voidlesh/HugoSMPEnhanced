@@ -54,7 +54,10 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 	}
 
 	private record Row(Kind kind, String send, String title, String subtitle, ItemStack icon, String priceKey, int highlight,
-		int highlightLength) {
+		int highlightLength, int color, boolean limited) {
+		Row(Kind kind, String send, String title, String subtitle, ItemStack icon, String priceKey, int highlight, int highlightLength) {
+			this(kind, send, title, subtitle, icon, priceKey, highlight, highlightLength, 0, false);
+		}
 	}
 
 	public AuctionSearchScreen(SignBlockEntity sign, boolean front, AuctionMarket market) {
@@ -108,11 +111,13 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 			for (AuctionSearch.Match match : AuctionSearch.search(query, MAX_SUGGESTIONS)) {
 				AuctionSearch.Entry entry = match.entry();
 				String subtitle = entry.enchantment() ? "Verzauberung" : null;
-				if (!entry.englishName().equalsIgnoreCase(entry.gameName())) {
+				if (entry.custom()) {
+					subtitle = (entry.limited() ? "Limitiert" : "HugoSMP-Item") + (entry.baseName() != null ? " · " + entry.baseName() : "");
+				} else if (!entry.englishName().equalsIgnoreCase(entry.gameName())) {
 					subtitle = subtitle == null ? entry.englishName() : subtitle + " · " + entry.englishName();
 				}
 				this.rows.add(new Row(Kind.ITEM, entry.sendName(), entry.gameName(), subtitle, entry.icon(), entry.priceKey(),
-					match.highlight(), query.length()));
+					match.highlight(), query.length(), entry.color(), entry.limited()));
 			}
 		}
 		while (this.rows.size() > this.visibleRows) {
@@ -127,7 +132,7 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 		AuctionSearch.Entry entry = AuctionSearch.exact(term);
 		ItemStack icon = entry != null ? entry.icon() : new ItemStack(kind == Kind.FAVORITE ? Items.NETHER_STAR : Items.PAPER);
 		return new Row(kind, term, term, kind == Kind.FAVORITE ? "Favorit" : "Letzte Suche", icon,
-			entry != null ? entry.priceKey() : null, -1, 0);
+			entry != null ? entry.priceKey() : null, -1, 0, entry != null ? entry.color() : 0, entry != null && entry.limited());
 	}
 
 	private void submit(String query) {
@@ -268,7 +273,17 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 		String priceText = null;
 		String ageText = null;
 		AuctionPriceMemory.Seen seen = AuctionPriceMemory.get(row.priceKey(), this.market);
-		if (seen != null) {
+		AuctionPriceMemory.Seen perHour = row.limited() && ModConfigManager.CONFIG.limitedItemsPerHour
+			? AuctionPriceMemory.getPerHour(row.priceKey(), this.market) : null;
+		if (perHour != null && this.market == AuctionMarket.AUCTION) {
+			// For limited items what counts is the price per hour of time left.
+			priceText = "ab " + LimitedOffers.perHour(perHour.min);
+			ageText = age(perHour.minAt);
+			int priceWidth = Math.max(this.font.width(priceText), this.font.width(ageText));
+			graphics.drawString(this.font, priceText, right - this.font.width(priceText), y + 3, 0xFFFFAA00);
+			graphics.drawString(this.font, ageText, right - this.font.width(ageText), y + 12, 0xFF777777);
+			right -= priceWidth + 6;
+		} else if (seen != null) {
 			// Buying in the auction house, the cheapest offer counts; selling to orders, the best one.
 			boolean orders = this.market == AuctionMarket.ORDERS;
 			priceText = orders ? "bis " + formatPrice(seen.max) : "ab " + formatPrice(seen.min);
@@ -281,7 +296,7 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 
 		int titleY = row.subtitle() == null ? y + (height - 8) / 2 : y + 3;
 		String title = this.font.plainSubstrByWidth(row.title(), right - textX);
-		int color = row.kind() == Kind.QUERY ? 0xFFFFFFFF : 0xFFE0E0E0;
+		int color = row.kind() == Kind.QUERY ? 0xFFFFFFFF : row.color() != 0 ? row.color() : 0xFFE0E0E0;
 		if (row.highlight() >= 0 && row.highlight() + row.highlightLength() <= title.length()) {
 			String before = title.substring(0, row.highlight());
 			String match = title.substring(row.highlight(), row.highlight() + row.highlightLength());

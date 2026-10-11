@@ -41,9 +41,17 @@ public final class AuctionSearch {
 	private static String indexLanguage;
 	private static ClientLanguage english;
 
-	/** One thing that can be searched for: an item or an enchantment. */
+	/**
+	 * One thing that can be searched for: an item, an enchantment or a HugoSMP item. {@code color} is
+	 * the custom item's name colour (0 for none), {@code baseName} the vanilla item it is made from.
+	 */
 	public record Entry(String gameName, String englishName, ItemStack icon, String priceKey, boolean enchantment,
-		String gameFolded, String englishFolded) {
+		String gameFolded, String englishFolded, boolean custom, boolean limited, int color, String baseName) {
+		Entry(String gameName, String englishName, ItemStack icon, String priceKey, boolean enchantment, String gameFolded,
+			String englishFolded) {
+			this(gameName, englishName, icon, priceKey, enchantment, gameFolded, englishFolded, false, false, 0, null);
+		}
+
 		public String sendName() {
 			return ModConfigManager.CONFIG.auctionSearchLanguage == AuctionSearchLanguage.ENGLISH ? this.englishName : this.gameName;
 		}
@@ -60,10 +68,15 @@ public final class AuctionSearch {
 		AuctionMarket.register();
 		ClientPlayConnectionEvents.DISCONNECT.register((handler, client) -> {
 			AuctionPriceMemory.saveIfDirty();
-			// Enchantments come from the server's registries.
+			// Enchantments and custom item components come from the server's registries.
 			index = null;
+			CustomItems.saveIfDirty();
+			CustomItems.forgetIcons();
 		});
-		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> AuctionPriceMemory.saveIfDirty());
+		ClientLifecycleEvents.CLIENT_STOPPING.register(client -> {
+			AuctionPriceMemory.saveIfDirty();
+			CustomItems.saveIfDirty();
+		});
 	}
 
 	/** Called when the server opens a sign editor; returns true if the search screen was opened instead. */
@@ -149,8 +162,9 @@ public final class AuctionSearch {
 				continue;
 			}
 			int score = game >= 0 && (eng < 0 || game <= eng) ? game * 2 : eng * 2 + 1;
-			// Enchantments sort after items that match as well, so "Schutz" still lists the item first.
-			matches.add(new Match(entry, score * 2 + (entry.enchantment() ? 1 : 0), entry.gameFolded().indexOf(folded)));
+			// HugoSMP items first, enchantments after items that match as well, so "Schutz" still lists the item first.
+			int kind = entry.custom() ? 0 : entry.enchantment() ? 2 : 1;
+			matches.add(new Match(entry, score * 3 + kind, entry.gameFolded().indexOf(folded)));
 		}
 		matches.sort(Comparator.comparingInt(Match::score)
 			.thenComparingInt(match -> match.entry().gameName().length())
@@ -208,6 +222,11 @@ public final class AuctionSearch {
 		return out.toString();
 	}
 
+	/** Builds the suggestions again, e.g. after a new HugoSMP item was seen. */
+	public static void invalidate() {
+		index = null;
+	}
+
 	private static List<Entry> index() {
 		Minecraft client = Minecraft.getInstance();
 		String language = client.getLanguageManager().getSelected();
@@ -238,6 +257,14 @@ public final class AuctionSearch {
 				entries.add(new Entry(game, eng, new ItemStack(Items.ENCHANTED_BOOK), "enchantment:" + holder.key().identifier(), true,
 					fold(game), fold(eng)));
 			});
+		}
+		if (ModConfigManager.CONFIG.customItemsEnabled) {
+			for (CustomItems.Known known : CustomItems.known()) {
+				ItemStack icon = CustomItems.icon(known);
+				String base = icon.isEmpty() ? null : new ItemStack(icon.getItem()).getHoverName().getString();
+				entries.add(new Entry(known.name, known.name, icon, "custom:" + known.id, false, fold(known.name), fold(known.name),
+					true, known.limited, known.color, base));
+			}
 		}
 		index = entries;
 		indexLanguage = language;

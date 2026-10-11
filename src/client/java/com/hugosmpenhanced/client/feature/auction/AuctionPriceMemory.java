@@ -12,6 +12,7 @@ import java.util.Map;
 
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
+import com.hugosmpenhanced.client.config.ModConfigManager;
 
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
@@ -49,9 +50,19 @@ public final class AuctionPriceMemory {
 	private AuctionPriceMemory() {
 	}
 
-	/** Key for a stack: the item id, or the enchantment id for a book with exactly one enchantment. Null for renamed items. */
+	/**
+	 * Key for a stack: "custom:" and the id for a HugoSMP item, the item id, or the enchantment id for
+	 * a book with exactly one enchantment. Null for renamed items.
+	 */
 	public static String keyOf(ItemStack stack) {
-		if (stack.isEmpty() || stack.has(DataComponents.CUSTOM_NAME)) {
+		if (stack.isEmpty()) {
+			return null;
+		}
+		String custom = CustomItems.idOf(stack, true);
+		if (custom != null) {
+			return "custom:" + custom;
+		}
+		if (stack.has(DataComponents.CUSTOM_NAME)) {
 			return null;
 		}
 		if (stack.is(Items.ENCHANTED_BOOK)) {
@@ -67,10 +78,27 @@ public final class AuctionPriceMemory {
 
 	public static void record(ItemStack stack, double perItem, AuctionMarket market) {
 		String key = keyOf(stack);
-		if (key == null || perItem <= 0) {
+		if (key != null) {
+			recordKey(market.keyPrefix + key, perItem);
+		}
+	}
+
+	/** The best price per hour of time left seen for a limited item. */
+	public static void recordPerHour(ItemStack stack, double perHour, AuctionMarket market) {
+		String key = keyOf(stack);
+		if (key != null && ModConfigManager.CONFIG.auctionPriceMemoryEnabled) {
+			recordKey("perhour:" + market.keyPrefix + key, perHour);
+		}
+	}
+
+	public static Seen getPerHour(String key, AuctionMarket market) {
+		return key == null ? null : all().get("perhour:" + market.keyPrefix + key);
+	}
+
+	private static void recordKey(String key, double perItem) {
+		if (perItem <= 0 || !Double.isFinite(perItem)) {
 			return;
 		}
-		key = market.keyPrefix + key;
 		long now = System.currentTimeMillis();
 		Seen seen = all().computeIfAbsent(key, k -> new Seen());
 		if (seen.last == perItem && now - seen.lastAt < 60_000) {
