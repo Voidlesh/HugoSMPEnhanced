@@ -8,7 +8,7 @@ import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
 
 public final class TpaKeybinds {
-	private static final KeyMapping.Category CATEGORY =
+	public static final KeyMapping.Category CATEGORY =
 			KeyMapping.Category.register(Identifier.fromNamespaceAndPath("hugosmpenhanced", "tpa"));
 
 	public static KeyMapping acceptKey;

@@ -14,6 +14,8 @@ Früher Aufbau. Implementierte Features:
 - **Kompakte Tabliste** — skaliert die Tabliste (Halten von Tab) einstellbar herunter (`src/client/.../mixin/CompactTabListMixin.java`)
 - **"HugoSMP.net beitreten"-Button im Hauptmenü** — verbindet direkt, ohne den Server manuell in der Multiplayer-Liste einzutragen (`src/client/.../mixin/TitleScreenQuickJoinMixin.java`, nutzt Vanillas eigenen `ConnectScreen`-Verbindungsablauf)
 - **Chat-Filter** — Öffentlicher Chat/Systemnachrichten/Private Nachrichten/Clan/Freunde einzeln ausblendbar, erkannt an den echten HugoSMP-Präfixen (`[HugoSMP]`, `[Nachricht]`, `[Clan]`, `[Freunde]`); eigene Nachrichten werden nie ausgeblendet (`src/client/.../feature/chatfilter`, Mixin in `ClientPacketListener.handleSystemChat/handlePlayerChat/handleDisguisedChat`)
+- **Tastatur-Ansicht** — im Vanilla-Menü "Tastenbelegung" öffnet ein Button eine gezeichnete QWERTZ-Tastatur samt Maustasten: belegte Tasten grün, doppelt belegte rot (F3-Kombinationen und Zuschauer-Tasten zählen nicht als Doppelbelegung). Taste anklicken, rechts eine Aktion suchen und per Klick drauflegen oder mit ✕ entfernen (`src/client/.../feature/keyboard`)
+- **Screenshot-Galerie** — Button "Screenshots" unten links im Pause-Menü (oder eigene Taste, standardmäßig nicht belegt): Vorschaubilder seitenweise, Klick zeigt das Bild groß mit Kopieren (in die Zwischenablage, über PowerShell/osascript/xclip), Löschen und Im-Ordner-Zeigen (`src/client/.../feature/gallery`)
 
 Alle Features (außer dem Hauptmenü-Button, der ja vor jeder Verbindung greift) sind über `ServerCheck` (`src/client/.../util/ServerCheck.java`) auf Verbindungen zu `hugosmp.net` beschränkt — sie tun nichts auf anderen Servern.
 
