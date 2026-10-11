@@ -11,7 +11,11 @@ import dev.isxander.yacl3.api.OptionGroup;
 import dev.isxander.yacl3.api.YetAnotherConfigLib;
 import dev.isxander.yacl3.api.controller.BooleanControllerBuilder;
 import dev.isxander.yacl3.api.controller.DoubleSliderControllerBuilder;
+import dev.isxander.yacl3.api.controller.EnumControllerBuilder;
 import dev.isxander.yacl3.api.controller.StringControllerBuilder;
+import com.hugosmpenhanced.client.feature.mainmenu.MainMenuLayout;
+import com.hugosmpenhanced.client.feature.mainmenu.SplashAnimation;
+import com.hugosmpenhanced.client.feature.mainmenu.SplashColor;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -39,6 +43,7 @@ public final class ConfigScreenBuilder {
 						.group(chatGroup(config))
 						.group(chatFilterGroup(config))
 						.group(mainMenuGroup(config))
+						.group(splashTextsGroup(config))
 						.build())
 				.save(ModConfigManager::save)
 				.build()
@@ -259,6 +264,48 @@ public final class ConfigScreenBuilder {
 						.binding(true, () -> config.mainMenuButtonEnabled, v -> config.mainMenuButtonEnabled = v)
 						.controller(BooleanControllerBuilder::create)
 						.build())
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Eigenes Hauptmenü"))
+						.description(OptionDescription.of(Component.literal(
+								"Ersetzt das Minecraft-Hauptmenü durch das HugoSMP-Menü mit Logo und eigenem Splash-Text.")))
+						.binding(true, () -> config.mainMenuCustom, v -> config.mainMenuCustom = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.option(Option.<MainMenuLayout>createBuilder()
+						.name(Component.literal("Layout"))
+						.description(OptionDescription.of(Component.literal(
+								"Lässt sich auch direkt im Hauptmenü oben rechts umschalten.")))
+						.binding(MainMenuLayout.CLASSIC, () -> config.mainMenuLayout, v -> config.mainMenuLayout = v)
+						.controller(opt -> EnumControllerBuilder.create(opt).enumClass(MainMenuLayout.class))
+						.build())
+				.option(Option.<Boolean>createBuilder()
+						.name(Component.literal("Server-Karte (Seitenleiste)"))
+						.description(OptionDescription.of(Component.literal(
+								"Zeigt im Seitenleisten-Layout, ob HugoSMP.net online ist und wie viele Spieler drauf sind.")))
+						.binding(true, () -> config.mainMenuServerCard, v -> config.mainMenuServerCard = v)
+						.controller(BooleanControllerBuilder::create)
+						.build())
+				.option(Option.<SplashAnimation>createBuilder()
+						.name(Component.literal("Splash-Animation"))
+						.binding(SplashAnimation.PULSE, () -> config.splashAnimation, v -> config.splashAnimation = v)
+						.controller(opt -> EnumControllerBuilder.create(opt).enumClass(SplashAnimation.class))
+						.build())
+				.option(Option.<SplashColor>createBuilder()
+						.name(Component.literal("Splash-Farbe"))
+						.binding(SplashColor.YELLOW, () -> config.splashColor, v -> config.splashColor = v)
+						.controller(opt -> EnumControllerBuilder.create(opt).enumClass(SplashColor.class))
+						.build())
+				.build();
+	}
+
+	private static ListOption<String> splashTextsGroup(ModConfig config) {
+		return ListOption.<String>createBuilder()
+				.name(Component.literal("Splash-Texte"))
+				.description(OptionDescription.of(Component.literal(
+						"Bei jedem Öffnen des Hauptmenüs wird zufällig einer dieser Texte angezeigt. Leere Liste = kein Splash-Text.")))
+				.initial("")
+				.controller(StringControllerBuilder::create)
+				.binding(new ModConfig().splashTexts, () -> config.splashTexts, v -> config.splashTexts = v)
 				.build();
 	}
 }
