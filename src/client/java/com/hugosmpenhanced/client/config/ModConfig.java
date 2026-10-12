@@ -8,6 +8,9 @@ import java.util.Map;
 import java.util.Set;
 
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
+import com.hugosmpenhanced.client.feature.colorcodes.ColorCodes;
+import com.hugosmpenhanced.client.feature.colorcodes.ColorTemplate;
+import com.hugosmpenhanced.client.feature.colorcodes.HexStyle;
 import com.hugosmpenhanced.client.feature.discord.DiscordOutside;
 import com.hugosmpenhanced.client.feature.discord.DiscordTimer;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButton;
@@ -98,6 +101,13 @@ public class ModConfig {
 	public boolean hugoGuardGlow = true;
 	// Chat-Rechner
 	public boolean chatCalculatorEnabled = true;
+	// Farbcode-Editor (/rename, /sign)
+	public boolean colorChatPreview = true;
+	public HexStyle colorHexStyle = HexStyle.AMPERSAND_HASH;
+	public List<String> colorCommands = new ArrayList<>(List.of("rename", "sign"));
+	public List<ColorTemplate> colorTemplates = ColorCodes.defaultTemplates();
+	/** Last used RGB colours as "#RRGGBB", newest first. */
+	public List<String> colorRecent = new ArrayList<>();
 	// Notizblock
 	public List<Note> notes = new ArrayList<>();
 	public int notesHudX = 4;
