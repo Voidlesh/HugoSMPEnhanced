@@ -16,6 +16,7 @@ import com.hugosmpenhanced.client.feature.keyboard.KeyboardFeature;
 import com.hugosmpenhanced.client.feature.mentions.MentionHighlightFeature;
 import com.hugosmpenhanced.client.feature.notes.NotesFeature;
 import com.hugosmpenhanced.client.feature.sell.SellFeature;
+import com.hugosmpenhanced.client.feature.spawnerprices.SpawnerPricesFeature;
 import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
 import com.hugosmpenhanced.client.settings.SettingsFeature;
 import com.hugosmpenhanced.client.util.ServerCheck;
@@ -46,6 +47,7 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		HgCommand.register();
 		EntityHeatmap.register();
 		SellFeature.register();
+		SpawnerPricesFeature.register();
 		DiscordPresence.register();
 		ColorCodes.register();
 		AntiLeak.register();
