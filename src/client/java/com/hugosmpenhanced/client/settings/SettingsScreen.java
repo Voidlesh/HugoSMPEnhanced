@@ -275,9 +275,16 @@ public class SettingsScreen extends Screen implements StyledScreen {
 			List<SettingsTab> tabs = this.current().tabs();
 			int tx = this.contentLeft + 2;
 			int ty = this.fy + 37;
+			int[] widths = new int[tabs.size()];
 			for (int i = 0; i < tabs.size(); i++) {
-				String name = tabs.get(i).name();
-				int w = this.font.width(name);
+				widths[i] = this.font.width(tabs.get(i).name());
+			}
+			int gap = this.fitTabs(widths, this.fx + this.fw - 13 - tx);
+			for (int i = 0; i < tabs.size(); i++) {
+				String full = tabs.get(i).name();
+				int w = widths[i];
+				String name = this.font.width(full) > w ? this.ellipsize(full, w) : full;
+				w = this.font.width(name);
 				boolean selected = i == this.tab;
 				boolean over = this.inside(mouseX, mouseY, tx - 5, ty - 4, w + 10, 16);
 				if (selected) {
@@ -287,8 +294,11 @@ public class SettingsScreen extends Screen implements StyledScreen {
 					Theme.panel(graphics, tx - 5, ty - 4, w + 10, 16, 0xFF1E1E1E, 0);
 				}
 				graphics.drawString(this.font, name, tx, ty, selected ? Theme.WHITE : over ? Theme.TEXT : Theme.MUTED, selected);
+				if (over && !name.equals(full)) {
+					graphics.setTooltipForNextFrame(this.font, Component.literal(full), mouseX, mouseY);
+				}
 				this.tabBoxes.add(new int[] {tx - 5, ty - 4, w + 10, 16});
-				tx += w + 16;
+				tx += w + gap;
 			}
 		}
 		graphics.fill(this.contentLeft - 4, this.fy + 53, this.fx + this.fw - 8, this.fy + 54, Theme.FRAME_BORDER);
@@ -515,6 +525,55 @@ public class SettingsScreen extends Screen implements StyledScreen {
 	public void removed() {
 		this.stopCapturing(null);
 		ModConfigManager.save();
+	}
+
+	/**
+	 * Makes the tab row fit {@code room}: first the gaps shrink from 16 to 10, then the longest names
+	 * are cut (with "...") down to one common width, while the selected tab keeps its full name.
+	 * {@code widths} is changed in place; returns the gap to use.
+	 */
+	private int fitTabs(int[] widths, int room) {
+		int n = widths.length;
+		int total = 0;
+		for (int w : widths) {
+			total += w;
+		}
+		for (int gap = 16; gap >= 10; gap--) {
+			if (total + gap * (n - 1) <= room) {
+				return gap;
+			}
+		}
+		int gap = 10;
+		int left = room - gap * (n - 1);
+		int others = n;
+		if (this.tab >= 0 && this.tab < n) {
+			left -= widths[this.tab];
+			others--;
+		}
+		if (others <= 0) {
+			return gap;
+		}
+		// Largest common cap so that the capped names fit what is left.
+		int min = this.font.width("W...");
+		int cap = Math.max(min, left / others);
+		for (int c = cap; ; c++) {
+			int sum = 0;
+			for (int i = 0; i < n; i++) {
+				if (i != this.tab) {
+					sum += Math.min(widths[i], c);
+				}
+			}
+			if (sum > left || c > 400) {
+				cap = Math.max(min, c - 1);
+				break;
+			}
+		}
+		for (int i = 0; i < n; i++) {
+			if (i != this.tab) {
+				widths[i] = Math.min(widths[i], cap);
+			}
+		}
+		return gap;
 	}
 
 	private String ellipsize(String text, int width) {
