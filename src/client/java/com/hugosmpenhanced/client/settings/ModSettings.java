@@ -25,6 +25,13 @@ import com.hugosmpenhanced.client.feature.discord.DiscordStatusOption;
 import com.hugosmpenhanced.client.feature.discord.DiscordTimer;
 import com.hugosmpenhanced.client.feature.discord.StatusReader;
 import com.hugosmpenhanced.client.feature.entityheatmap.EntityHeatmap;
+import com.hugosmpenhanced.client.feature.streamer.ChatPatterns;
+import com.hugosmpenhanced.client.feature.streamer.DonationAuction;
+import com.hugosmpenhanced.client.feature.streamer.Giveaway;
+import com.hugosmpenhanced.client.feature.streamer.Money;
+import com.hugosmpenhanced.client.feature.streamer.StreamerFeature;
+import com.hugosmpenhanced.client.feature.streamer.StreamerScreen;
+import com.hugosmpenhanced.client.feature.streamer.TwitchChat;
 import com.hugosmpenhanced.client.feature.gallery.GalleryFeature;
 import com.hugosmpenhanced.client.feature.gallery.GalleryScreen;
 import com.hugosmpenhanced.client.feature.inventorylayout.InventoryLayout;
@@ -389,7 +396,7 @@ public final class ModSettings {
 	}
 
 	private static SettingsCategory tools() {
-		return new SettingsCategory("Werkzeuge", "tools", "Notizblock, Galerie, Tastatur und Farm-Heatmap",
+		return new SettingsCategory("Werkzeuge", "tools", "Notizblock, Galerie, Tastatur, Farm-Heatmap und Streamer-Tools",
 			new SettingsTab("Notizen",
 				new SettingsSection("Notizblock",
 					ButtonOption.page("Notizen öffnen", null, "Öffnen", () -> open(NotesScreen::new)),
@@ -416,7 +423,79 @@ public final class ModSettings {
 					SliderOption.ofInt("Cramming-Limit", "Ab hier rot, Server-Standard 24", 2, 100, v -> String.valueOf((int) v),
 						c -> c.entityHeatmapCrammingLimit, (c, v) -> c.entityHeatmapCrammingLimit = v),
 					SliderOption.ofInt("Anzeigen ab", "Blöcke mit weniger Entitäten ausblenden", 1, 20, v -> String.valueOf((int) v),
-						c -> c.entityHeatmapMinCount, (c, v) -> c.entityHeatmapMinCount = v))));
+						c -> c.entityHeatmapMinCount, (c, v) -> c.entityHeatmapMinCount = v))),
+			streamerTab());
+	}
+
+	private static SettingsTab streamerTab() {
+		return new SettingsTab("Streamer",
+			new SettingsSection("Streamer-Tools",
+				ButtonOption.page("Streamer-Panel", "Spenden-Auktion und Giveaway mit Glücksrad, auch per /streamer", "Öffnen",
+					() -> open(StreamerScreen::new)).keywords("auktion giveaway glücksrad stream"),
+				new KeyBindOption("Taste", null, () -> StreamerFeature.panelKey).keywords("streamer panel"),
+				toggle("Töne", "Gebote, Beitritte, Glücksrad und Gewinner", c -> c.streamerSounds, (c, v) -> c.streamerSounds = v)),
+			new SettingsSection("Spenden-Auktion",
+				toggle("Zahlungen zusammenrechnen", "2x $10.000 von einem Spieler = Gebot $20.000. Aus: nur die größte Zahlung zählt.",
+					c -> c.streamerSumPayments, (c, v) -> c.streamerSumPayments = v),
+				toggle("Spätes Gebot verlängert", "Ein neues Höchstgebot kurz vor Schluss setzt die Uhr wieder hoch",
+					c -> c.streamerExtendLateBids, (c, v) -> c.streamerExtendLateBids = v),
+				SliderOption.ofInt("Verlängern auf", null, 5, 60, v -> (int) v + " s",
+					c -> c.streamerExtendSeconds, (c, v) -> c.streamerExtendSeconds = v),
+				toggle("Ansagen im Chat", "Schreibt Start, neues Höchstgebot (höchstens alle 10 s) und Gewinner in den Chat",
+					c -> c.streamerAnnounce, (c, v) -> c.streamerAnnounce = v).keywords("broadcast nachricht")),
+			new SettingsSection("Zahlungen erkennen",
+				new InfoOption("Zuletzt erkannt", "Nur Server-Nachrichten zählen, Chat-Nachrichten von Spielern nie",
+					ModSettings::streamerLastPayment).keywords("pay zahlung"),
+				ButtonOption.action("Zahlungstext anlernen", "Falls HugoSMP Zahlungen anders schreibt: starten und dir $1 schicken lassen",
+					"Anlernen", () -> ChatPatterns.startLearning(ChatPatterns.Learning.PAYMENT)),
+				ButtonOption.action("Flüstertext anlernen", "Falls /msg-Beitritte nicht erkannt werden: starten und dir eine /msg schicken lassen",
+					"Anlernen", () -> ChatPatterns.startLearning(ChatPatterns.Learning.WHISPER)),
+				ButtonOption.danger("Angelerntes vergessen", "Zurück zu den eingebauten Texten", "Vergessen", () -> {
+					ChatPatterns.forget(ChatPatterns.Learning.PAYMENT);
+					ChatPatterns.forget(ChatPatterns.Learning.WHISPER);
+				}),
+				ButtonOption.action("Zahlungs-Protokoll", "Jede erkannte Zahlung mit Uhrzeit, zum Nachprüfen und Zurückzahlen",
+					"Ordner öffnen", () -> Util.getPlatform().openPath(DonationAuction.logFile().getParent()))),
+			new SettingsSection("Giveaway: Ingame",
+				toggle("Beitritt per /msg", "Zuschauer schreiben dir das Wort privat", c -> c.streamerIngameJoin, (c, v) -> c.streamerIngameJoin = v),
+				new TextOption("Wort", "Groß/klein egal, mit oder ohne !", "join", 24,
+					c -> c.streamerIngameJoinWord, (c, v) -> c.streamerIngameJoinWord = v)),
+			new SettingsSection("Giveaway: Twitch",
+				toggle("Beitritt über Twitch-Chat", "Liest nur mit, ohne Login. Verbindet nur, solange die Teilnahme offen ist.",
+					c -> c.streamerTwitchJoin, (c, v) -> c.streamerTwitchJoin = v),
+				new TextOption("Kanal", "Dein Twitch-Name oder der Link zum Kanal", "z. B. levi_hugo", 64,
+					c -> c.streamerTwitchChannel, (c, v) -> c.streamerTwitchChannel = v).keywords("twitch kanal channel"),
+				new TextOption("Befehl", "Mit MC-Namen dahinter klappt später auch TPA: !join Name", "!join", 24,
+					c -> c.streamerTwitchJoinWord, (c, v) -> c.streamerTwitchJoinWord = v),
+				toggle("Nur Subs, VIPs und Mods", null, c -> c.streamerTwitchSubsOnly, (c, v) -> c.streamerTwitchSubsOnly = v),
+				new InfoOption("Verbindung", null, ModSettings::streamerTwitchStatus)),
+			new SettingsSection("Glücksrad",
+				SliderOption.ofInt("Drehdauer", null, 3, 15, v -> (int) v + " s",
+					c -> c.streamerWheelSeconds, (c, v) -> c.streamerWheelSeconds = v)));
+	}
+
+	private static String streamerLastPayment() {
+		ChatPatterns.Payment last = ChatPatterns.lastPayment();
+		if (ChatPatterns.learning() != ChatPatterns.Learning.NONE) {
+			return "lerne gerade…";
+		}
+		return last == null ? "noch keine" : last.name() + " " + Money.format(last.amount());
+	}
+
+	private static String streamerTwitchStatus() {
+		var config = ModConfigManager.CONFIG;
+		if (!config.streamerTwitchJoin) {
+			return "aus";
+		}
+		if (TwitchChat.normalize(config.streamerTwitchChannel).isEmpty()) {
+			return "kein Kanal";
+		}
+		return switch (StreamerFeature.twitch().status()) {
+			case CONNECTED -> "verbunden";
+			case CONNECTING -> "verbindet…";
+			case FAILED -> "getrennt";
+			default -> Giveaway.open() ? "aus" : "wartet aufs Giveaway";
+		};
 	}
 
 	// ------------------------------------------------------------------ helpers
