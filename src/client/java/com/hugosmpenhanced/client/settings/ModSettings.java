@@ -150,10 +150,10 @@ public final class ModSettings {
 				new KeyBindOption("Ein/Aus-Taste", "Schaltet alles auf einmal, ohne Taste nur hier", () -> AntiLeak.toggleKey)
 					.keywords("anti-leak streamer")),
 			new SettingsSection("F3-Bildschirm",
-				toggle("Koordinaten verstecken", "X und Z in Position, Block, Chunk und \"Targeted Block\"",
+				toggle("Koordinaten verstecken", "X und Z in Position, Block, Chunk und \"Targeted Block\", auch mit BetterF3",
 					c -> c.antiLeakF3, (c, v) -> c.antiLeakF3 = v).keywords("f3 debug blur xyz"),
-				new CycleOption<>("Aussehen", "Die echten Ziffern werden nie gezeichnet", CoordinateMask.class,
-					c -> c.antiLeakF3Style, (c, v) -> c.antiLeakF3Style = v).keywords("f3 blur verschwommen"),
+				new CycleOption<>("Aussehen", "Die echten Ziffern werden nie gezeichnet. Zufällig zeigt jede Sekunde einen anderen erfundenen Ort.", CoordinateMask.class,
+					c -> c.antiLeakF3Style, (c, v) -> c.antiLeakF3Style = v).keywords("f3 blur verschwommen zufall random betterf3"),
 				toggle("Höhe (Y) zeigen", "Y allein verrät keinen Ort und hilft beim Abbauen",
 					c -> c.antiLeakShowY, (c, v) -> c.antiLeakShowY = v).keywords("f3 y höhe")),
 			new SettingsSection("Welt",
