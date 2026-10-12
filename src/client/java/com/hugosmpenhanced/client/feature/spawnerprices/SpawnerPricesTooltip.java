@@ -17,9 +17,8 @@ import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.world.item.component.TypedEntityData;
 
 /**
- * Adds the shown server's Ankauf and Verkauf (VOID Market by default) to the tooltip of every
- * spawner item: in the inventory, in chests, in the auction house. With a stack of several the
- * Ankauf is also given for the whole stack, and a better offer elsewhere is named.
+ * Adds VOID Market's Ankauf and Verkauf to the tooltip of every spawner item: in the inventory, in
+ * chests, in the auction house. With a stack of several the Ankauf is also given for the whole stack.
  */
 public final class SpawnerPricesTooltip {
 	private static final long STALE_MS = 60 * 60 * 1000L;
@@ -80,54 +79,35 @@ public final class SpawnerPricesTooltip {
 
 	/** The tooltip lines for a stack of {@code count} spawners of this mob. */
 	public static List<Component> lines(SpawnerMob mob, int count) {
+		MutableComponent header = Component.literal(SpawnerPrices.SERVER).withStyle(ChatFormatting.LIGHT_PURPLE);
 		SpawnerPrices.Snapshot snapshot = SpawnerPrices.snapshot();
-		String wanted = ModConfigManager.CONFIG.spawnerPricesServer;
-		MutableComponent header = Component.literal(wanted).withStyle(ChatFormatting.LIGHT_PURPLE);
 		if (snapshot == null) {
 			return List.of(header, Component.literal(SpawnerPrices.state() == SpawnerPrices.State.FAILED
 				? " Preise gerade nicht erreichbar" : " Preise werden geladen…").withStyle(ChatFormatting.DARK_GRAY));
 		}
-		SpawnerPrices.Server server = snapshot.server(wanted);
-		if (server == null) {
-			return List.of(header, Component.literal(" Nicht auf hugosmptools.com gelistet").withStyle(ChatFormatting.DARK_GRAY));
-		}
-		Long buy = server.buy(mob);
-		Long sell = server.sell(mob);
-		if (buy == null && sell == null && snapshot.bestBuy(mob) == null && snapshot.bestSell(mob) == null) {
-			return List.of(Component.literal(server.name()).withStyle(ChatFormatting.LIGHT_PURPLE),
-				Component.literal(" Kein Server handelt " + mob.label + "-Spawner").withStyle(ChatFormatting.DARK_GRAY));
-		}
+		SpawnerPrices.Server server = snapshot.server();
+		Long buy = server != null ? server.buy(mob) : null;
+		Long sell = server != null ? server.sell(mob) : null;
 		List<Component> lines = new ArrayList<>();
-		lines.add(Component.literal(server.name()).withStyle(ChatFormatting.LIGHT_PURPLE));
-
-		MutableComponent buyLine = Component.literal(" Ankauf: ").withStyle(ChatFormatting.GRAY);
-		if (buy != null) {
-			buyLine.append(Component.literal(SpawnerPrices.format(buy)).withStyle(ChatFormatting.GREEN));
-			if (count > 1) {
-				buyLine.append(Component.literal("  (" + count + "× = " + SpawnerPrices.format(buy * count) + ")")
-					.withStyle(ChatFormatting.DARK_GREEN));
-			}
+		lines.add(header);
+		if (buy == null && sell == null) {
+			lines.add(Component.literal(" Handelt gerade keine " + mob.label + "-Spawner").withStyle(ChatFormatting.DARK_GRAY));
 		} else {
-			buyLine.append(Component.literal("kein Angebot").withStyle(ChatFormatting.DARK_GRAY));
-		}
-		lines.add(buyLine);
-
-		MutableComponent sellLine = Component.literal(" Verkauf: ").withStyle(ChatFormatting.GRAY);
-		sellLine.append(sell != null ? Component.literal(SpawnerPrices.format(sell)).withStyle(ChatFormatting.GOLD)
-			: Component.literal("kein Angebot").withStyle(ChatFormatting.DARK_GRAY));
-		lines.add(sellLine);
-
-		if (ModConfigManager.CONFIG.spawnerPricesCompareBest) {
-			SpawnerPrices.Best bestBuy = snapshot.bestBuy(mob);
-			if (bestBuy != null && bestBuy.server() != server && (buy == null || bestBuy.price() > buy)) {
-				lines.add(Component.literal(" Mehr bei " + bestBuy.server().name() + ": ").withStyle(ChatFormatting.DARK_GRAY)
-					.append(Component.literal(SpawnerPrices.format(bestBuy.price())).withStyle(ChatFormatting.YELLOW)));
+			MutableComponent buyLine = Component.literal(" Ankauf: ").withStyle(ChatFormatting.GRAY);
+			if (buy != null) {
+				buyLine.append(Component.literal(SpawnerPrices.format(buy)).withStyle(ChatFormatting.GREEN));
+				if (count > 1) {
+					buyLine.append(Component.literal("  (" + count + "× = " + SpawnerPrices.format(buy * count) + ")")
+						.withStyle(ChatFormatting.DARK_GREEN));
+				}
+			} else {
+				buyLine.append(Component.literal("kein Angebot").withStyle(ChatFormatting.DARK_GRAY));
 			}
-			SpawnerPrices.Best bestSell = snapshot.bestSell(mob);
-			if (bestSell != null && bestSell.server() != server && (sell == null || bestSell.price() < sell)) {
-				lines.add(Component.literal(" Günstiger bei " + bestSell.server().name() + ": ").withStyle(ChatFormatting.DARK_GRAY)
-					.append(Component.literal(SpawnerPrices.format(bestSell.price())).withStyle(ChatFormatting.YELLOW)));
-			}
+			lines.add(buyLine);
+			MutableComponent sellLine = Component.literal(" Verkauf: ").withStyle(ChatFormatting.GRAY);
+			sellLine.append(sell != null ? Component.literal(SpawnerPrices.format(sell)).withStyle(ChatFormatting.GOLD)
+				: Component.literal("kein Angebot").withStyle(ChatFormatting.DARK_GRAY));
+			lines.add(sellLine);
 		}
 		if (System.currentTimeMillis() - snapshot.fetchedAt() > STALE_MS) {
 			lines.add(Component.literal(" Stand " + SpawnerPrices.age(snapshot.fetchedAt())).withStyle(ChatFormatting.DARK_GRAY));
