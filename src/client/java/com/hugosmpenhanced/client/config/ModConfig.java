@@ -158,7 +158,6 @@ public class ModConfig {
 	public String sellCommand = "sell";
 	// Discord Rich Presence
 	public boolean discordEnabled = true;
-	public String discordAppId = "";
 	public String discordDetails = "{ort}";
 	public String discordState = "{geld} · {kills} Kills · {tode} Tode · K/D {kd}";
 	public boolean discordShowLocation = true;

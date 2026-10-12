@@ -203,10 +203,7 @@ public final class ModSettings {
 				SliderOption.ofInt("Spawn-Radius", "So nah am Weltspawn zählt als Spawn, 0 = aus", 0, 500, v -> (int) v + " Blöcke",
 					c -> c.discordSpawnRadius, (c, v) -> c.discordSpawnRadius = v),
 				new TextOption("Sonst", "Wenn nichts erkannt wird", "leer = kein Ort", 32,
-					c -> c.discordFallbackLocation, (c, v) -> c.discordFallbackLocation = v)),
-			new SettingsSection("Discord-App",
-				new TextOption("Application-ID", "Aus dem Discord Developer Portal. Ihr Name steht als \"Spielt ...\" im Profil.",
-					"Zahl, z. B. 1234567890123456789", 25, c -> c.discordAppId, (c, v) -> c.discordAppId = v).keywords("client id")));
+					c -> c.discordFallbackLocation, (c, v) -> c.discordFallbackLocation = v)));
 	}
 
 	private static String discordDetected() {
