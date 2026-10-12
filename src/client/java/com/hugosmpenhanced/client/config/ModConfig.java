@@ -51,6 +51,11 @@ public class ModConfig {
 	public boolean limitedItemsHighlightBest = true;
 	public int limitedItemsLifetimeHours = 72;
 
+	// Spawner-Preise von hugosmptools.com/trading
+	public boolean spawnerPricesTooltip = true;
+	public boolean spawnerPricesCompareBest = true;
+	public String spawnerPricesServer = "VOID Market";
+
 	// TPA-Toast
 	public boolean tpaToastEnabled = true;
 

@@ -20,7 +20,8 @@
 			"com.hugosmpenhanced.test.SellGameTest",
 			"com.hugosmpenhanced.test.DiscordPresenceGameTest",
 			"com.hugosmpenhanced.test.ColorCodesGameTest",
-			"com.hugosmpenhanced.test.AntiLeakGameTest"
+			"com.hugosmpenhanced.test.AntiLeakGameTest",
+			"com.hugosmpenhanced.test.SpawnerPricesGameTest"
 		],
 		"main": [
 			"com.hugosmpenhanced.test.TestSellServer",
