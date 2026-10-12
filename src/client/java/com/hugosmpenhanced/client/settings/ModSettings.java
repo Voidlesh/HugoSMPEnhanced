@@ -155,7 +155,7 @@ public final class ModSettings {
 					c -> c.streamerModeEnabled, (c, v) -> c.streamerModeEnabled = v).keywords("streamer stream namen verstecken name hider"),
 				new KeyBindOption("Ein/Aus-Taste", "Ohne Taste nur hier", () -> StreamerMode.toggleKey)
 					.keywords("streamer-modus namen"),
-				new InfoOption("Gerade versteckt", null, ModSettings::streamerModeStatus)),
+				new InfoOption("Versteckt", null, ModSettings::streamerModeStatus)),
 			new SettingsSection("Dein Name",
 				toggle("Eigenen Namen verstecken", null,
 					c -> c.streamerModeHideOwn, (c, v) -> c.streamerModeHideOwn = v).keywords("eigener name"),
@@ -181,7 +181,7 @@ public final class ModSettings {
 	private static String streamerModeStatus() {
 		ModConfig config = ModConfigManager.CONFIG;
 		if (!config.streamerModeEnabled) {
-			return "Nichts, Streamer-Modus ist aus";
+			return "Nichts, Modus ist aus";
 		}
 		int others = StreamerMode.hiddenOthers();
 		String own = config.streamerModeHideOwn ? "Dein Name" : null;
