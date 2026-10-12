@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.hugosmpenhanced.client.feature.antileak.CoordinateMask;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
 import com.hugosmpenhanced.client.feature.colorcodes.ColorCodes;
 import com.hugosmpenhanced.client.feature.colorcodes.ColorTemplate;
@@ -173,4 +174,13 @@ public class ModConfig {
 		"lobby=Spawn", "farmwelt=Farmwelt", "smp=SMP", "survival=SMP"));
 	public int discordSpawnRadius = 150;
 	public String discordFallbackLocation = "SMP";
+	// Anti-Leak (Streamer-Schutz)
+	public boolean antiLeakEnabled = false;
+	public boolean antiLeakF3 = true;
+	public CoordinateMask antiLeakF3Style = CoordinateMask.BLUR;
+	public boolean antiLeakShowY = true;
+	public boolean antiLeakBedrock = true;
+	public boolean antiLeakOres = false;
+	public boolean antiLeakNoRotation = true;
+	public boolean antiLeakClouds = true;
 }

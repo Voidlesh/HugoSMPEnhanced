@@ -2,6 +2,7 @@
 	"required": true,
 	"minVersion": "0.8",
 	"package": "com.hugosmpenhanced.client.mixin",
+	"plugin": "com.hugosmpenhanced.client.mixin.HugoMixinPlugin",
 	"mixins": [
 		"TpaSystemChatMixin",
 		"PersistentChatMixin",
@@ -28,7 +29,16 @@
 		"AuctionSearchSignMixin",
 		"InventoryLayoutSlotMixin",
 		"LimitedOfferSlotMixin",
-		"PlayerTabOverlayAccessor"
+		"PlayerTabOverlayAccessor",
+		"AntiLeakDebugOverlayMixin",
+		"AntiLeakLookingAtBlockMixin",
+		"AntiLeakSectionRegionMixin",
+		"AntiLeakSodiumLevelSliceMixin",
+		"AntiLeakBlockStateMixin",
+		"BlockBehaviourAccessor",
+		"ClientLevelDataAccessor",
+		"AntiLeakTerrainParticleMixin",
+		"AntiLeakCloudMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

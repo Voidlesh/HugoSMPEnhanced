@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client;
 
+import com.hugosmpenhanced.client.feature.antileak.AntiLeak;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearch;
 import com.hugosmpenhanced.client.feature.auction.LimitedOffers;
 import com.hugosmpenhanced.client.feature.auction.PricePerItemFeature;
@@ -47,6 +48,7 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		SellFeature.register();
 		DiscordPresence.register();
 		ColorCodes.register();
+		AntiLeak.register();
 		LOGGER.info("HugoSMP Enhanced loaded");
 	}
 }
