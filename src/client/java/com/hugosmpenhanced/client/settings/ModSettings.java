@@ -40,6 +40,8 @@ import com.hugosmpenhanced.client.feature.sell.SellFeature;
 import com.hugosmpenhanced.client.feature.sell.SellHudPosition;
 import com.hugosmpenhanced.client.feature.sell.SellRulesOption;
 import com.hugosmpenhanced.client.feature.sell.SellSpeed;
+import com.hugosmpenhanced.client.feature.spawnerprices.SpawnerPrices;
+import com.hugosmpenhanced.client.feature.spawnerprices.SpawnerPricesScreen;
 import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
 import com.hugosmpenhanced.client.settings.option.ButtonOption;
 import com.hugosmpenhanced.client.settings.option.CycleOption;
@@ -338,7 +340,22 @@ public final class ModSettings {
 					SliderOption.ofInt("Lebensdauer", "Ab Erstelldatum", 1, 168,
 						v -> (int) v + " Std" + ((int) v % 24 == 0 ? " (" + (int) v / 24 + " T)" : ""),
 						c -> c.limitedItemsLifetimeHours, (c, v) -> c.limitedItemsLifetimeHours = v).keywords("limitiert tage"))),
+			spawnerTab(),
 			sellTab());
+	}
+
+	private static SettingsTab spawnerTab() {
+		return new SettingsTab("Spawner",
+			new SettingsSection("Spawner-Preise",
+				toggle("Preise im Tooltip", "Ankauf und Verkauf bei jedem Spawner-Item, nur auf HugoSMP",
+					c -> c.spawnerPricesTooltip, (c, v) -> c.spawnerPricesTooltip = v).keywords("spawner preis void market ankauf verkauf"),
+				toggle("Besseren Kurs nennen", "Zeigt, wenn ein anderer Server mehr zahlt oder weniger verlangt",
+					c -> c.spawnerPricesCompareBest, (c, v) -> c.spawnerPricesCompareBest = v).keywords("spawner vergleich"),
+				new TextOption("Server", "Name wie auf hugosmptools.com/trading", "VOID Market", 40,
+					c -> c.spawnerPricesServer, (c, v) -> c.spawnerPricesServer = v.isBlank() ? "VOID Market" : v.strip()).keywords("void market"),
+				ButtonOption.page("Alle Spawner-Preise", "Auch per /spawnerpreise", "Öffnen", () -> open(SpawnerPricesScreen::new)),
+				new InfoOption("Stand", "Preise von hugosmptools.com/trading, alle 5 Minuten neu",
+					() -> SpawnerPrices.snapshot() == null ? "noch nicht geladen" : SpawnerPrices.age(SpawnerPrices.snapshot().fetchedAt()))));
 	}
 
 	private static SettingsTab sellTab() {
