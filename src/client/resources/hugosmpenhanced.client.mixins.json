@@ -43,7 +43,13 @@
 		"AntiLeakCloudMixin",
 		"StreamerModeFontMixin",
 		"StreamerModeWrapMixin",
-		"StreamerModeSkinMixin"
+		"StreamerModeSkinMixin",
+		"SettingsKeyMixin",
+		"ClientFullbrightMixin",
+		"ClientZoomFovMixin",
+		"ClientZoomMouseMixin",
+		"ClientFireOverlayMixin",
+		"ClientPumpkinOverlayMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

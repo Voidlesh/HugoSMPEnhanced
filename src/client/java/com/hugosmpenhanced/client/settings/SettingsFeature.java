@@ -17,14 +17,24 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.SpriteIconButton;
 import net.minecraft.client.gui.components.Tooltip;
+import net.minecraft.client.gui.components.toasts.SystemToast;
 import net.minecraft.client.gui.screens.PauseScreen;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.contents.TranslatableContents;
 
-/** Opens the settings menu with a key (O by default) and from a logo button in the pause menu. */
+/**
+ * Opens the settings menu with a key (O by default) and from a logo button in the pause menu.
+ *
+ * <p>Since 1.21.9 several key bindings can share a key and all of them fire. Iris, for one, opens
+ * its shader pack screen on O as well, and whichever mod sets its screen last wins. So the press is
+ * taken straight from the keyboard ({@link #onKeyPress}) before any binding sees it, and the first
+ * time another binding is passed over that way, a toast names it.
+ */
 public final class SettingsFeature {
 	public static KeyMapping openKey;
+	private static boolean conflictShown;
 
 	private SettingsFeature() {
 	}
@@ -49,6 +59,41 @@ public final class SettingsFeature {
 				addPauseButton(screen, scaledHeight);
 			}
 		});
+	}
+
+	/**
+	 * Called from the keyboard before key bindings are updated. Returns true when the press opened
+	 * the menu, so no other binding on the same key reacts to it.
+	 */
+	public static boolean onKeyPress(KeyEvent event) {
+		Minecraft client = Minecraft.getInstance();
+		if (openKey == null || openKey.isUnbound() || client.screen != null || client.player == null
+			|| client.getOverlay() != null || !openKey.matches(event) || client.options.keyDebugModifier.isDown()) {
+			return false;
+		}
+		client.setScreen(new SettingsScreen(null));
+		KeyMapping other = conflictingMapping();
+		if (other != null && !conflictShown) {
+			conflictShown = true;
+			client.getToastManager().addToast(SystemToast.multiline(client, SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+				Component.literal("Taste " + openKey.getTranslatedKeyMessage().getString() + " ist doppelt belegt"),
+				Component.literal("Auch \"").append(Component.translatable(other.getName()))
+					.append("\". HugoSMP Enhanced hat Vorrang, ändern unter Allgemein > Menü.")));
+		}
+		return true;
+	}
+
+	/** Another binding on the menu key, F3 combinations left out (they only fire together with F3). */
+	public static KeyMapping conflictingMapping() {
+		if (openKey == null || openKey.isUnbound()) {
+			return null;
+		}
+		for (KeyMapping other : Minecraft.getInstance().options.keyMappings) {
+			if (other != openKey && other.same(openKey) && !other.getName().startsWith("key.debug.")) {
+				return other;
+			}
+		}
+		return null;
 	}
 
 	/** Third icon right of "Back to Game", after the camera and the notepad. */
