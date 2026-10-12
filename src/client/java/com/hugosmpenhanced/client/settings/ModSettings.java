@@ -347,14 +347,10 @@ public final class ModSettings {
 	private static SettingsTab spawnerTab() {
 		return new SettingsTab("Spawner",
 			new SettingsSection("Spawner-Preise",
-				toggle("Preise im Tooltip", "Ankauf und Verkauf bei jedem Spawner-Item, nur auf HugoSMP",
+				toggle("Preise im Tooltip", "Ankauf und Verkauf von VOID Market bei jedem Spawner-Item, nur auf HugoSMP",
 					c -> c.spawnerPricesTooltip, (c, v) -> c.spawnerPricesTooltip = v).keywords("spawner preis void market ankauf verkauf"),
-				toggle("Besseren Kurs nennen", "Zeigt, wenn ein anderer Server mehr zahlt oder weniger verlangt",
-					c -> c.spawnerPricesCompareBest, (c, v) -> c.spawnerPricesCompareBest = v).keywords("spawner vergleich"),
-				new TextOption("Server", "Name wie auf hugosmptools.com/trading", "VOID Market", 40,
-					c -> c.spawnerPricesServer, (c, v) -> c.spawnerPricesServer = v.isBlank() ? "VOID Market" : v.strip()).keywords("void market"),
 				ButtonOption.page("Alle Spawner-Preise", "Auch per /spawnerpreise", "Öffnen", () -> open(SpawnerPricesScreen::new)),
-				new InfoOption("Stand", "Preise von hugosmptools.com/trading, alle 5 Minuten neu",
+				new InfoOption("Stand", "VOID-Market-Preise, alle 5 Minuten neu",
 					() -> SpawnerPrices.snapshot() == null ? "noch nicht geladen" : SpawnerPrices.age(SpawnerPrices.snapshot().fetchedAt()))));
 	}
 

@@ -20,7 +20,6 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.hugosmpenhanced.client.HugoSmpEnhancedClient;
-import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.util.ServerCheck;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -28,8 +27,8 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.util.Util;
 
 /**
- * Spawner buy and sell prices of the Discord trading servers, from the public list on
- * hugosmptools.com/trading (voidbot pushes VOID Market's prices there). Refreshed every five
+ * VOID Market's spawner buy and sell prices, from the public list on hugosmptools.com/trading
+ * (voidbot pushes them there). Other servers on that list are ignored on purpose. Refreshed every five
  * minutes while on HugoSMP; the last answer is kept on disk, so tooltips have prices right after
  * joining and while the site is down.
  *
@@ -38,6 +37,8 @@ import net.minecraft.util.Util;
  */
 public final class SpawnerPrices {
 	public static final String SITE = "https://hugosmptools.com/trading";
+	/** The only server whose prices the mod shows. */
+	public static final String SERVER = "VOID Market";
 	private static final String DEFAULT_API = "https://hugosmptools.com/api/public/trading";
 	private static final String USER_AGENT = "Mozilla/5.0 (compatible; HugoSMPEnhanced/1.0; +https://github.com/Voidlesh/HugoSMPEnhanced)";
 	private static final Path CACHE = FabricLoader.getInstance().getConfigDir().resolve("hugosmpenhanced-spawner-prices.json");
@@ -71,47 +72,8 @@ public final class SpawnerPrices {
 		}
 	}
 
-	/** The best price of one direction and who offers it. */
-	public record Best(long price, Server server) {
-	}
-
-	public record Snapshot(List<Server> servers, long fetchedAt) {
-		public Server server(String name) {
-			if (name == null) {
-				return null;
-			}
-			String wanted = normalize(name);
-			for (Server server : this.servers) {
-				if (normalize(server.name()).equals(wanted) || server.id().equalsIgnoreCase(name)) {
-					return server;
-				}
-			}
-			return null;
-		}
-
-		/** Highest Ankauf (you get the most), or null. */
-		public Best bestBuy(SpawnerMob mob) {
-			Best best = null;
-			for (Server server : this.servers) {
-				Long price = server.buy(mob);
-				if (price != null && price > 0 && (best == null || price > best.price())) {
-					best = new Best(price, server);
-				}
-			}
-			return best;
-		}
-
-		/** Lowest Verkauf (you pay the least), or null. */
-		public Best bestSell(SpawnerMob mob) {
-			Best best = null;
-			for (Server server : this.servers) {
-				Long price = server.sell(mob);
-				if (price != null && price > 0 && (best == null || price < best.price())) {
-					best = new Best(price, server);
-				}
-			}
-			return best;
-		}
+	/** VOID Market's entry, or a null server if the list no longer has it. */
+	public record Snapshot(Server server, long fetchedAt) {
 	}
 
 	public enum State {
@@ -186,10 +148,10 @@ public final class SpawnerPrices {
 		return lastError;
 	}
 
-	/** The server whose prices the tooltip shows (VOID Market unless changed in the config). */
-	public static Server shownServer() {
+	/** VOID Market's prices, or null before the first load or if it is not listed. */
+	public static Server voidMarket() {
 		Snapshot current = snapshot;
-		return current != null ? current.server(ModConfigManager.CONFIG.spawnerPricesServer) : null;
+		return current != null ? current.server() : null;
 	}
 
 	private static boolean fetch() {
@@ -223,7 +185,6 @@ public final class SpawnerPrices {
 		if (!body.has("ok") || !body.get("ok").getAsBoolean() || !body.has("servers") || !body.get("servers").isJsonArray()) {
 			throw new IllegalStateException("unexpected answer");
 		}
-		List<Server> servers = new ArrayList<>();
 		for (JsonElement element : body.getAsJsonArray("servers")) {
 			if (!element.isJsonObject()) {
 				continue;
@@ -231,7 +192,7 @@ public final class SpawnerPrices {
 			JsonObject server = element.getAsJsonObject();
 			String id = string(server, "id");
 			String name = string(server, "name");
-			if (id == null || name == null) {
+			if (id == null || name == null || !normalize(name).equals(normalize(SERVER))) {
 				continue;
 			}
 			List<Offer> offers = new ArrayList<>();
@@ -244,12 +205,12 @@ public final class SpawnerPrices {
 			}
 			String invite = string(server, "invite");
 			offers = List.copyOf(offers);
-			servers.add(new Server(id, name, invite != null && invite.startsWith("https://") ? invite : null,
+			return new Snapshot(new Server(id, name, invite != null && invite.startsWith("https://") ? invite : null,
 				server.has("members") && server.get("members").isJsonPrimitive() ? server.get("members").getAsInt() : 0,
 				server.has("verified") && server.get("verified").isJsonPrimitive() && server.get("verified").getAsBoolean(),
-				string(server, "note"), offers));
+				string(server, "note"), offers), fetchedAt);
 		}
-		return new Snapshot(List.copyOf(servers), fetchedAt);
+		return new Snapshot(null, fetchedAt);
 	}
 
 	private static Snapshot readCache() {
