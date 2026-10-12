@@ -11,6 +11,8 @@ import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.config.NametagStyleScreen;
 import com.hugosmpenhanced.client.config.SecondNametagScreen;
+import com.hugosmpenhanced.client.feature.antileak.AntiLeak;
+import com.hugosmpenhanced.client.feature.antileak.CoordinateMask;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
 import com.hugosmpenhanced.client.feature.auction.CustomItems;
 import com.hugosmpenhanced.client.feature.colorcodes.ColorCodeScreen;
@@ -96,7 +98,7 @@ public final class ModSettings {
 	// ------------------------------------------------------------------ categories
 
 	private static SettingsCategory general() {
-		return new SettingsCategory("Allgemein", "general", "Menü, Hauptmenü und Discord",
+		return new SettingsCategory("Allgemein", "general", "Menü, Discord und Anti-Leak",
 			new SettingsTab("Menü",
 				new SettingsSection("Menü",
 					new KeyBindOption("Menü öffnen", "Taste für dieses Menü, überall im Spiel", () -> SettingsFeature.openKey),
@@ -126,7 +128,36 @@ public final class ModSettings {
 					new CycleOption<>("Farbe", null, SplashColor.class, c -> c.splashColor, (c, v) -> c.splashColor = v),
 					new StringListOption("Eigene Splash-Texte", "Bei jedem Öffnen wird zufällig einer gezeigt",
 						"Keine, dann ohne Splash-Text", c -> c.splashTexts, (c, v) -> c.splashTexts = v))),
-			discordTab());
+			discordTab(),
+			antiLeakTab());
+	}
+
+	private static SettingsTab antiLeakTab() {
+		return new SettingsTab("Anti-Leak",
+			new SettingsSection("Anti-Leak",
+				toggle("Anti-Leak aktiviert", "Für Streams und Videos: versteckt, woran Zuschauer deine Position erkennen könnten. "
+					+ "Nur die Anzeige ändert sich, Spiel und Server merken nichts.",
+					c -> c.antiLeakEnabled, (c, v) -> c.antiLeakEnabled = v).keywords("streamer stream koordinaten leak schutz"),
+				new KeyBindOption("Ein/Aus-Taste", "Schaltet alles auf einmal, ohne Taste nur hier", () -> AntiLeak.toggleKey)
+					.keywords("anti-leak streamer")),
+			new SettingsSection("F3-Bildschirm",
+				toggle("Koordinaten verstecken", "X und Z in Position, Block, Chunk und \"Targeted Block\"",
+					c -> c.antiLeakF3, (c, v) -> c.antiLeakF3 = v).keywords("f3 debug blur xyz"),
+				new CycleOption<>("Aussehen", "Die echten Ziffern werden nie gezeichnet", CoordinateMask.class,
+					c -> c.antiLeakF3Style, (c, v) -> c.antiLeakF3Style = v).keywords("f3 blur verschwommen"),
+				toggle("Höhe (Y) zeigen", "Y allein verrät keinen Ort und hilft beim Abbauen",
+					c -> c.antiLeakShowY, (c, v) -> c.antiLeakShowY = v).keywords("f3 y höhe")),
+			new SettingsSection("Welt",
+				toggle("Bedrock-Muster verstecken", "Die Schichten über dem Bedrock-Boden (und unter der Nether-Decke) "
+					+ "werden als glatter Bedrock gezeigt, auch Gänge darin",
+					c -> c.antiLeakBedrock, (c, v) -> c.antiLeakBedrock = v).keywords("bedrock seed"),
+				toggle("Erze tarnen", "Erze sehen aus wie Stein, Tiefenschiefer oder Netherrack. Achtung: auch du siehst sie dann nicht.",
+					c -> c.antiLeakOres, (c, v) -> c.antiLeakOres = v).keywords("erz ore diamant xray seed"),
+				toggle("Keine Block-Rotation", "Erde, Gras, Sand und Co. sind nicht mehr zufällig gedreht, Blumen und Gras "
+					+ "stehen mittig. Beides hängt sonst nur von der Position ab.",
+					c -> c.antiLeakNoRotation, (c, v) -> c.antiLeakNoRotation = v).keywords("textur rotation drehung versatz"),
+				toggle("Wolken verschieben", "Das Wolkenmuster passt sonst zu X und Z, es wird bei jedem Start zufällig versetzt",
+					c -> c.antiLeakClouds, (c, v) -> c.antiLeakClouds = v).keywords("wolken clouds")));
 	}
 
 	private static SettingsTab discordTab() {
