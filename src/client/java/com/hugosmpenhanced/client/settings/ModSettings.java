@@ -3,6 +3,7 @@ package com.hugosmpenhanced.client.settings;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
+import java.util.function.DoubleFunction;
 import java.util.function.Function;
 
 import com.hugosmpenhanced.client.HugoSmpEnhancedClient;
@@ -15,6 +16,9 @@ import com.hugosmpenhanced.client.feature.antileak.AntiLeak;
 import com.hugosmpenhanced.client.feature.antileak.CoordinateMask;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
 import com.hugosmpenhanced.client.feature.auction.CustomItems;
+import com.hugosmpenhanced.client.feature.client.ClientTweaks;
+import com.hugosmpenhanced.client.feature.client.HudCorner;
+import com.hugosmpenhanced.client.feature.client.Zoom;
 import com.hugosmpenhanced.client.feature.colorcodes.ColorCodeScreen;
 import com.hugosmpenhanced.client.feature.colorcodes.ColorCodes;
 import com.hugosmpenhanced.client.feature.colorcodes.HexStyle;
@@ -63,10 +67,19 @@ import com.hugosmpenhanced.client.settings.option.SliderOption;
 import com.hugosmpenhanced.client.settings.option.StringListOption;
 import com.hugosmpenhanced.client.settings.option.TextOption;
 import com.hugosmpenhanced.client.settings.option.ToggleOption;
+import com.hugosmpenhanced.client.settings.option.ValueOption;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.OptionInstance;
+import net.minecraft.client.Options;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.client.gui.screens.options.OptionsScreen;
+import net.minecraft.client.gui.screens.options.SoundOptionsScreen;
+import net.minecraft.client.gui.screens.options.VideoSettingsScreen;
+import net.minecraft.client.gui.screens.options.controls.KeyBindsScreen;
+import net.minecraft.network.chat.Component;
+import net.minecraft.sounds.SoundSource;
 import net.minecraft.util.Util;
 
 /**
@@ -81,7 +94,7 @@ public final class ModSettings {
 
 	public static List<SettingsCategory> categories() {
 		if (categories == null) {
-			categories = List.of(general(), chat(), players(), inventory(), tools());
+			categories = List.of(general(), client(), chat(), players(), inventory(), tools());
 		}
 		return categories;
 	}
@@ -98,10 +111,10 @@ public final class ModSettings {
 		return all;
 	}
 
-	/** Puts every option back to its default; notes, buttons, layouts and AH history stay. */
+	/** Puts every option back to its default; notes, buttons, layouts, AH history and Minecraft's own options stay. */
 	public static void resetAll() {
 		for (SettingsOption option : allOptions()) {
-			if (option.hasDefault() && !option.isDefault()) {
+			if (option.hasDefault() && !option.isDefault() && !option.minecraftOption()) {
 				option.reset();
 			}
 		}
@@ -292,6 +305,122 @@ public final class ModSettings {
 		}
 		StatusReader.Reading reading = StatusReader.last();
 		return reading.location() == null ? "nichts" : reading.location() + " (" + reading.locationSource() + ")";
+	}
+
+	private static SettingsCategory client() {
+		return new SettingsCategory("Client", "client", "Minecraft-Einstellungen, Anzeige und Zoom",
+			new SettingsTab("Minecraft",
+				new SettingsSection("Grafik",
+					intSlider("Sichtweite", null, 2, 32, v -> (int) v + " Chunks", Options::renderDistance, 12)
+						.max(() -> ((OptionInstance.IntRange) Minecraft.getInstance().options.renderDistance().values()).maxInclusive())
+						.applyOnRelease().keywords("render distance chunks"),
+					intSlider("Sichtfeld", null, 30, 110, v -> (int) v == 70 ? "Normal" : (int) v == 110 ? "Quake Pro" : String.valueOf((int) v),
+						Options::fov, 70).keywords("fov"),
+					new SliderOption("Max. Bildrate", null, 10, 260, 10, v -> v >= 260 ? "Unbegrenzt" : (int) v + " FPS",
+						intBinding(Options::framerateLimit, 120)).applyOnRelease().keywords("fps framerate limit"),
+					new ToggleOption("VSync", "Gleicht die Bildrate an den Monitor an, gegen Bildrisse",
+						ValueOption.vanilla(Options::enableVsync, true)),
+					new ToggleOption("Vollbild", "Auch mit F11", ValueOption.vanilla(Options::fullscreen, false)).keywords("fullscreen"),
+					new SliderOption("GUI-Größe", "Wie groß Menüs, Chat und Hotbar sind", 0, 8, 1,
+						v -> (int) v == 0 ? "Auto" : String.valueOf((int) v), intBinding(Options::guiScale, 0))
+						.max(ModSettings::maxGuiScale).applyOnRelease().keywords("gui scale skalierung"),
+					new SliderOption("Helligkeit", "Für mehr Licht in Höhlen siehe Anzeige > Fullbright", 0, 1, 0.01,
+						v -> v <= 0 ? "Düster" : v >= 1 ? "Hell" : Math.round(v * 100) + " %", ValueOption.vanilla(Options::gamma, 0.5))
+						.keywords("gamma brightness")),
+				new SettingsSection("Steuerung",
+					new CycleOption<>("Sprinten", null, HoldToggle.class, holdToggle(Options::toggleSprint)).keywords("sprint"),
+					new CycleOption<>("Schleichen", null, HoldToggle.class, holdToggle(Options::toggleCrouch)).keywords("sneak crouch"),
+					new SliderOption("Mausempfindlichkeit", null, 0, 1, 0.01,
+						v -> v <= 0 ? "Schnecke" : v >= 1 ? "HYPERSPEED!!!" : Math.round(v * 200) + " %",
+						ValueOption.vanilla(Options::sensitivity, 0.5)).keywords("maus sensitivity"),
+					ButtonOption.page("Tastenbelegung", "Alle Tasten von Minecraft und den Mods", "Öffnen",
+						() -> open(parent -> new KeyBindsScreen(parent, Minecraft.getInstance().options))).keywords("keybinds tasten")),
+				new SettingsSection("Ton",
+					new SliderOption("Gesamtlautstärke", null, 0, 1, 0.01, v -> v <= 0 ? "Aus" : Math.round(v * 100) + " %",
+						ValueOption.vanilla(options -> options.getSoundSourceOptionInstance(SoundSource.MASTER), 1.0))
+						.keywords("sound volume lautstärke"),
+					ButtonOption.page("Musik und Geräusche", "Einzelne Lautstärken", "Öffnen",
+						() -> open(parent -> new SoundOptionsScreen(parent, Minecraft.getInstance().options)))),
+				new SettingsSection("Alles andere",
+					ButtonOption.page("Grafikeinstellungen", "Partikel, Wolken, Schatten und mehr", "Öffnen",
+						() -> open(parent -> new VideoSettingsScreen(parent, Minecraft.getInstance(), Minecraft.getInstance().options)))
+						.keywords("video grafik"),
+					ButtonOption.page("Minecraft-Optionen", "Das normale Optionen-Menü", "Öffnen",
+						() -> open(parent -> new OptionsScreen(parent, Minecraft.getInstance().options))).keywords("optionen"))),
+			new SettingsTab("Anzeige",
+				new SettingsSection("Helligkeit",
+					toggle("Fullbright", "Alles so hell wie mit Nachtsicht, auch in Höhlen und nachts",
+						c -> c.clientFullbright, (c, v) -> c.clientFullbright = v).keywords("nachtsicht gamma hell"),
+					new KeyBindOption("Fullbright-Taste", "Schaltet Fullbright an und aus", () -> ClientTweaks.fullbrightKey)
+						.keywords("fullbright")),
+				new SettingsSection("FPS und Ping",
+					new CycleOption<>("Anzeige", "Bildrate und Ping in einer Ecke, ausgeblendet mit F1 und F3", HudCorner.class,
+						c -> c.clientFpsHud, (c, v) -> c.clientFpsHud = v).keywords("fps ping hud"),
+					toggle("Ping zeigen", "Nur auf Servern", c -> c.clientFpsShowPing, (c, v) -> c.clientFpsShowPing = v).keywords("ping ms")),
+				new SettingsSection("Bildschirm",
+					toggle("Feuer tiefer", "Das Feuer beim Brennen bedeckt nur den unteren Rand",
+						c -> c.clientLowFire, (c, v) -> c.clientLowFire = v).keywords("feuer fire overlay"),
+					toggle("Kürbis durchsichtig", "Kein Kürbis-Rand, wenn du einen geschnitzten Kürbis trägst",
+						c -> c.clientNoPumpkinBlur, (c, v) -> c.clientNoPumpkinBlur = v).keywords("kürbis pumpkin"),
+					percentSlider("Wackeln bei Schaden", null, Options::damageTiltStrength).keywords("hurt cam damage tilt"),
+					percentSlider("Verzerrung", "Übelkeit und Nether-Portal", Options::screenEffectScale).keywords("nausea portal"),
+					percentSlider("Sichtfeld-Effekte", "Zoom beim Sprinten, durch Tränke und Bögen", Options::fovEffectScale)
+						.keywords("fov sprint"))),
+			new SettingsTab("Zoom",
+				new SettingsSection("Zoom",
+					new KeyBindOption("Zoom-Taste", "Gedrückt halten zum Zoomen", () -> Zoom.key).keywords("zoom"),
+					new SliderOption("Stärke", null, 2, 10, 0.5, v -> (v == Math.floor(v) ? String.valueOf((int) v) : String.valueOf(v)) + "x",
+						c -> c.clientZoomFactor, (c, v) -> c.clientZoomFactor = v).keywords("zoom faktor"),
+					toggle("Mausrad ändert Zoom", "Beim Zoomen statt den Hotbar-Slot zu wechseln",
+						c -> c.clientZoomScroll, (c, v) -> c.clientZoomScroll = v).keywords("zoom scroll"),
+					toggle("Weicher Übergang", null, c -> c.clientZoomSmooth, (c, v) -> c.clientZoomSmooth = v).keywords("zoom smooth"),
+					toggle("Weiche Kamera beim Zoomen", "Die Kamera folgt der Maus mit Verzögerung, wie mit F8",
+						c -> c.clientZoomCinematic, (c, v) -> c.clientZoomCinematic = v).keywords("zoom cinematic"))));
+	}
+
+	/** Sprint and sneak: hold the key or press it once. */
+	public enum HoldToggle implements Labeled {
+		HOLD("Halten"),
+		TOGGLE("Umschalten");
+
+		private final String label;
+
+		HoldToggle(String label) {
+			this.label = label;
+		}
+
+		@Override
+		public Component getDisplayName() {
+			return Component.literal(this.label);
+		}
+	}
+
+	private static ValueOption.Binding<HoldToggle> holdToggle(Function<Options, OptionInstance<Boolean>> option) {
+		ValueOption.Binding<Boolean> raw = ValueOption.vanilla(option, false);
+		return new ValueOption.Binding<>(() -> raw.getter().get() ? HoldToggle.TOGGLE : HoldToggle.HOLD,
+			value -> raw.setter().accept(value == HoldToggle.TOGGLE), () -> HoldToggle.HOLD, raw.save(), true);
+	}
+
+	private static ValueOption.Binding<Double> intBinding(Function<Options, OptionInstance<Integer>> option, int defaultValue) {
+		ValueOption.Binding<Integer> raw = ValueOption.vanilla(option, defaultValue);
+		return new ValueOption.Binding<>(() -> raw.getter().get().doubleValue(),
+			value -> raw.setter().accept((int) Math.round(value)), () -> (double) defaultValue, raw.save(), true);
+	}
+
+	private static SliderOption intSlider(String label, String description, int min, int max, DoubleFunction<String> format,
+		Function<Options, OptionInstance<Integer>> option, int defaultValue) {
+		return new SliderOption(label, description, min, max, 1, format, intBinding(option, defaultValue));
+	}
+
+	private static SliderOption percentSlider(String label, String description, Function<Options, OptionInstance<Double>> option) {
+		return new SliderOption(label, description, 0, 1, 0.05, v -> v <= 0 ? "Aus" : Math.round(v * 100) + " %",
+			ValueOption.vanilla(option, 1.0));
+	}
+
+	/** The largest GUI scale this window allows, like Minecraft's own slider. */
+	private static double maxGuiScale() {
+		Minecraft client = Minecraft.getInstance();
+		return client.getWindow().calculateScale(0, client.isEnforceUnicode());
 	}
 
 	private static SettingsCategory chat() {

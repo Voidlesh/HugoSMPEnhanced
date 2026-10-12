@@ -19,6 +19,11 @@ public class CycleOption<E extends Enum<E> & Labeled> extends ValueOption<E> {
 		this.values = type.getEnumConstants();
 	}
 
+	public CycleOption(String label, String description, Class<E> type, Binding<E> binding) {
+		super(label, description, binding);
+		this.values = type.getEnumConstants();
+	}
+
 	@Override
 	protected int controlWidth(Font font) {
 		int widest = 0;
@@ -42,7 +47,7 @@ public class CycleOption<E extends Enum<E> & Labeled> extends ValueOption<E> {
 	protected boolean clickControl(double mouseX, double mouseY, int button) {
 		int index = this.get().ordinal() + (button == 1 ? -1 : 1);
 		this.set(this.values[Math.floorMod(index, this.values.length)]);
-		changed();
+		this.save();
 		return true;
 	}
 }

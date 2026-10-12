@@ -4,6 +4,7 @@ import com.hugosmpenhanced.client.feature.antileak.AntiLeak;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearch;
 import com.hugosmpenhanced.client.feature.auction.LimitedOffers;
 import com.hugosmpenhanced.client.feature.auction.PricePerItemFeature;
+import com.hugosmpenhanced.client.feature.client.ClientTweaks;
 import com.hugosmpenhanced.client.feature.colorcodes.ColorCodes;
 import com.hugosmpenhanced.client.feature.discord.DiscordPresence;
 import com.hugosmpenhanced.client.feature.entityheatmap.EntityHeatmap;
@@ -59,6 +60,7 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		StreamerFeature.register();
 		ModUpdates.register();
 		UpdateBadge.register();
+		ClientTweaks.register();
 		LOGGER.info("HugoSMP Enhanced loaded");
 	}
 }

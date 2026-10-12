@@ -15,6 +15,10 @@ public class ToggleOption extends ValueOption<Boolean> {
 		super(label, description, getter, setter);
 	}
 
+	public ToggleOption(String label, String description, Binding<Boolean> binding) {
+		super(label, description, binding);
+	}
+
 	@Override
 	protected int controlWidth(Font font) {
 		return 22;
@@ -28,7 +32,7 @@ public class ToggleOption extends ValueOption<Boolean> {
 	@Override
 	protected boolean clickControl(double mouseX, double mouseY, int button) {
 		this.set(!this.get());
-		changed();
+		this.save();
 		return true;
 	}
 }

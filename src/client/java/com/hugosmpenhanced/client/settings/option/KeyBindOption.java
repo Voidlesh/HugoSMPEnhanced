@@ -10,9 +10,11 @@ import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
+import net.minecraft.client.Options;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.input.KeyEvent;
+import net.minecraft.network.chat.Component;
 
 /**
  * Shows and changes a key binding in place: click, then press a key. Escape cancels,
@@ -35,18 +37,22 @@ public class KeyBindOption extends SettingsOption {
 		return key == null || key.isUnbound() ? "Keine" : key.getTranslatedKeyMessage().getString();
 	}
 
-	private boolean conflicts() {
+	/** Another binding on the same key, or null. */
+	private KeyMapping conflict() {
 		KeyMapping key = this.mapping.get();
 		if (key == null || key.isUnbound()) {
-			return false;
+			return null;
 		}
-		for (KeyMapping other : Minecraft.getInstance().options.keyMappings) {
-			// F3 combinations are key bindings too since 1.21.9, but only fire together with F3.
-			if (other != key && other.same(key) && !other.getName().startsWith("key.debug.")) {
-				return true;
+		Options options = Minecraft.getInstance().options;
+		for (KeyMapping other : options.keyMappings) {
+			// F3 combinations are key bindings too since 1.21.9, but only fire together with F3; the
+			// hotbar activators only act together with a number key in creative mode.
+			if (other != key && other.same(key) && !other.getName().startsWith("key.debug.")
+				&& other != options.keySaveHotbarActivator && other != options.keyLoadHotbarActivator) {
+				return other;
 			}
 		}
-		return false;
+		return null;
 	}
 
 	@Override
@@ -62,8 +68,14 @@ public class KeyBindOption extends SettingsOption {
 		int border = this.listening || over ? Theme.GOLD : 0xFF646464;
 		Theme.panel(graphics, left, centerY - 7, w, 15, 0xFF282828, border);
 		graphics.fill(left + 1, centerY + 6, left + w - 1, centerY + 7, 0xFF141414);
-		int color = this.listening ? Theme.GOLD : this.conflicts() ? Theme.RED_TEXT : Theme.WHITE;
+		KeyMapping conflict = this.listening ? null : this.conflict();
+		int color = this.listening ? Theme.GOLD : conflict != null ? Theme.RED_TEXT : Theme.WHITE;
 		graphics.drawString(font, this.keyText(), left + 5, centerY - 3, color, false);
+		if (conflict != null && over) {
+			graphics.setTooltipForNextFrame(font, Component.literal("Auch belegt: ").append(Component.translatable(conflict.getName()))
+				.append(" (" + conflict.getCategory().label().getString() + ")"),
+				mouseX, mouseY);
+		}
 	}
 
 	@Override
