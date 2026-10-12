@@ -40,6 +40,12 @@ public final class DiscordPresence {
 	private static final Pattern PLACEHOLDER = Pattern.compile("\\{(\\w+)}");
 	private static final int UPDATE_TICKS = 20;
 
+	/** The "HugoSMP" application in the Discord Developer Portal; its name is the "Spielt ..." line. */
+	public static final String APP_ID = "1559249038363201627";
+
+	/** Tests: talk to the fake Discord with another id. */
+	public static String appId = APP_ID;
+
 	/** Tests: treat every world as HugoSMP. */
 	public static boolean anyServer;
 
@@ -110,7 +116,7 @@ public final class DiscordPresence {
 		ModConfig config = ModConfigManager.CONFIG;
 		View view = config.discordEnabled ? build(client) : null;
 		current = view;
-		CONNECTION.show(config.discordEnabled, config.discordAppId.strip(), view == null ? null : toJson(view));
+		CONNECTION.show(config.discordEnabled, appId, view == null ? null : toJson(view));
 	}
 
 	public static boolean onHugoSmp() {

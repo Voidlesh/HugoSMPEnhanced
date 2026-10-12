@@ -218,7 +218,7 @@ final class DiscordConnection {
 		if (code == 4000 || message.toLowerCase(java.util.Locale.ROOT).contains("client id")) {
 			this.status = Status.BAD_ID;
 			this.rejectedId = id;
-			this.lastError = "Unbekannte Application-ID";
+			this.lastError = "Discord lehnt die App ab";
 		}
 	}
 
