@@ -17,6 +17,8 @@ import com.hugosmpenhanced.client.feature.nametag.NametagColorFields.ColorField;
 import com.hugosmpenhanced.client.feature.nametag.NametagEffectEngine.Glitch;
 import com.hugosmpenhanced.client.feature.nametag.NametagEffectEngine.Glow;
 import com.hugosmpenhanced.client.feature.nametag.NametagEffectEngine.WordTransform;
+import com.hugosmpenhanced.client.feature.streamermode.NameMask;
+import com.hugosmpenhanced.client.feature.streamermode.StreamerMode;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
@@ -142,7 +144,10 @@ public final class NametagStyleRenderer {
 
 	/** Whether {@code text} contains the local player's raw username, i.e. it should be styled. */
 	public static boolean matchesLocalName(String text) {
-		return text != null && !text.isEmpty() && localPlayerName() != null && text.contains(localPlayerName());
+		if (text == null || text.isEmpty() || localPlayerName() == null) {
+			return false;
+		}
+		return NameMask.mask(text).contains(localPlayerName());
 	}
 
 	public static Set<NametagEffect> activeEffects() {
@@ -155,7 +160,8 @@ public final class NametagStyleRenderer {
 			return null;
 		}
 		String name = player.getGameProfile().name();
-		return name.isEmpty() ? null : name;
+		// With streamer mode hiding it, the stand-in is what's on screen and gets the style.
+		return name.isEmpty() ? null : StreamerMode.shownOwnName(name);
 	}
 
 	/**
@@ -274,6 +280,8 @@ public final class NametagStyleRenderer {
 	// ---- Component rendering: used by the tab list/scoreboard/nametag mixins. ----
 
 	public static void renderComponent2D(GuiGraphics graphics, Font font, Component component, float x, float y, int fallbackColor, boolean dropShadow) {
+		// Streamer mode: style the stand-in, never draw the hidden name glyph by glyph.
+		component = NameMask.mask(component);
 		String name = localPlayerName();
 		List<NametagTextUtil.TextRun> runs = NametagTextUtil.runs(component);
 		String full = concatRuns(runs);
@@ -312,6 +320,7 @@ public final class NametagStyleRenderer {
 	 * of the line, computed against the untouched vanilla text, keep working normally).
 	 */
 	public static void overlayChatLine(GuiGraphics graphics, Font font, FormattedCharSequence sequence, float y, float opacity, boolean dropShadow) {
+		sequence = NameMask.mask(sequence);
 		String name = localPlayerName();
 		if (name == null) {
 			return;
@@ -458,6 +467,7 @@ public final class NametagStyleRenderer {
 		Font font, Component component, float x, float y, boolean dropShadow, Matrix4f pose, MultiBufferSource buffer,
 		Font.DisplayMode mode, int backgroundColor, int lightCoords, int fallbackColor
 	) {
+		component = NameMask.mask(component);
 		String name = localPlayerName();
 		List<NametagTextUtil.TextRun> runs = NametagTextUtil.runs(component);
 		String full = concatRuns(runs);

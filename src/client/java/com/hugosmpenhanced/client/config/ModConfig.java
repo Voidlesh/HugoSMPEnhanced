@@ -188,6 +188,16 @@ public class ModConfig {
 	public boolean antiLeakOres = false;
 	public boolean antiLeakNoRotation = true;
 	public boolean antiLeakClouds = true;
+	// Streamer-Modus (Namen verstecken)
+	public boolean streamerModeEnabled = false;
+	public boolean streamerModeHideOwn = true;
+	public String streamerModeOwnName = "Streamer";
+	public boolean streamerModeHideOthers = true;
+	public String streamerModeOthersName = "Spieler";
+	public boolean streamerModeNumbered = true;
+	public List<String> streamerModeExtraNames = new ArrayList<>();
+	public boolean streamerModeHideSkins = true;
+	public boolean streamerModeHideOwnSkin = false;
 	// Streamer-Tools (Spenden-Auktion, Giveaway)
 	public int streamerAuctionSeconds = 120;
 	public long streamerStartBid = 10_000;

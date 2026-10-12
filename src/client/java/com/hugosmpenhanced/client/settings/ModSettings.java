@@ -32,6 +32,7 @@ import com.hugosmpenhanced.client.feature.streamer.Money;
 import com.hugosmpenhanced.client.feature.streamer.StreamerFeature;
 import com.hugosmpenhanced.client.feature.streamer.StreamerScreen;
 import com.hugosmpenhanced.client.feature.streamer.TwitchChat;
+import com.hugosmpenhanced.client.feature.streamermode.StreamerMode;
 import com.hugosmpenhanced.client.feature.gallery.GalleryFeature;
 import com.hugosmpenhanced.client.feature.gallery.GalleryScreen;
 import com.hugosmpenhanced.client.feature.inventorylayout.InventoryLayout;
@@ -107,7 +108,7 @@ public final class ModSettings {
 	// ------------------------------------------------------------------ categories
 
 	private static SettingsCategory general() {
-		return new SettingsCategory("Allgemein", "general", "Menü, Discord und Anti-Leak",
+		return new SettingsCategory("Allgemein", "general", "Menü, Discord, Anti-Leak und Streamer-Modus",
 			new SettingsTab("Menü",
 				new SettingsSection("Menü",
 					new KeyBindOption("Menü öffnen", "Taste für dieses Menü, überall im Spiel", () -> SettingsFeature.openKey),
@@ -138,7 +139,53 @@ public final class ModSettings {
 					new StringListOption("Eigene Splash-Texte", "Bei jedem Öffnen wird zufällig einer gezeigt",
 						"Keine, dann ohne Splash-Text", c -> c.splashTexts, (c, v) -> c.splashTexts = v))),
 			discordTab(),
-			antiLeakTab());
+			antiLeakTab(),
+			streamerModeTab());
+	}
+
+	private static SettingsTab streamerModeTab() {
+		return new SettingsTab("Streamer-Modus",
+			new SettingsSection("Streamer-Modus",
+				toggle("Streamer-Modus aktiviert", "Versteckt Namen überall, wo Text steht: Chat, Tabliste, Nametags, Scoreboard, "
+					+ "Titel, Schilder und Menüs. Nur die Anzeige ändert sich, Befehle gehen mit den echten Namen raus.",
+					c -> c.streamerModeEnabled, (c, v) -> c.streamerModeEnabled = v).keywords("streamer stream namen verstecken name hider"),
+				new KeyBindOption("Ein/Aus-Taste", "Ohne Taste nur hier", () -> StreamerMode.toggleKey)
+					.keywords("streamer-modus namen"),
+				new InfoOption("Gerade versteckt", null, ModSettings::streamerModeStatus)),
+			new SettingsSection("Dein Name",
+				toggle("Eigenen Namen verstecken", null,
+					c -> c.streamerModeHideOwn, (c, v) -> c.streamerModeHideOwn = v).keywords("eigener name"),
+				new TextOption("Ersatzname", "Steht überall, wo sonst dein Name stünde", StreamerMode.DEFAULT_OWN_NAME, 16,
+					c -> c.streamerModeOwnName, (c, v) -> c.streamerModeOwnName = v).keywords("alias nick")),
+			new SettingsSection("Andere Spieler",
+				toggle("Namen anderer verstecken", "Alle Spieler auf dem Server und die Namen unten",
+					c -> c.streamerModeHideOthers, (c, v) -> c.streamerModeHideOthers = v),
+				new TextOption("Ersatzname", null, StreamerMode.DEFAULT_OTHERS_NAME, 16,
+					c -> c.streamerModeOthersName, (c, v) -> c.streamerModeOthersName = v),
+				toggle("Durchnummerieren", "\"Spieler 1\", \"Spieler 2\" ... bleibt bis zum Neustart gleich, so sieht man, "
+					+ "wer was schreibt", c -> c.streamerModeNumbered, (c, v) -> c.streamerModeNumbered = v),
+				new StringListOption("Weitere Namen", "Auch wenn sie nicht online sind, z. B. Freunde oder Zweitaccounts. "
+					+ "Mit Streamer-Modus an stehen hier auch nur die Ersatznamen.",
+					"Keine", c -> c.streamerModeExtraNames, (c, v) -> c.streamerModeExtraNames = v).keywords("freunde zweitaccount")),
+			new SettingsSection("Skins",
+				toggle("Skins anderer verstecken", "Steve, Alex und Co. statt der echten Skins, auch im Tab-Kopf. Umhänge fallen weg.",
+					c -> c.streamerModeHideSkins, (c, v) -> c.streamerModeHideSkins = v).keywords("skin umhang cape"),
+				toggle("Eigenen Skin verstecken", null,
+					c -> c.streamerModeHideOwnSkin, (c, v) -> c.streamerModeHideOwnSkin = v).keywords("skin")));
+	}
+
+	private static String streamerModeStatus() {
+		ModConfig config = ModConfigManager.CONFIG;
+		if (!config.streamerModeEnabled) {
+			return "Nichts, Streamer-Modus ist aus";
+		}
+		int others = StreamerMode.hiddenOthers();
+		String own = config.streamerModeHideOwn ? "Dein Name" : null;
+		String rest = config.streamerModeHideOthers ? others + (others == 1 ? " anderer Name" : " andere Namen") : null;
+		if (own == null && rest == null) {
+			return "Keine Namen";
+		}
+		return own == null ? rest : rest == null ? own : own + " und " + rest;
 	}
 
 	private static SettingsTab antiLeakTab() {
