@@ -6,9 +6,9 @@ import net.minecraft.network.chat.Component;
 
 /** How the editor writes RGB colours, depending on what the server's /rename and /sign read. */
 public enum HexStyle implements Labeled {
-	AMPERSAND_HASH("&#RRGGBB"),
-	AMPERSAND_X("&x&R&R&G&G&B&B"),
-	LEGACY_ONLY("Nur 16 Farben");
+	LEGACY_ONLY("16 Chat-Farben"),
+	AMPERSAND_HASH("Hex &#RRGGBB"),
+	AMPERSAND_X("Hex &x&R&R...");
 
 	private final String label;
 

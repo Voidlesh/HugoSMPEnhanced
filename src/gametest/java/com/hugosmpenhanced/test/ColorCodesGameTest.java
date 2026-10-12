@@ -35,7 +35,8 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 		checkCodes();
 		context.runOnClient(client -> {
 			client.options.menuBackgroundBlurriness().set(0);
-			ModConfigManager.CONFIG.colorHexStyle = HexStyle.AMPERSAND_HASH;
+			ModConfigManager.CONFIG.colorHexStyle = HexStyle.LEGACY_ONLY;
+			ModConfigManager.CONFIG.colorMaxLength = 35;
 			ModConfigManager.CONFIG.colorChatPreview = true;
 			ModConfigManager.CONFIG.colorTemplates = ColorCodes.defaultTemplates();
 			ModConfigManager.CONFIG.colorRecent.clear();
@@ -59,27 +60,29 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			});
 			context.waitTicks(5);
 
-			// Typing /rename in chat shows the colours right away.
+			// Typing /rename in chat shows the colours and the count against the limit right away.
 			context.setScreen(() -> new ChatScreen("", false));
 			context.waitTicks(2);
-			context.getInput().typeChars("/rename &6&lHugo&eSMP &#7CFC7CEnhanced");
+			context.getInput().typeChars("/rename &6&lHugo&eSMP");
 			context.waitTicks(3);
 			context.takeScreenshot("farbcodes-1-chat-vorschau");
 
 			// Ctrl+E opens the editor with that text.
 			combo(context, GLFW.GLFW_KEY_E, GLFW.GLFW_MOD_CONTROL);
-			context.waitTicks(3);
 			String opened = context.computeOnClient(client -> client.screen instanceof ColorCodeScreen screen ? screen.text() : null);
-			expect("&6&lHugo&eSMP &#7CFC7CEnhanced".equals(opened), "Ctrl+E did not open the editor with the chat text: " + opened);
+			expect("&6&lHugo&eSMP".equals(opened), "Ctrl+E did not open the editor with the chat text: " + opened);
 			context.takeScreenshot("farbcodes-2-editor-aus-chat");
 
-			// New text, then a gradient over all of it.
+			// New text, then a gradient with chat colours only, within 35 characters.
 			selectAll(context);
 			context.getInput().typeChars("HugoSMP Enhanced");
 			click(context, "gradient");
 			String gradient = text(context);
-			expect(ColorText.parse(gradient).plain().equals("HugoSMP Enhanced"), "Gradient changed the letters: " + gradient);
-			expect(gradient.chars().filter(c -> c == '#').count() == 15, "Gradient should colour 15 letters, skipping the space: " + gradient);
+			ColorText gradientText = ColorText.parse(gradient);
+			expect(gradientText.plain().equals("HugoSMP Enhanced"), "Gradient changed the letters: " + gradient);
+			expect(!gradient.contains("#") && gradient.length() <= 35, "Gradient not chat colours within 35: " + gradient);
+			expect(gradientText.glyphs.get(0).color.code() == '4' && gradientText.glyphs.get(15).color.code() == 'e',
+				"Gradient ends wrong: " + gradient);
 			context.takeScreenshot("farbcodes-3-verlauf");
 
 			// Select "Enhanced" with the keyboard, make it gold and bold.
@@ -92,10 +95,11 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			ColorText.Glyph e = parsed.glyphs.get(8);
 			ColorText.Glyph h = parsed.glyphs.get(0);
 			expect(e.color != null && e.color.code() == '6' && (e.formats & ColorText.BOLD) != 0, "Enhanced is not gold and bold: " + styled);
-			expect(h.color != null && !h.color.isLegacy() && (h.formats & ColorText.BOLD) == 0, "Hugo lost its gradient: " + styled);
+			expect(h.color != null && h.color.code() == '4' && (h.formats & ColorText.BOLD) == 0, "Hugo lost its gradient: " + styled);
+			expect(styled.length() <= 35, "Styled text over 35: " + styled);
 			context.takeScreenshot("farbcodes-4-markierung-gold-fett");
 
-			// Undo takes the bold back.
+			// Undo takes the bold back, redo brings it again.
 			combo(context, GLFW.GLFW_KEY_Z, GLFW.GLFW_MOD_CONTROL);
 			expect((ColorText.parse(text(context)).glyphs.get(8).formats & ColorText.BOLD) == 0, "Ctrl+Z did not undo bold: " + text(context));
 			combo(context, GLFW.GLFW_KEY_Y, GLFW.GLFW_MOD_CONTROL);
@@ -116,14 +120,21 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			// Other text with the look of "Feuer" (brush), then hover a template for its tooltip.
 			selectAll(context);
 			context.getInput().typeChars("Flammenschwert");
-			int fire = indexOf("Feuer");
-			click(context, "brush:" + fire);
+			click(context, "brush:" + indexOf("Feuer"));
 			String fiery = text(context);
 			ColorText fieryText = ColorText.parse(fiery);
-			expect(fieryText.plain().equals("Flammenschwert") && fieryText.glyphs.get(0).color != null
-				&& fieryText.glyphs.get(0).color.rgb() != fieryText.glyphs.get(13).color.rgb(), "Feuer style not applied: " + fiery);
+			expect(fieryText.plain().equals("Flammenschwert") && fieryText.glyphs.get(0).color.code() == '4'
+				&& fieryText.glyphs.get(13).color.code() == 'e' && fiery.length() <= 35, "Feuer style not applied: " + fiery);
 			hover(context, "template:" + indexOf("Ozean"));
 			context.takeScreenshot("farbcodes-6-stil-feuer");
+
+			// Gradient ends: click "Von", then a palette colour; the gradient now starts blue.
+			click(context, "end:0");
+			context.takeScreenshot("farbcodes-7-verlauf-farbe-waehlen");
+			click(context, "swatch:9");
+			click(context, "gradient");
+			expect(ColorText.parse(text(context)).glyphs.get(0).color.code() == '9', "Gradient start not changed: " + text(context));
+			context.takeScreenshot("farbcodes-8-verlauf-blau");
 
 			// Load the saved template and send /rename; the test server names the sword.
 			click(context, "template:0");
@@ -136,17 +147,18 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 				return name == null ? null : name.getString();
 			});
 			expect("HugoSMP Enhanced".equals(renamed), "Server did not rename the sword: " + renamed + " (sent " + TestRenameServer.lastRename + ")");
+			expect(styled.equals(TestRenameServer.lastRename), "Sent text differs: " + TestRenameServer.lastRename);
 			expect(context.computeOnClient(client -> client.screen == null), "Editor did not close after sending");
 			// Switch slots so the hotbar shows the new name.
 			context.runOnClient(client -> client.player.getInventory().setSelectedSlot(1));
 			context.waitTicks(2);
 			context.runOnClient(client -> client.player.getInventory().setSelectedSlot(0));
 			context.waitTicks(4);
-			context.takeScreenshot("farbcodes-7-umbenannt");
+			context.takeScreenshot("farbcodes-9-umbenannt");
 
 			// Opening by key reads the held item's name back as codes.
 			String fromItem = context.computeOnClient(client -> ColorCodes.heldItemName());
-			expect(ColorText.parse(fromItem).plain().equals("HugoSMP Enhanced") && fromItem.contains("&6&l"),
+			expect(ColorText.parse(fromItem).plain().equals("HugoSMP Enhanced") && fromItem.contains("&6&l") && !fromItem.contains("#"),
 				"Held item name not read back: " + fromItem);
 
 			// Larger GUI area: GUI scale 1.
@@ -156,32 +168,36 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			});
 			context.setScreen(() -> ColorCodeScreen.forHeldItem(null));
 			context.waitTicks(3);
-			context.takeScreenshot("farbcodes-8-editor-gui1");
+			context.takeScreenshot("farbcodes-10-editor-gui1");
 			context.runOnClient(client -> {
 				client.options.guiScale().set(2);
 				client.resizeDisplay();
 			});
 
-			// A long gradient shares colours between letters so it still fits into one command.
+			// Over 35 characters: send is refused, the counter turns red.
 			context.setScreen(() -> new ColorCodeScreen(null, "rename", "", null));
 			context.waitTicks(2);
-			context.getInput().typeChars("Das ist ein sehr langer Name fuer einen Verlauf");
-			click(context, "gradient");
-			String longGradient = text(context);
-			expect(("/rename " + longGradient).length() <= ColorCodes.MAX_COMMAND_LENGTH && longGradient.chars().filter(c -> c == '#').count() > 10,
-				"Long gradient does not fit or lost its colours: " + longGradient.length());
-			context.takeScreenshot("farbcodes-9-langer-verlauf");
-
-			// Too long for one command: send is refused, the counter turns red.
-			for (int i = 0; i < 5; i++) {
-				click(context, "format:" + i);
-			}
-			context.getInput().pressKey(GLFW.GLFW_KEY_END);
-			context.getInput().typeChars(" &#123456a&#654321b&#abcdefc&#fedcbad&#111111e&#222222f&#333333g&#444444h&#555555i&#666666j");
+			context.getInput().typeChars("Ein sehr langer Name mit &cFarben &6und &lmehr");
 			context.waitTicks(1);
 			click(context, "send");
-			expect(context.computeOnClient(client -> client.screen instanceof ColorCodeScreen), "A too long command was sent");
-			context.takeScreenshot("farbcodes-10-zu-lang");
+			expect(context.computeOnClient(client -> client.screen instanceof ColorCodeScreen), "A too long text was sent");
+			context.takeScreenshot("farbcodes-11-zu-lang");
+
+			// Hex mode for other servers still works: picker shown, gradient with a colour per letter.
+			context.runOnClient(client -> {
+				ModConfigManager.CONFIG.colorHexStyle = HexStyle.AMPERSAND_HASH;
+				ModConfigManager.CONFIG.colorMaxLength = 0;
+			});
+			context.setScreen(() -> new ColorCodeScreen(null, "rename", "", null));
+			context.waitTicks(2);
+			context.getInput().typeChars("HugoSMP Enhanced");
+			click(context, "gradient");
+			expect(text(context).chars().filter(c -> c == '#').count() == 15, "Hex gradient wrong: " + text(context));
+			context.takeScreenshot("farbcodes-12-hex-modus");
+			context.runOnClient(client -> {
+				ModConfigManager.CONFIG.colorHexStyle = HexStyle.LEGACY_ONLY;
+				ModConfigManager.CONFIG.colorMaxLength = 35;
+			});
 			context.setScreen(() -> null);
 		}
 	}
@@ -205,6 +221,14 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 		partial.toggleFormat(0, 3, ColorText.BOLD);
 		expect(partial.serialize(HexStyle.AMPERSAND_HASH).equals("&cRot&lFett"), "Bold removed: " + partial.serialize(HexStyle.AMPERSAND_HASH));
 		expect(ColorCodes.match("/rename &cHi").textStart() == 8, "match /rename");
+		java.util.List<net.minecraft.ChatFormatting> path = ColorText.legacyPath(net.minecraft.ChatFormatting.DARK_RED, net.minecraft.ChatFormatting.YELLOW);
+		expect(path.get(0) == net.minecraft.ChatFormatting.DARK_RED && path.get(path.size() - 1) == net.minecraft.ChatFormatting.YELLOW
+			&& path.size() >= 3, "legacy path " + path);
+		ColorText legacy = ColorText.parse("HugoSMP");
+		legacy.legacyGradient(0, 7, net.minecraft.ChatFormatting.RED, net.minecraft.ChatFormatting.AQUA, 99);
+		String legacyOut = legacy.serialize(HexStyle.LEGACY_ONLY);
+		expect(!legacyOut.contains("#") && legacyOut.startsWith("&c") && legacyOut.contains("&b"), "legacy gradient " + legacyOut + " path "
+			+ ColorText.legacyPath(net.minecraft.ChatFormatting.RED, net.minecraft.ChatFormatting.AQUA));
 		expect(ColorCodes.match("/RENAME x") != null && ColorCodes.match("/renamex") == null && ColorCodes.match("rename x") == null, "match edge cases");
 	}
 

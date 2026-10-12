@@ -35,6 +35,7 @@ public final class ColorCodes {
 	}
 
 	public static void register() {
+		migrate();
 		openKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.hugosmpenhanced.open_color_editor",
 			InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), TpaKeybinds.CATEGORY));
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -78,7 +79,7 @@ public final class ColorCodes {
 
 	public static HexStyle hexStyle() {
 		HexStyle style = ModConfigManager.CONFIG.colorHexStyle;
-		return style == null ? HexStyle.AMPERSAND_HASH : style;
+		return style == null ? HexStyle.LEGACY_ONLY : style;
 	}
 
 	/** The held item's own name as codes, for editing an item that was renamed before. */
@@ -140,26 +141,53 @@ public final class ColorCodes {
 		ModConfigManager.save();
 	}
 
-	/** The examples a new config starts with; each is its own name in its look. */
+	/** The examples a new config starts with; each is its own name in its look, only chat colours. */
 	public static List<ColorTemplate> defaultTemplates() {
 		List<ColorTemplate> templates = new ArrayList<>();
-		templates.add(gradient("Feuer", 0, 0xFF3D00, 0xFFC400));
-		templates.add(gradient("Ozean", 0, 0x00D2FF, 0x3A47D5));
-		templates.add(gradient("Gold", ColorText.BOLD, 0xFFE259, 0xFFA751));
-		templates.add(gradient("Abendrot", 0, 0xFF5F6D, 0xFFC371));
-		templates.add(gradient("Lila Traum", 0, 0xC471F5, 0xFA71CD));
-		templates.add(gradient("Giftgrün", 0, 0xA8FF78, 0x2AA876));
-		templates.add(gradient("Regenbogen", 0, 0xFF4B4B, 0xFFB23F, 0xFFF35C, 0x5CFF7A, 0x4FC3FF, 0xB46CFF));
+		templates.add(new ColorTemplate("Feuer", "&4Fe&cu&6e&er"));
+		templates.add(new ColorTemplate("Ozean", "&9Oz&3e&ban"));
+		templates.add(new ColorTemplate("Gold", "&6&lGo&e&lld"));
+		templates.add(new ColorTemplate("Abendrot", "&5Ab&den&cdr&6ot"));
+		templates.add(new ColorTemplate("Lila Traum", "&5Lila &dTraum"));
+		templates.add(new ColorTemplate("Giftgrün", "&2Gift&agrün"));
+		templates.add(new ColorTemplate("Regenbogen", "&cRe&6ge&en&ab&bo&9g&de&5n"));
+		templates.add(new ColorTemplate("Schatten", "&8Sch&7att&fen"));
 		templates.add(new ColorTemplate("Klassisch Gold", "&6&lKlassisch &e&lGold"));
 		return templates;
 	}
 
-	private static ColorTemplate gradient(String name, int formats, int... stops) {
-		ColorText text = ColorText.parse(name);
-		text.gradient(0, text.glyphs.size(), stops);
-		for (ColorText.Glyph glyph : text.glyphs) {
-			glyph.formats = formats;
+	/**
+	 * Version 2: HugoSMP only reads the 16 chat colours and allows 35 characters, so older configs
+	 * switch to that and the hex example templates are replaced by chat colour ones.
+	 */
+	private static void migrate() {
+		var config = ModConfigManager.CONFIG;
+		if (config.colorConfigVersion >= 2) {
+			return;
 		}
-		return new ColorTemplate(name, text.serialize(HexStyle.AMPERSAND_HASH));
+		config.colorHexStyle = HexStyle.LEGACY_ONLY;
+		config.colorMaxLength = 35;
+		for (ColorTemplate example : defaultTemplates()) {
+			for (ColorTemplate template : config.colorTemplates) {
+				if (template.name.equals(example.name) && template.text.contains("&#")) {
+					template.text = example.text;
+				}
+			}
+		}
+		config.colorTemplates.removeIf(t -> t.name.equals("Sonnenuntergang") && t.text.contains("&#"));
+		config.colorConfigVersion = 2;
+		ModConfigManager.save();
+	}
+
+	/** Whether only the 16 chat colours are written (no hex). */
+	public static boolean legacy() {
+		return hexStyle() == HexStyle.LEGACY_ONLY;
+	}
+
+	/** How long the text after the command may be, codes included. */
+	public static int textLimit(String command) {
+		int commandRoom = MAX_COMMAND_LENGTH - command.length() - 2;
+		int limit = ModConfigManager.CONFIG.colorMaxLength;
+		return limit <= 0 ? commandRoom : Math.min(limit, commandRoom);
 	}
 }

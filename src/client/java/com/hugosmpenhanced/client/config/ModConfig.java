@@ -107,7 +107,10 @@ public class ModConfig {
 	public boolean chatCalculatorEnabled = true;
 	// Farbcode-Editor (/rename, /sign)
 	public boolean colorChatPreview = true;
-	public HexStyle colorHexStyle = HexStyle.AMPERSAND_HASH;
+	public HexStyle colorHexStyle = HexStyle.LEGACY_ONLY;
+	/** Most characters (codes included) the server takes after /rename or /sign; 0 = only the chat limit. */
+	public int colorMaxLength = 35;
+	public int colorConfigVersion = 0;
 	public List<String> colorCommands = new ArrayList<>(List.of("rename", "sign"));
 	public List<ColorTemplate> colorTemplates = ColorCodes.defaultTemplates();
 	/** Last used RGB colours as "#RRGGBB", newest first. */
