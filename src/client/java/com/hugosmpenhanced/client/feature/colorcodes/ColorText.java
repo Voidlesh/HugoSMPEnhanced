@@ -352,6 +352,69 @@ public final class ColorText {
 	}
 
 	/**
+	 * The chat colours a gradient from one chat colour to another passes through, in order. Grey,
+	 * black and white are only used as ends, so a gradient never turns muddy in the middle.
+	 */
+	public static List<ChatFormatting> legacyPath(ChatFormatting from, ChatFormatting to) {
+		List<ChatFormatting> path = new ArrayList<>();
+		path.add(from);
+		int a = from.getColor();
+		int b = to.getColor();
+		for (int k = 1; k < 64; k++) {
+			int mixed = ColorMath.mix(a, b, k / 64f);
+			ChatFormatting best = null;
+			double bestDistance = Double.MAX_VALUE;
+			for (ChatFormatting formatting : ChatFormatting.values()) {
+				if (!formatting.isColor() || (isNeutral(formatting) && formatting != from && formatting != to)) {
+					continue;
+				}
+				double distance = ColorMath.distance(mixed, formatting.getColor());
+				if (distance < bestDistance) {
+					bestDistance = distance;
+					best = formatting;
+				}
+			}
+			if (best != path.get(path.size() - 1) && !path.contains(best)) {
+				path.add(best);
+			}
+		}
+		if (path.get(path.size() - 1) != to) {
+			path.remove(to);
+			path.add(to);
+		}
+		return path;
+	}
+
+	private static boolean isNeutral(ChatFormatting formatting) {
+		return formatting == ChatFormatting.BLACK || formatting == ChatFormatting.DARK_GRAY
+			|| formatting == ChatFormatting.GRAY || formatting == ChatFormatting.WHITE;
+	}
+
+	/**
+	 * Colours the letters of the range in blocks along {@link #legacyPath}, using at most
+	 * {@code maxColors} of its colours (always both ends). Returns how many colours were used.
+	 */
+	public int legacyGradient(int from, int to, ChatFormatting start, ChatFormatting end, int maxColors) {
+		List<ChatFormatting> path = legacyPath(start, end);
+		List<Glyph> letters = new ArrayList<>();
+		for (int i = from; i < to; i++) {
+			if (!this.glyphs.get(i).isSpace()) {
+				letters.add(this.glyphs.get(i));
+			}
+		}
+		int colors = Math.max(1, Math.min(Math.min(maxColors, path.size()), letters.size()));
+		List<ChatFormatting> used = new ArrayList<>();
+		for (int c = 0; c < colors; c++) {
+			used.add(path.get(colors == 1 ? 0 : Math.round(c * (path.size() - 1) / (float) (colors - 1))));
+		}
+		int n = letters.size();
+		for (int k = 0; k < n; k++) {
+			letters.get(k).color = Color.legacy(used.get(k * colors / n));
+		}
+		return colors;
+	}
+
+	/**
 	 * Gives the range the look of another text: colours and formats are taken from the same relative
 	 * position, so a gradient template stretches over any length.
 	 */

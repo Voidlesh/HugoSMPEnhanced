@@ -25,7 +25,8 @@ import net.minecraft.network.chat.Component;
 
 /**
  * While typing /rename or /sign, shows the colour codes as they will look in a small box at the
- * right above the input, with a link into the colour code editor (click or Ctrl+E).
+ * right above the input, with the character count against the server's limit and a link into the
+ * colour code editor (click or Ctrl+E).
  */
 @Mixin(ChatScreen.class)
 public abstract class ColorChatPreviewMixin {
@@ -54,8 +55,12 @@ public abstract class ColorChatPreviewMixin {
 			return;
 		}
 		Font font = Minecraft.getInstance().font;
-		ColorText text = ColorText.parse(this.input.getValue().substring(match.textStart()));
-		int linkWidth = font.width(LINK);
+		String raw = this.input.getValue().substring(match.textStart());
+		ColorText text = ColorText.parse(raw);
+		int limit = ColorCodes.textLimit(match.command());
+		String count = raw.length() + "/" + limit;
+		int countColor = raw.length() > limit ? 0xFFFF7878 : 0xFF777777;
+		int linkWidth = font.width(LINK) + font.width(count) + 8;
 		int maxText = Math.max(40, graphics.guiWidth() / 2 - linkWidth - 20);
 		boolean cut = false;
 		while (!text.glyphs.isEmpty() && font.width(text.toComponent()) > maxText) {
@@ -75,7 +80,8 @@ public abstract class ColorChatPreviewMixin {
 		graphics.drawString(font, shown, x + 4, y + 3, 0xFFFFFFFF);
 		int linkX = x + width - linkWidth - 5;
 		graphics.fill(linkX - 5, y + 2, linkX - 4, y + 11, BORDER);
-		graphics.drawString(font, LINK, linkX, y + 3, over ? 0xFFFFC83D : 0xFFAAAAAA);
+		graphics.drawString(font, count, linkX, y + 3, countColor);
+		graphics.drawString(font, LINK, linkX + font.width(count) + 8, y + 3, over ? 0xFFFFC83D : 0xFFAAAAAA);
 		this.hugosmpenhanced$boxX = x;
 		this.hugosmpenhanced$boxY = y;
 		this.hugosmpenhanced$boxW = width;

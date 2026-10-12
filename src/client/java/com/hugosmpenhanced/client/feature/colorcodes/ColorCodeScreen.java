@@ -59,6 +59,10 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 	private static final int SLOT_TO = 2;
 	private static final int[] SLOTS = {0xFFAA00, 0xFF8C1A, 0xD14BFF};
 	private static int lastSlot;
+	/** Gradient ends when only the 16 chat colours are used. */
+	private static final ChatFormatting[] LEGACY_SLOTS = {ChatFormatting.DARK_RED, ChatFormatting.YELLOW};
+	/** The legacy gradient end that the next palette click sets, or -1. */
+	private int pickingEnd = -1;
 
 	private final Screen parent;
 	/** The chat input to go back to on cancel, or null when not opened from chat. */
@@ -151,6 +155,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 				this.loadSlot();
 			}
 		});
+		this.hexField.visible = !ColorCodes.legacy();
 		this.addRenderableWidget(this.hexField);
 
 		this.nameField = new EditBox(this.font, this.fx + 10, this.saveY() + 3, this.listWidth - 34, 10, Component.literal("Name"));
@@ -335,6 +340,10 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 	 * colour, as few as needed, so a long name still gets a gradient that can be sent.
 	 */
 	private void applyGradient() {
+		if (ColorCodes.legacy()) {
+			this.applyLegacyGradient();
+			return;
+		}
 		int start = SLOTS[SLOT_FROM];
 		int end = SLOTS[SLOT_TO];
 		ColorCodes.addRecent(end);
@@ -343,7 +352,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 			this.showFlash("Erst Text eingeben, dann Verlauf");
 			return;
 		}
-		int room = ColorCodes.MAX_COMMAND_LENGTH - ("/" + this.command + " ").length();
+		int room = ColorCodes.textLimit(this.command);
 		int[] usedStep = {1};
 		this.apply((text, from, to) -> {
 			int letters = to - from;
@@ -361,6 +370,31 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		if (usedStep[0] > 1) {
 			this.showFlash("Je " + usedStep[0] + " Buchstaben eine Farbe, damit es passt");
 		}
+	}
+
+	/**
+	 * Gradient with the 16 chat colours: the colours between the two ends, each on a block of
+	 * letters. Uses fewer in-between colours when the text would get too long for the limit.
+	 */
+	private void applyLegacyGradient() {
+		if (ColorText.parse(this.raw).glyphs.isEmpty()) {
+			this.showFlash("Erst Text eingeben, dann Verlauf");
+			return;
+		}
+		ChatFormatting start = LEGACY_SLOTS[0];
+		ChatFormatting end = LEGACY_SLOTS[1];
+		int room = ColorCodes.textLimit(this.command);
+		int[] used = {0};
+		this.apply((text, from, to) -> {
+			int most = ColorText.legacyPath(start, end).size();
+			for (int colors = most; colors >= 2; colors--) {
+				used[0] = text.legacyGradient(from, to, start, end, colors);
+				if (text.serialize(HexStyle.LEGACY_ONLY).length() <= room) {
+					return;
+				}
+			}
+		}, null);
+		this.showFlash(used[0] + " Farben im Verlauf");
 	}
 
 	private void toggleFormat(int bit) {
@@ -432,7 +466,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 	}
 
 	private int remaining() {
-		return ColorCodes.MAX_COMMAND_LENGTH - this.fullCommand().length();
+		return ColorCodes.textLimit(this.command) - this.raw.length();
 	}
 
 	private boolean canSend() {
@@ -711,15 +745,15 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 
 		int infoY = this.infoY();
 		int remaining = this.remaining();
-		int used = ColorCodes.MAX_COMMAND_LENGTH - remaining;
-		String count = used + " / " + ColorCodes.MAX_COMMAND_LENGTH;
-		int countColor = remaining < 0 ? Theme.RED_TEXT : remaining < 20 ? Theme.GOLD : Theme.MUTED;
+		int limit = ColorCodes.textLimit(this.command);
+		String count = this.raw.length() + " / " + limit;
+		int countColor = remaining < 0 ? Theme.RED_TEXT : remaining < Math.max(3, limit / 10) ? Theme.GOLD : Theme.MUTED;
 		int countX = this.cx + this.cw - this.font.width(count) - 2;
 		graphics.drawString(this.font, count, countX, infoY, countColor, false);
 		if (inside(mouseX, mouseY, countX, infoY - 1, this.font.width(count), 10)) {
 			graphics.setTooltipForNextFrame(this.font, this.font.split(Component.literal(
-				"Zeichen des ganzen Befehls mit Codes. Mehr als " + ColorCodes.MAX_COMMAND_LENGTH
-					+ " passen nicht in den Chat. Lange Verläufe brauchen viel Platz."), 200), mouseX, mouseY);
+				"Zeichen mit allen Codes. Jeder Code wie &6 zählt 2 Zeichen mit. Das Limit stellst du unter Chat > Farben ein."),
+				200), mouseX, mouseY);
 		}
 
 		String hint;
@@ -753,7 +787,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 			if (over) {
 				graphics.setTooltipForNextFrame(this.font, List.of(
 					Component.literal(PALETTE_NAMES[i] + "  ").append(Component.literal("&" + PALETTE[i].getChar()).withStyle(ChatFormatting.GRAY)).getVisualOrderText(),
-					Component.literal("Rechtsklick: in den Farbwähler").withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText()),
+					Component.literal(this.pickingEnd >= 0 ? "Klick: als Verlaufsfarbe setzen" : ColorCodes.legacy() ? "Rechtsklick: als Verlaufsanfang" : "Rechtsklick: in den Farbwähler").withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText()),
 					mouseX, mouseY);
 			}
 		}
@@ -790,6 +824,10 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 	}
 
 	private void renderPicker(GuiGraphics graphics, int mouseX, int mouseY) {
+		if (ColorCodes.legacy()) {
+			this.renderLegacyGradient(graphics, mouseX, mouseY);
+			return;
+		}
 		int px = this.cx;
 		int py = this.pickerY();
 		int pw = this.pickerW;
@@ -871,6 +909,92 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		}
 	}
 
+	private int legacyEndX(int end) {
+		int buttonW = this.font.width("Verlauf") + 16;
+		return end == 0 ? this.cx + this.font.width("Verlauf") + 8 : this.cx + this.cw - buttonW - 8 - 16 - 14;
+	}
+
+	/** The gradient row with only chat colours: two ends picked from the palette, a preview, the button. */
+	private void renderLegacyGradient(GuiGraphics graphics, int mouseX, int mouseY) {
+		int y = this.pickerY();
+		graphics.drawString(this.font, "Verlauf", this.cx, y + 4, Theme.TEXT_DIM, false);
+		int fromX = this.legacyEndX(0);
+		int toX = this.legacyEndX(1);
+		for (int end = 0; end < 2; end++) {
+			int x = end == 0 ? fromX : toX;
+			boolean picking = this.pickingEnd == end;
+			boolean over = inside(mouseX, mouseY, x, y, 16, 16);
+			graphics.fill(x + 2, y + 2, x + 14, y + 14, 0xFF000000 | LEGACY_SLOTS[end].getColor());
+			HugoOutline.draw(graphics, x, y, 16, 16, picking ? Theme.GOLD : over ? Theme.WHITE : 0xFF4A4A4A);
+			if (picking) {
+				HugoOutline.draw(graphics, x + 1, y + 1, 14, 14, 0xFF000000);
+			}
+			if (over) {
+				int index = paletteIndex(LEGACY_SLOTS[end]);
+				graphics.setTooltipForNextFrame(this.font, List.of(
+					Component.literal((end == 0 ? "Von  " : "Bis  ") + PALETTE_NAMES[index] + "  ")
+						.append(Component.literal("&" + LEGACY_SLOTS[end].getChar()).withStyle(ChatFormatting.GRAY)).getVisualOrderText(),
+					Component.literal("Klick, dann eine Farbe oben wählen. Mausrad wechselt.").withStyle(ChatFormatting.DARK_GRAY)
+						.getVisualOrderText()), mouseX, mouseY);
+			}
+		}
+		// The colours the gradient will use, each as one block.
+		List<ChatFormatting> path = ColorText.legacyPath(LEGACY_SLOTS[0], LEGACY_SLOTS[1]);
+		int barLeft = fromX + 20;
+		int barRight = toX - 4;
+		int span = barRight - barLeft;
+		for (int i = 0; i < path.size(); i++) {
+			int left = barLeft + span * i / path.size();
+			int right = barLeft + span * (i + 1) / path.size();
+			graphics.fill(left, y + 5, right, y + 11, 0xFF000000 | path.get(i).getColor());
+		}
+		int swapX = toX + 19;
+		boolean overSwap = inside(mouseX, mouseY, swapX - 1, y + 2, 10, 12);
+		Theme.glyph(graphics, SWAP, swapX, y + 5, overSwap ? Theme.GOLD : Theme.TEXT_DIM);
+		if (overSwap) {
+			graphics.setTooltipForNextFrame(this.font, Component.literal("Richtung tauschen"), mouseX, mouseY);
+		}
+		int[] button = this.bounds("gradient");
+		this.actionButton(graphics, button[0], button[1], button[2], "Verlauf", mouseX, mouseY,
+			"Färbt die Markierung oder den Text von der einen zur anderen Farbe, mit den Chat-Farben dazwischen");
+		String hint = this.pickingEnd >= 0 ? "Jetzt oben die Farbe für " + (this.pickingEnd == 0 ? "\"Von\"" : "\"Bis\"") + " anklicken"
+			: "Nur Chat-Farben (&0 bis &f), jeder Code kostet 2 Zeichen";
+		graphics.drawString(this.font, this.font.plainSubstrByWidth(hint, this.cw), this.cx, y + 24,
+			this.pickingEnd >= 0 ? Theme.GOLD : Theme.FAINT, false);
+	}
+
+	private static int paletteIndex(ChatFormatting formatting) {
+		for (int i = 0; i < PALETTE.length; i++) {
+			if (PALETTE[i] == formatting) {
+				return i;
+			}
+		}
+		return 0;
+	}
+
+	private boolean clickLegacyGradient(double mx, double my) {
+		int y = this.pickerY();
+		for (int end = 0; end < 2; end++) {
+			if (inside(mx, my, this.legacyEndX(end), y, 16, 16)) {
+				this.pickingEnd = this.pickingEnd == end ? -1 : end;
+				return true;
+			}
+		}
+		if (inside(mx, my, this.legacyEndX(1) + 18, y + 2, 10, 12)) {
+			ChatFormatting from = LEGACY_SLOTS[0];
+			LEGACY_SLOTS[0] = LEGACY_SLOTS[1];
+			LEGACY_SLOTS[1] = from;
+			return true;
+		}
+		int[] button = this.bounds("gradient");
+		if (inside(mx, my, button[0], button[1], button[2], button[3])) {
+			this.pickingEnd = -1;
+			this.applyGradient();
+			return true;
+		}
+		return false;
+	}
+
 	private void slotSwatch(GuiGraphics graphics, int slot, int x, int y, int mouseX, int mouseY, String name) {
 		boolean selected = this.slot == slot;
 		boolean over = inside(mouseX, mouseY, x, y, 16, 16);
@@ -928,7 +1052,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 			sendable ? Theme.WHITE : Theme.FAINT);
 		if (inside(mouseX, mouseY, send[0], y, send[2], 16)) {
 			String tip = !ingame ? "Nur in einer Welt oder auf einem Server"
-				: this.remaining() < 0 ? "Zu lang für einen Befehl, kürzen oder weniger Farben nutzen"
+				: this.remaining() < 0 ? "Zu lang: höchstens " + ColorCodes.textLimit(this.command) + " Zeichen mit Codes. Kürzen oder weniger Farben nutzen"
 				: ColorText.parse(this.raw).plain().isBlank() ? "Erst Text eingeben"
 				: "Schickt " + this.fullCommand();
 			graphics.setTooltipForNextFrame(this.font, this.font.split(Component.literal(tip), 220), mouseX, mouseY);
@@ -991,7 +1115,10 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		int rowY = this.listTop() + (index - this.templateScroll) * ROW;
 		return switch (parts[0]) {
 			case "color" -> new int[] {buttonX, this.pickerY(), buttonW, 16};
-			case "gradient" -> new int[] {buttonX, this.pickerY() + 22, buttonW, 16};
+			case "gradient" -> ColorCodes.legacy()
+				? new int[] {this.cx + this.cw - (this.font.width("Verlauf") + 16), this.pickerY(), this.font.width("Verlauf") + 16, 16}
+				: new int[] {buttonX, this.pickerY() + 22, buttonW, 16};
+			case "end" -> new int[] {this.legacyEndX(index), this.pickerY(), 16, 16};
 			case "send" -> withHeight(this.sendBox());
 			case "chat" -> withHeight(this.chatBox());
 			case "cancel" -> withHeight(this.cancelBox());
@@ -1051,7 +1178,12 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		int py = this.paletteY();
 		for (int i = 0; i < PALETTE.length; i++) {
 			if (inside(mx, my, this.cx + i * this.swatch, py, this.swatch, this.swatch)) {
-				if (button == 1) {
+				if (this.pickingEnd >= 0) {
+					LEGACY_SLOTS[this.pickingEnd] = PALETTE[i];
+					this.pickingEnd = -1;
+				} else if (button == 1 && ColorCodes.legacy()) {
+					LEGACY_SLOTS[0] = PALETTE[i];
+				} else if (button == 1) {
 					this.setPicked(PALETTE[i].getColor() & 0xFFFFFF);
 					this.loadSlot();
 				} else {
@@ -1072,18 +1204,25 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		}
 
 		// picker
-		if (inside(mx, my, this.cx, this.pickerY(), this.pickerW, this.pickerH)) {
+		if (ColorCodes.legacy()) {
+			if (this.clickLegacyGradient(mx, my)) {
+				return true;
+			}
+			this.pickingEnd = -1;
+		} else if (inside(mx, my, this.cx, this.pickerY(), this.pickerW, this.pickerH)) {
 			this.dragging = 1;
 			this.dragPicker(mx, my);
 			return true;
 		}
-		if (inside(mx, my, this.cx, this.hueY() - 2, this.pickerW, 10)) {
-			this.dragging = 2;
-			this.dragPicker(mx, my);
-			return true;
-		}
-		if (this.clickPickerSide(mx, my)) {
-			return true;
+		if (!ColorCodes.legacy()) {
+			if (inside(mx, my, this.cx, this.hueY() - 2, this.pickerW, 10)) {
+				this.dragging = 2;
+				this.dragPicker(mx, my);
+				return true;
+			}
+			if (this.clickPickerSide(mx, my)) {
+				return true;
+			}
 		}
 
 		// bottom buttons
@@ -1111,7 +1250,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 			this.input.mouseClicked(event, doubleClick);
 			return true;
 		}
-		if (inside(mx, my, this.cx, this.hexY(), this.pickerW, 16)) {
+		if (!ColorCodes.legacy() && inside(mx, my, this.cx, this.hexY(), this.pickerW, 16)) {
 			this.input.setFocused(false);
 			this.setFocused(this.hexField);
 			this.hexField.setFocused(true);
@@ -1238,7 +1377,15 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 			this.templateScroll -= (int) Math.signum(scrollY);
 			return true;
 		}
-		if (inside(mouseX, mouseY, this.cx, this.hueY() - 2, this.pickerW, 10)) {
+		if (ColorCodes.legacy()) {
+			for (int end = 0; end < 2; end++) {
+				if (inside(mouseX, mouseY, this.legacyEndX(end), this.pickerY(), 16, 16)) {
+					int next = Math.floorMod(paletteIndex(LEGACY_SLOTS[end]) - (int) Math.signum(scrollY), PALETTE.length);
+					LEGACY_SLOTS[end] = PALETTE[next];
+					return true;
+				}
+			}
+		} else if (inside(mouseX, mouseY, this.cx, this.hueY() - 2, this.pickerW, 10)) {
 			this.hue = (this.hue - (float) scrollY * 0.01f + 1) % 1f;
 			this.setPicked(ColorMath.hsv(this.hue, this.sat, this.val));
 			return true;
