@@ -7,6 +7,7 @@ import com.hugosmpenhanced.client.HugoSmpEnhancedClient;
 import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.quickjoin.QuickJoinAction;
+import com.hugosmpenhanced.client.feature.update.UpdateBadge;
 import com.hugosmpenhanced.client.gui.HugoStyle;
 import com.hugosmpenhanced.client.gui.StyledScreen;
 import com.hugosmpenhanced.client.mixin.ScreenAccessor;
@@ -103,6 +104,21 @@ public class HugoTitleScreen extends TitleScreen implements StyledScreen {
 					ModConfigManager.save();
 					this.rebuildWidgets();
 				}));
+
+		UpdateBadge badge = this.layout == MainMenuLayout.SIDEBAR
+				? UpdateBadge.create(this, this.panelWidth + 8, 4)
+				: UpdateBadge.create(this, 4, 4);
+		if (badge != null) {
+			this.addRenderableWidget(badge);
+		}
+	}
+
+	private boolean versionFits() {
+		return this.font.width(versionText()) + this.font.width(COPYRIGHT) + 12 <= this.width;
+	}
+
+	private static String versionText() {
+		return "HugoSMP Enhanced " + modVersion() + " - Minecraft " + SharedConstants.getCurrentVersion().name();
 	}
 
 	private void initClassic(boolean join, boolean modMenu) {
@@ -262,10 +278,9 @@ public class HugoTitleScreen extends TitleScreen implements StyledScreen {
 		}
 		renderSplash(graphics);
 
-		String version = "HugoSMP Enhanced " + modVersion() + " - Minecraft " + SharedConstants.getCurrentVersion().name();
+		String version = versionText();
 		int copyrightWidth = this.font.width(COPYRIGHT);
-		boolean fits = this.font.width(version) + copyrightWidth + 12 <= this.width;
-		if (fits) {
+		if (this.versionFits()) {
 			graphics.drawString(this.font, version, 2, this.height - 10, 0xFFFFFFFF);
 		} else if (this.layout == MainMenuLayout.SIDEBAR) {
 			graphics.drawString(this.font, version, this.width - this.font.width(version) - 2, this.height - 20, 0xFFFFFFFF);

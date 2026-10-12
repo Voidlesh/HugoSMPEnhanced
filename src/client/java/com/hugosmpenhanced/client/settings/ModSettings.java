@@ -51,6 +51,9 @@ import com.hugosmpenhanced.client.feature.sell.SellSpeed;
 import com.hugosmpenhanced.client.feature.spawnerprices.SpawnerPrices;
 import com.hugosmpenhanced.client.feature.spawnerprices.SpawnerPricesScreen;
 import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
+import com.hugosmpenhanced.client.feature.update.ModUpdates;
+import com.hugosmpenhanced.client.feature.update.UpdateInstaller;
+import com.hugosmpenhanced.client.feature.update.UpdateStatusOption;
 import com.hugosmpenhanced.client.settings.option.ButtonOption;
 import com.hugosmpenhanced.client.settings.option.CycleOption;
 import com.hugosmpenhanced.client.settings.option.InfoOption;
@@ -114,6 +117,7 @@ public final class ModSettings {
 					new KeyBindOption("Menü öffnen", "Taste für dieses Menü, überall im Spiel", () -> SettingsFeature.openKey),
 					toggle("Knopf im Pausemenü", "Logo-Knopf neben Kamera und Notizblock",
 						c -> c.pauseMenuSettingsButton, (c, v) -> c.pauseMenuSettingsButton = v)),
+				updatesSection(),
 				new SettingsSection("Daten",
 					ButtonOption.action("Konfig-Ordner", "config/hugosmpenhanced.json", "Öffnen",
 						() -> Util.getPlatform().openPath(FabricLoader.getInstance().getConfigDir())),
@@ -186,6 +190,28 @@ public final class ModSettings {
 			return "Keine Namen";
 		}
 		return own == null ? rest : rest == null ? own : own + " und " + rest;
+	}
+
+	private static SettingsSection updatesSection() {
+		return new SettingsSection("Updates",
+			new UpdateStatusOption().keywords("update version aktualisieren github release"),
+			toggle("Nach Updates suchen", "Zeigt neue Versionen im Hauptmenü und einmal im Chat",
+				c -> c.updateCheck, (c, v) -> c.updateCheck = v).keywords("update github"),
+			toggle("Automatisch installieren", "Lädt neue Versionen selbst herunter, prüft sie und tauscht die Jar "
+				+ "aus, wenn du das Spiel beendest", c -> c.updateAutoInstall, (c, v) -> {
+					c.updateAutoInstall = v;
+					ModUpdates.Release release = ModUpdates.notifiable();
+					if (v && release != null && UpdateInstaller.canInstall(release)) {
+						UpdateInstaller.download(release);
+					}
+				}).keywords("update auto download"),
+			toggle("Vorabversionen", "Auch Releases, die auf GitHub als Pre-release markiert sind",
+				c -> c.updatePrereleases, (c, v) -> {
+					c.updatePrereleases = v;
+					ModUpdates.check();
+				}).keywords("update beta alpha pre-release"),
+			ButtonOption.action("Alle Releases", ModUpdates.RELEASES_PAGE.replace("https://", ""), "Öffnen",
+				() -> Util.getPlatform().openUri(ModUpdates.RELEASES_PAGE)).keywords("update changelog github"));
 	}
 
 	private static SettingsTab antiLeakTab() {

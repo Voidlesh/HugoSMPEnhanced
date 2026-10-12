@@ -60,6 +60,12 @@ public class ModConfig {
 	// Chat beim Weltwechsel erhalten
 	public boolean persistentChatEnabled = true;
 
+	// Updates von GitHub
+	public boolean updateCheck = true;
+	public boolean updateAutoInstall = false;
+	public boolean updatePrereleases = false;
+	public String updateSkippedVersion = "";
+
 	// Einstellungsmenü: Logo-Knopf im Pausemenü
 	public boolean pauseMenuSettingsButton = true;
 
