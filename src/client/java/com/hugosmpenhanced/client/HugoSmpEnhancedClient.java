@@ -20,6 +20,8 @@ import com.hugosmpenhanced.client.feature.spawnerprices.SpawnerPricesFeature;
 import com.hugosmpenhanced.client.feature.streamer.StreamerFeature;
 import com.hugosmpenhanced.client.feature.streamermode.StreamerMode;
 import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
+import com.hugosmpenhanced.client.feature.update.ModUpdates;
+import com.hugosmpenhanced.client.feature.update.UpdateBadge;
 import com.hugosmpenhanced.client.settings.SettingsFeature;
 import com.hugosmpenhanced.client.util.ServerCheck;
 import net.fabricmc.api.ClientModInitializer;
@@ -55,6 +57,8 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		AntiLeak.register();
 		StreamerMode.register();
 		StreamerFeature.register();
+		ModUpdates.register();
+		UpdateBadge.register();
 		LOGGER.info("HugoSMP Enhanced loaded");
 	}
 }

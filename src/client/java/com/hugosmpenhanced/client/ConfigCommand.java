@@ -1,6 +1,7 @@
 package com.hugosmpenhanced.client;
 
 import com.hugosmpenhanced.client.feature.discord.DiscordPresence;
+import com.hugosmpenhanced.client.feature.update.ModUpdates;
 import com.hugosmpenhanced.client.settings.SettingsScreen;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
@@ -16,6 +17,11 @@ public final class ConfigCommand {
 						.then(ClientCommandManager.literal("discord").executes(context -> {
 							Minecraft client = Minecraft.getInstance();
 							client.execute(() -> DiscordPresence.printDiagnosis(client));
+							return 1;
+						}))
+						.then(ClientCommandManager.literal("update").executes(context -> {
+							Minecraft client = Minecraft.getInstance();
+							client.execute(() -> ModUpdates.openOrCheck(client));
 							return 1;
 						}))
 						.executes(context -> {
