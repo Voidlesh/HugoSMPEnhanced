@@ -17,6 +17,7 @@ import com.hugosmpenhanced.client.feature.mentions.MentionHighlightFeature;
 import com.hugosmpenhanced.client.feature.notes.NotesFeature;
 import com.hugosmpenhanced.client.feature.sell.SellFeature;
 import com.hugosmpenhanced.client.feature.spawnerprices.SpawnerPricesFeature;
+import com.hugosmpenhanced.client.feature.streamer.StreamerFeature;
 import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
 import com.hugosmpenhanced.client.settings.SettingsFeature;
 import com.hugosmpenhanced.client.util.ServerCheck;
@@ -51,6 +52,7 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		DiscordPresence.register();
 		ColorCodes.register();
 		AntiLeak.register();
+		StreamerFeature.register();
 		LOGGER.info("HugoSMP Enhanced loaded");
 	}
 }
