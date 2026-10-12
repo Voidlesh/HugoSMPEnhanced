@@ -358,11 +358,18 @@ public final class StatusReader {
 		if (!matcher.find()) {
 			return null;
 		}
-		Double value = AuctionLore.parseAmount(matcher.group(1));
+		String digits = matcher.group(1).replaceAll("[.,]+$", "");
+		String suffix = matcher.group(2);
+		Double value;
+		if (suffix != null && digits.matches("\\d+[.,]\\d+")) {
+			// With a suffix one separator is always the decimal point: "1.500M" is 1,5 million.
+			value = Double.parseDouble(digits.replace(',', '.'));
+		} else {
+			value = AuctionLore.parseAmount(digits);
+		}
 		if (value == null) {
 			return null;
 		}
-		String suffix = matcher.group(2);
 		if (suffix != null) {
 			value *= switch (suffix.toLowerCase(Locale.ROOT)) {
 				case "k", "tsd" -> 1_000;

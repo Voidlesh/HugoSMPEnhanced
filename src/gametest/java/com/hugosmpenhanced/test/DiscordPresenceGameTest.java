@@ -89,15 +89,21 @@ public class DiscordPresenceGameTest implements FabricClientGameTest {
 			server.runCommand("scoreboard objectives add sb dummy {\"text\":\"HugoSMP\",\"color\":\"gold\",\"bold\":true}");
 			server.runCommand("scoreboard objectives setdisplay sidebar sb");
 			server.runCommand("scoreboard objectives modify sb numberformat blank");
+			// HugoSMP's own sidebar (screenshot from Voidlesh): icon, label, value, no colon.
 			line(server, "l1", 9, "{\"text\":\"\"}");
 			line(server, "l2", 8, "[{\"text\":\"» Server: \",\"color\":\"gray\"},{\"text\":\"SMP\",\"color\":\"green\"}]");
-			line(server, "l3", 7, "[{\"text\":\"» Geld: \",\"color\":\"gray\"},{\"text\":\"$1.234.567\",\"color\":\"gold\"}]");
-			line(server, "l4", 6, "[{\"text\":\"» Kills: \",\"color\":\"gray\"},{\"text\":\"42\",\"color\":\"red\"}]");
-			line(server, "l5", 5, "[{\"text\":\"» Tode: \",\"color\":\"gray\"},{\"text\":\"7\",\"color\":\"red\"}]");
-			line(server, "l6", 4, "{\"text\":\"hugosmp.net\",\"color\":\"yellow\"}");
+			line(server, "l3", 7, "[{\"text\":\"$ \",\"color\":\"green\"},{\"text\":\"Geld \"},{\"text\":\"1.50M\",\"color\":\"green\"}]");
+			line(server, "g0", 7, "[{\"text\":\"Gems \"},{\"text\":\"0\",\"color\":\"red\"}]");
+			line(server, "l4", 6, "[{\"text\":\"⚔ Kills \"},{\"text\":\"42\",\"color\":\"gold\"}]");
+			line(server, "l5", 5, "[{\"text\":\"☠ Tode \"},{\"text\":\"7\",\"color\":\"red\"}]");
+			line(server, "c0", 5, "[{\"text\":\"Clan \"},{\"text\":\"GHG\",\"color\":\"dark_purple\"}]");
+			line(server, "p0", 4, "[{\"text\":\"Ping \"},{\"text\":\"37ms\",\"color\":\"light_purple\"}]");
+			line(server, "k0", 4, "[{\"text\":\"Keyall \"},{\"text\":\"???\",\"color\":\"aqua\"}]");
+			line(server, "t0", 4, "[{\"text\":\"Spielzeit \"},{\"text\":\"4d 15h\",\"color\":\"green\"}]");
+			line(server, "l6", 3, "{\"text\":\"hugosmp.net\",\"color\":\"red\"}");
 
 			waitFor(context, discord, a -> "SMP".equals(str(a, "details"))
-				&& "$1.234.567 · 42 Kills · 7 Tode".equals(str(a, "state")), "SMP with money, kills and deaths");
+				&& "$1.500.000 · 42 Kills · 7 Tode".equals(str(a, "state")), "SMP with money, kills and deaths");
 			JsonObject activity = discord.last();
 			check(activity.getAsJsonObject("timestamps").get("start").getAsLong() > 0, "elapsed time");
 			check(DiscordPresence.LOGO_URL.equals(activity.getAsJsonObject("assets").get("large_image").getAsString()), "logo");
@@ -142,7 +148,7 @@ public class DiscordPresenceGameTest implements FabricClientGameTest {
 				ModConfigManager.CONFIG.discordShowKd = true;
 				ModConfigManager.CONFIG.discordMoneyShort = true;
 			});
-			waitFor(context, discord, a -> "$1,2 Mio · 42 Kills · 7 Tode · K/D 6,00".equals(str(a, "state")), "K/D and short money");
+			waitFor(context, discord, a -> "$1,5 Mio · 42 Kills · 7 Tode · K/D 6,00".equals(str(a, "state")), "K/D and short money");
 
 			// Another server: the "Server:" line wins.
 			line(server, "l2", 8, "[{\"text\":\"» Server: \",\"color\":\"gray\"},{\"text\":\"Duels-2\",\"color\":\"green\"}]");
