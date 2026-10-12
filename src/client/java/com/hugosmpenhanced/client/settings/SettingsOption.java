@@ -55,8 +55,13 @@ public abstract class SettingsOption {
 	public boolean matches(String query) {
 		String q = query.toLowerCase(Locale.ROOT);
 		return this.label.toLowerCase(Locale.ROOT).contains(q)
-			|| (this.description != null && this.description.toLowerCase(Locale.ROOT).contains(q))
+			|| (this.description() != null && this.description().toLowerCase(Locale.ROOT).contains(q))
 			|| this.keywords.toLowerCase(Locale.ROOT).contains(q);
+	}
+
+	/** The grey text under the label; rows whose text changes override this. */
+	protected String description() {
+		return this.description;
 	}
 
 	/** Width the control takes on the right of the row. */
@@ -77,7 +82,8 @@ public abstract class SettingsOption {
 	}
 
 	private List<FormattedCharSequence> descriptionLines(Font font, int width) {
-		return this.description == null ? List.of() : font.split(Component.literal(this.description), this.textWidth(font, width));
+		String text = this.description();
+		return text == null ? List.of() : font.split(Component.literal(text), this.textWidth(font, width));
 	}
 
 	public int height(Font font, int width) {
