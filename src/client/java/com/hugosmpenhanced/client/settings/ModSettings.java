@@ -13,6 +13,12 @@ import com.hugosmpenhanced.client.config.NametagStyleScreen;
 import com.hugosmpenhanced.client.config.SecondNametagScreen;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
 import com.hugosmpenhanced.client.feature.auction.CustomItems;
+import com.hugosmpenhanced.client.feature.discord.DiscordOutside;
+import com.hugosmpenhanced.client.feature.discord.DiscordPresence;
+import com.hugosmpenhanced.client.feature.discord.DiscordPreviewOption;
+import com.hugosmpenhanced.client.feature.discord.DiscordStatusOption;
+import com.hugosmpenhanced.client.feature.discord.DiscordTimer;
+import com.hugosmpenhanced.client.feature.discord.StatusReader;
 import com.hugosmpenhanced.client.feature.entityheatmap.EntityHeatmap;
 import com.hugosmpenhanced.client.feature.gallery.GalleryFeature;
 import com.hugosmpenhanced.client.feature.gallery.GalleryScreen;
@@ -37,6 +43,7 @@ import com.hugosmpenhanced.client.settings.option.KeyBindOption;
 import com.hugosmpenhanced.client.settings.option.PillsOption;
 import com.hugosmpenhanced.client.settings.option.SliderOption;
 import com.hugosmpenhanced.client.settings.option.StringListOption;
+import com.hugosmpenhanced.client.settings.option.TextOption;
 import com.hugosmpenhanced.client.settings.option.ToggleOption;
 
 import net.fabricmc.loader.api.FabricLoader;
@@ -86,7 +93,7 @@ public final class ModSettings {
 	// ------------------------------------------------------------------ categories
 
 	private static SettingsCategory general() {
-		return new SettingsCategory("Allgemein", "general", "Menü, Taste und Titelbildschirm",
+		return new SettingsCategory("Allgemein", "general", "Menü, Hauptmenü und Discord",
 			new SettingsTab("Menü",
 				new SettingsSection("Menü",
 					new KeyBindOption("Menü öffnen", "Taste für dieses Menü, überall im Spiel", () -> SettingsFeature.openKey),
@@ -115,7 +122,63 @@ public final class ModSettings {
 					new CycleOption<>("Animation", null, SplashAnimation.class, c -> c.splashAnimation, (c, v) -> c.splashAnimation = v),
 					new CycleOption<>("Farbe", null, SplashColor.class, c -> c.splashColor, (c, v) -> c.splashColor = v),
 					new StringListOption("Eigene Splash-Texte", "Bei jedem Öffnen wird zufällig einer gezeigt",
-						"Keine, dann ohne Splash-Text", c -> c.splashTexts, (c, v) -> c.splashTexts = v))));
+						"Keine, dann ohne Splash-Text", c -> c.splashTexts, (c, v) -> c.splashTexts = v))),
+			discordTab());
+	}
+
+	private static SettingsTab discordTab() {
+		return new SettingsTab("Discord",
+			new SettingsSection("Discord Rich Presence",
+				toggle("Auf Discord-Profil anzeigen", "Zeigt Ort, Geld, Kills und Tode in deinem Discord-Status. Braucht die Discord-App am PC.",
+					c -> c.discordEnabled, (c, v) -> c.discordEnabled = v).keywords("rich presence rpc status"),
+				new DiscordStatusOption(),
+				new DiscordPreviewOption()),
+			new SettingsSection("Inhalt",
+				new PillsOption("Anzeigen", "Was aus ist, fällt samt Trennzeichen aus dem Text")
+					.pill("Ort", c -> c.discordShowLocation, (c, v) -> c.discordShowLocation = v)
+					.pill("Geld", c -> c.discordShowMoney, (c, v) -> c.discordShowMoney = v)
+					.pill("Kills", c -> c.discordShowKills, (c, v) -> c.discordShowKills = v)
+					.pill("Tode", c -> c.discordShowDeaths, (c, v) -> c.discordShowDeaths = v)
+					.pill("K/D", c -> c.discordShowKd, (c, v) -> c.discordShowKd = v)
+					.pill("Kopf", c -> c.discordShowHead, (c, v) -> c.discordShowHead = v),
+				toggle("Geld kurz", "$1,2 Mio statt $1.234.567", c -> c.discordMoneyShort, (c, v) -> c.discordMoneyShort = v),
+				new CycleOption<>("Zeit", null, DiscordTimer.class, c -> c.discordTimer, (c, v) -> c.discordTimer = v),
+				new CycleOption<>("Außerhalb von HugoSMP", "Hauptmenü, Einzelspieler und andere Server",
+					DiscordOutside.class, c -> c.discordOutside, (c, v) -> c.discordOutside = v),
+				new PillsOption("Buttons", "Andere sehen sie auf deinem Profil, du selbst kannst sie nicht klicken")
+					.pill("HugoSMP-Discord", c -> c.discordButtonDiscord, (c, v) -> c.discordButtonDiscord = v)
+					.pill("Mod herunterladen", c -> c.discordButtonMod, (c, v) -> c.discordButtonMod = v)),
+			new SettingsSection("Eigener Text",
+				new TextOption("Obere Zeile", "Platzhalter: " + DiscordPresence.PLACEHOLDERS, "z. B. {ort}", 128,
+					c -> c.discordDetails, (c, v) -> c.discordDetails = v).keywords("details platzhalter"),
+				new TextOption("Untere Zeile", "Teile mit · trennen, damit fehlende Werte sauber wegfallen", "z. B. {geld} · {kills} Kills", 128,
+					c -> c.discordState, (c, v) -> c.discordState = v).keywords("state platzhalter")),
+			new SettingsSection("Ort-Erkennung",
+				new InfoOption("Gerade erkannt", "Liest Scoreboard, Tabliste, Weltname und Befehle wie /afk oder /spawn",
+					ModSettings::discordDetected).keywords("ort server"),
+				ButtonOption.action("Erkennung prüfen", "Schreibt in den Chat, was die Mod sieht und woher jeder Wert kommt", "Im Chat zeigen",
+					() -> {
+						Minecraft client = Minecraft.getInstance();
+						client.setScreen(null);
+						DiscordPresence.printDiagnosis(client);
+					}),
+				new StringListOption("Orte", "Wort=Name: das erste Wort, das gefunden wird, gibt den Ort an", null,
+					c -> c.discordLocations, (c, v) -> c.discordLocations = v).keywords("afk duels pvp spawn smp"),
+				SliderOption.ofInt("Spawn-Radius", "So nah am Weltspawn zählt als Spawn, 0 = aus", 0, 500, v -> (int) v + " Blöcke",
+					c -> c.discordSpawnRadius, (c, v) -> c.discordSpawnRadius = v),
+				new TextOption("Sonst", "Wenn nichts erkannt wird", "leer = kein Ort", 32,
+					c -> c.discordFallbackLocation, (c, v) -> c.discordFallbackLocation = v)),
+			new SettingsSection("Discord-App",
+				new TextOption("Application-ID", "Aus dem Discord Developer Portal. Ihr Name steht als \"Spielt ...\" im Profil.",
+					"Zahl, z. B. 1234567890123456789", 25, c -> c.discordAppId, (c, v) -> c.discordAppId = v).keywords("client id")));
+	}
+
+	private static String discordDetected() {
+		if (Minecraft.getInstance().level == null) {
+			return "nicht im Spiel";
+		}
+		StatusReader.Reading reading = StatusReader.last();
+		return reading.location() == null ? "nichts" : reading.location() + " (" + reading.locationSource() + ")";
 	}
 
 	private static SettingsCategory chat() {

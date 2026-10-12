@@ -23,6 +23,7 @@ Früher Aufbau. Implementierte Features:
 - **`/hg <Name>`** — Profilseite mit drehbarem Skin, HugoGuard-Status, Reputation (▲/▼), Anzahl Reports, letztem Report und Button zum Profil auf hugoguard.net; ohne Name das eigene Profil
 - **Chat-Rechner** — steht am Ende der Chat-Eingabe eine Rechnung (z. B. "verkaufe für 64*3,5"), erscheint das Ergebnis live darüber, mit Stacks/Shulkern; Tab ersetzt die Rechnung durch das Ergebnis. Versteht + - * x / : ^ %, Klammern, deutsche/englische Kommazahlen und k, m, st (Stack = 64) (`src/client/.../feature/calculator`)
 - **Notizblock** — mehrere Notizen mit Titel, über ein Symbol im Pause-Menü oder eine eigene Taste (standardmäßig nicht belegt); angeheftete Notizen bleiben oben links im HUD sichtbar (`src/client/.../feature/notes`)
+- **Discord Rich Presence** — zeigt im Discord-Profil Ort (SMP, Spawn, AFK-Welt, Duels, PvP), Geld, Kills, Tode und K/D samt Spielzeit, Logo, eigenem Kopf und Buttons; zwei Textzeilen mit Platzhaltern, alles in Einstellungen → Allgemein → Discord. Werte kommen aus Scoreboard, Tabliste, Weltname, Befehlen wie `/afk` und Chat-Antworten, Kills/Tode sonst aus der Vanilla-Statistik; `/hugosmpenhanced discord` zeigt, was erkannt wurde. Spricht lokal mit der Discord-App (`discord-ipc`), kein Login (`src/client/.../feature/discord`)
 
 Alle Features (außer dem Hauptmenü-Button, der ja vor jeder Verbindung greift) sind über `ServerCheck` (`src/client/.../util/ServerCheck.java`) auf Verbindungen zu `hugosmp.net` beschränkt — sie tun nichts auf anderen Servern.
 

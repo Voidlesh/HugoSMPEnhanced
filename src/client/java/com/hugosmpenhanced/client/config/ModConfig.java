@@ -8,6 +8,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
+import com.hugosmpenhanced.client.feature.discord.DiscordOutside;
+import com.hugosmpenhanced.client.feature.discord.DiscordTimer;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButton;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonPosition;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonSpots;
@@ -140,4 +142,25 @@ public class ModConfig {
 	/** /sell price per single item, learned from sales of one item type. */
 	public Map<String, Double> sellPrices = new HashMap<>();
 	public String sellCommand = "sell";
+	// Discord Rich Presence
+	public boolean discordEnabled = true;
+	public String discordAppId = "";
+	public String discordDetails = "{ort}";
+	public String discordState = "{geld} · {kills} Kills · {tode} Tode · K/D {kd}";
+	public boolean discordShowLocation = true;
+	public boolean discordShowMoney = true;
+	public boolean discordShowKills = true;
+	public boolean discordShowDeaths = true;
+	public boolean discordShowKd = false;
+	public boolean discordShowHead = true;
+	public boolean discordMoneyShort = false;
+	public DiscordTimer discordTimer = DiscordTimer.JOIN;
+	public DiscordOutside discordOutside = DiscordOutside.SHOW;
+	public boolean discordButtonDiscord = true;
+	public boolean discordButtonMod = true;
+	/** "word=Name": the first word found in the scoreboard, world name or warp command names the place. */
+	public List<String> discordLocations = new ArrayList<>(List.of("afk=AFK-Welt", "duel=Duels", "pvp=PvP", "spawn=Spawn",
+		"lobby=Spawn", "farmwelt=Farmwelt", "smp=SMP", "survival=SMP"));
+	public int discordSpawnRadius = 150;
+	public String discordFallbackLocation = "SMP";
 }
