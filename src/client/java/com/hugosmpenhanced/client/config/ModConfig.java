@@ -9,6 +9,7 @@ import java.util.Set;
 
 import com.hugosmpenhanced.client.feature.antileak.CoordinateMask;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
+import com.hugosmpenhanced.client.feature.client.HudCorner;
 import com.hugosmpenhanced.client.feature.colorcodes.ColorCodes;
 import com.hugosmpenhanced.client.feature.colorcodes.ColorTemplate;
 import com.hugosmpenhanced.client.feature.colorcodes.HexStyle;
@@ -223,4 +224,14 @@ public class ModConfig {
 	public String streamerTwitchJoinWord = "!join";
 	public boolean streamerTwitchSubsOnly = false;
 	public int streamerWheelSeconds = 7;
+	// Client: allgemeine Einstellungen (Helligkeit, Anzeige, Zoom)
+	public boolean clientFullbright = false;
+	public HudCorner clientFpsHud = HudCorner.OFF;
+	public boolean clientFpsShowPing = true;
+	public boolean clientLowFire = false;
+	public boolean clientNoPumpkinBlur = false;
+	public double clientZoomFactor = 4.0;
+	public boolean clientZoomScroll = true;
+	public boolean clientZoomSmooth = true;
+	public boolean clientZoomCinematic = false;
 }

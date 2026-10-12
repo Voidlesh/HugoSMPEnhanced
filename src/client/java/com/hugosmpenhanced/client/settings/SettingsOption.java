@@ -145,7 +145,7 @@ public abstract class SettingsOption {
 			int[] reset = this.resetBox(Minecraft.getInstance().font);
 			if (this.inside(mouseX, mouseY, reset[0] - 2, reset[1] - 2, RESET_SIZE + 4, RESET_SIZE + 4)) {
 				this.reset();
-				changed();
+				this.saveChange();
 				return true;
 			}
 		}
@@ -192,5 +192,15 @@ public abstract class SettingsOption {
 
 	protected static void changed() {
 		ModConfigManager.save();
+	}
+
+	/** Saves after this row was reset; rows bound elsewhere than the mod config override it. */
+	protected void saveChange() {
+		ModConfigManager.save();
+	}
+
+	/** Rows that show one of Minecraft's own options; "reset everything" leaves those alone. */
+	public boolean minecraftOption() {
+		return false;
 	}
 }

@@ -24,7 +24,8 @@
 			"com.hugosmpenhanced.test.SpawnerPricesGameTest",
 			"com.hugosmpenhanced.test.StreamerGameTest",
 			"com.hugosmpenhanced.test.StreamerModeGameTest",
-			"com.hugosmpenhanced.test.UpdateGameTest"
+			"com.hugosmpenhanced.test.UpdateGameTest",
+			"com.hugosmpenhanced.test.ClientSettingsGameTest"
 		],
 		"main": [
 			"com.hugosmpenhanced.test.TestSellServer",
