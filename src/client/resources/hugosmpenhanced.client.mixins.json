@@ -23,6 +23,8 @@
 		"HugoGuardNametagMixin",
 		"HugoGuardChatMixin",
 		"ChatCalculatorMixin",
+		"ColorChatPreviewMixin",
+		"EditBoxAccessor",
 		"AuctionSearchSignMixin",
 		"InventoryLayoutSlotMixin",
 		"LimitedOfferSlotMixin",

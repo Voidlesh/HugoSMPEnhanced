@@ -18,10 +18,12 @@
 			"com.hugosmpenhanced.test.EntityHeatmapGameTest",
 			"com.hugosmpenhanced.test.SettingsGameTest",
 			"com.hugosmpenhanced.test.SellGameTest",
-			"com.hugosmpenhanced.test.DiscordPresenceGameTest"
+			"com.hugosmpenhanced.test.DiscordPresenceGameTest",
+			"com.hugosmpenhanced.test.ColorCodesGameTest"
 		],
 		"main": [
-			"com.hugosmpenhanced.test.TestSellServer"
+			"com.hugosmpenhanced.test.TestSellServer",
+			"com.hugosmpenhanced.test.TestRenameServer"
 		]
 	}
 }
