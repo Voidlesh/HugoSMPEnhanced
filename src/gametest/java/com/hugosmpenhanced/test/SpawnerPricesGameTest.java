@@ -38,9 +38,9 @@ import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
 /**
  * Spawner prices from a local copy of hugosmptools.com's public trading list (the real VOID Market
- * and yayk clan prices of 12.10.2026): spawner items must show VOID's Ankauf/Verkauf and a better
- * offer elsewhere, other items nothing; the overview lists every kind; a failed refresh keeps the
- * last prices.
+ * and yayk clan prices of 12.10.2026): spawner items must show VOID's Ankauf/Verkauf and nothing
+ * from other servers, other items nothing; the overview lists every kind; a failed refresh keeps
+ * the last prices.
  */
 @SuppressWarnings("UnstableApiUsage")
 public class SpawnerPricesGameTest implements FabricClientGameTest {
@@ -60,18 +60,14 @@ public class SpawnerPricesGameTest implements FabricClientGameTest {
 	private static void run(ClientGameTestContext context) {
 		SpawnerPrices.forceActive = true;
 		ModConfigManager.CONFIG.spawnerPricesTooltip = true;
-		ModConfigManager.CONFIG.spawnerPricesCompareBest = true;
-		ModConfigManager.CONFIG.spawnerPricesServer = "VOID Market";
 		context.runOnClient(client -> client.options.menuBackgroundBlurriness().set(0));
 		check(Boolean.TRUE.equals(SpawnerPrices.refresh().join()), "prices must load: " + SpawnerPrices.lastError());
 		SpawnerPrices.Snapshot snapshot = SpawnerPrices.snapshot();
-		SpawnerPrices.Server voidMarket = snapshot.server("void market");
-		check(voidMarket != null && voidMarket.buy(SpawnerMob.SKELETON) == 12_500_000L && voidMarket.sell(SpawnerMob.SKELETON) == null,
+		SpawnerPrices.Server voidMarket = snapshot.server();
+		check(voidMarket != null && voidMarket.name().equals("VOID Market"), "only VOID Market is kept");
+		check(voidMarket.buy(SpawnerMob.SKELETON) == 12_500_000L && voidMarket.sell(SpawnerMob.SKELETON) == null,
 			"VOID skeleton Ankauf 12.5M, no Verkauf");
-		check(snapshot.bestBuy(SpawnerMob.SKELETON).server().name().equals("yayk clan")
-			&& snapshot.bestBuy(SpawnerMob.SKELETON).price() == 14_400_000L, "best skeleton Ankauf is yayk with 14.4M");
-		check(snapshot.bestBuy(SpawnerMob.IRON_GOLEM).server() == voidMarket, "VOID has the best iron golem Ankauf");
-		check(snapshot.bestSell(SpawnerMob.CREEPER).price() == 5_500_000L, "cheapest creeper is 5.5M");
+		check(voidMarket.buy(SpawnerMob.CREEPER) == 5_000_000L, "VOID creeper 5M (yayk's 7.5M is ignored)");
 
 		try (TestSingleplayerContext singleplayer = context.worldBuilder()
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
@@ -99,12 +95,11 @@ public class SpawnerPricesGameTest implements FabricClientGameTest {
 			System.out.println("SPAWNER tooltip skeletons:\n" + skeletonTooltip);
 			check(skeletonTooltip.contains("VOID Market") && skeletonTooltip.contains("Ankauf: $12,5 Mio")
 				&& skeletonTooltip.contains("4× = $50 Mio") && skeletonTooltip.contains("Verkauf: kein Angebot")
-				&& skeletonTooltip.contains("Mehr bei yayk clan: $14,4 Mio")
-				&& skeletonTooltip.contains("Günstiger bei yayk clan: $10,5 Mio"), "skeleton tooltip");
+				&& !skeletonTooltip.contains("yayk"), "skeleton tooltip shows VOID only");
 			String golemTooltip = tooltip(context, golem);
 			System.out.println("SPAWNER tooltip golem:\n" + golemTooltip);
-			check(golemTooltip.contains("Ankauf: $9 Mio") && !golemTooltip.contains("Mehr bei"), "golem: VOID is best, nothing better named");
-			check(tooltip(context, blaze).contains("Kein Server handelt Lohe-Spawner"), "blaze: nobody trades it");
+			check(golemTooltip.contains("Ankauf: $9 Mio"), "golem Ankauf");
+			check(tooltip(context, blaze).contains("Handelt gerade keine Lohe-Spawner"), "blaze: nobody trades it");
 			check(!tooltip(context, diamonds).contains("Ankauf"), "no prices on diamonds");
 			check(!tooltip(context, zombie).contains("Ankauf"), "no prices on zombie spawners");
 
