@@ -7,6 +7,8 @@ import java.util.regex.Pattern;
 
 import com.google.common.base.Strings;
 
+import com.hugosmpenhanced.client.feature.antileak.FakeCoordinates.Kind;
+
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -45,9 +47,20 @@ public final class DebugCoordinates {
 		return taps.toArray(new int[0][]);
 	}
 
-	/** A run of text, or a hidden number of fixed width. */
-	public record Part(String text, boolean masked) {
+	/** A run of text, or a hidden number of fixed width; {@code kind} says what a hidden number stood for. */
+	public record Part(String text, boolean masked, FakeCoordinates.Kind kind, String token) {
+		Part(String text) {
+			this(text, false, null, null);
+		}
 	}
+
+	private static final Kind[] XYZ = {Kind.POS_X, Kind.POS_Y, Kind.POS_Z};
+	private static final Kind[] BLOCK = {Kind.BLOCK_X, Kind.BLOCK_Y, Kind.BLOCK_Z};
+	private static final Kind[] RELATIVE = {Kind.RELATIVE_X, Kind.RELATIVE_Y, Kind.RELATIVE_Z};
+	private static final Kind[] TARGET = {Kind.TARGET_X, Kind.TARGET_Y, Kind.TARGET_Z};
+	/** Chunk x, section y, chunk z, x and z inside the region, region file x and z. */
+	private static final Kind[] CHUNK = {Kind.CHUNK_X, Kind.SECTION_Y, Kind.CHUNK_Z,
+		Kind.REGION_LOCAL_X, Kind.REGION_LOCAL_Z, Kind.REGION_X, Kind.REGION_Z};
 
 	/** Same as the vanilla debug overlay's renderLines, with coordinates masked. */
 	public static void renderLines(GuiGraphics graphics, Font font, List<String> lines, boolean left) {
@@ -55,7 +68,8 @@ public final class DebugCoordinates {
 		boolean showY = AntiLeak.showY();
 		List<List<Part>> parsed = new ArrayList<>(lines.size());
 		for (String line : lines) {
-			parsed.add(Strings.isNullOrEmpty(line) ? List.of() : split(line, showY));
+			List<Part> parts = Strings.isNullOrEmpty(line) ? List.of() : split(line, showY);
+			parsed.add(style == CoordinateMask.RANDOM ? randomize(parts) : parts);
 		}
 
 		for (int i = 0; i < parsed.size(); i++) {
@@ -93,28 +107,42 @@ public final class DebugCoordinates {
 		}
 	}
 
+	/** Hidden numbers become made-up ones, drawn like normal text. */
+	private static List<Part> randomize(List<Part> parts) {
+		List<Part> out = new ArrayList<>(parts.size());
+		for (Part part : parts) {
+			out.add(part.masked() ? new Part(FakeCoordinates.value(part.kind(), part.token())) : part);
+		}
+		return out;
+	}
+
 	/** Splits a line into text and masked numbers; lines without coordinates come back whole. */
 	public static List<Part> split(String line, boolean showY) {
 		String plain = ChatFormatting.stripFormatting(line);
 		if (plain == null) {
-			return List.of(new Part(line, false));
+			return List.of(new Part(line));
 		}
+		int keep = showY ? 1 : -1;
 		if (plain.startsWith("XYZ: ")) {
-			return mask(line, DECIMAL, showY ? 1 : -1);
+			return mask(line, DECIMAL, keep, XYZ);
 		}
-		if (plain.startsWith("Block: ") || plain.startsWith("Section-relative: ")
-			|| plain.startsWith("Targeted Block: ") || plain.startsWith("Targeted Fluid: ")) {
-			return mask(line, INT, showY ? 1 : -1);
+		if (plain.startsWith("Block: ")) {
+			return mask(line, INT, keep, BLOCK);
+		}
+		if (plain.startsWith("Section-relative: ")) {
+			return mask(line, INT, keep, RELATIVE);
+		}
+		if (plain.startsWith("Targeted Block: ") || plain.startsWith("Targeted Fluid: ")) {
+			return mask(line, INT, keep, TARGET);
 		}
 		if (plain.startsWith("Chunk: ")) {
-			// chunk x, section y, chunk z, x and z inside the region, region file x and z
-			return mask(line, INT, showY ? 1 : -1);
+			return mask(line, INT, keep, CHUNK);
 		}
-		return List.of(new Part(line, false));
+		return List.of(new Part(line));
 	}
 
 	/** Masks every number of the line except the one at {@code keep}. */
-	private static List<Part> mask(String line, Pattern number, int keep) {
+	private static List<Part> mask(String line, Pattern number, int keep, Kind[] kinds) {
 		List<Part> parts = new ArrayList<>();
 		Matcher matcher = number.matcher(line);
 		int start = 0;
@@ -126,15 +154,16 @@ public final class DebugCoordinates {
 			}
 			if (index != keep) {
 				if (matcher.start() > start) {
-					parts.add(new Part(line.substring(start, matcher.start()), false));
+					parts.add(new Part(line.substring(start, matcher.start())));
 				}
-				parts.add(new Part(matcher.group().contains(".") ? "0000.000" : "0000", true));
+				parts.add(new Part(matcher.group().contains(".") ? "0000.000" : "0000", true,
+					kinds[Math.min(index, kinds.length - 1)], matcher.group()));
 				start = matcher.end();
 			}
 			index++;
 		}
 		if (start < line.length()) {
-			parts.add(new Part(line.substring(start), false));
+			parts.add(new Part(line.substring(start)));
 		}
 		return parts;
 	}

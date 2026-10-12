@@ -1,0 +1,11 @@
+{
+	"providers": [
+		{
+			"type": "bitmap",
+			"file": "hugosmpenhanced:font/antileak_bar.png",
+			"ascent": 7,
+			"height": 8,
+			"chars": ["0123456789"]
+		}
+	]
+}

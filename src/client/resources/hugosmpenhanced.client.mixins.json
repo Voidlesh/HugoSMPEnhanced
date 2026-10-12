@@ -34,6 +34,8 @@
 		"AntiLeakLookingAtBlockMixin",
 		"AntiLeakSectionRegionMixin",
 		"AntiLeakSodiumLevelSliceMixin",
+		"AntiLeakBetterF3LineMixin",
+		"AntiLeakBetterF3TargetMixin",
 		"AntiLeakBlockStateMixin",
 		"BlockBehaviourAccessor",
 		"ClientLevelDataAccessor",
