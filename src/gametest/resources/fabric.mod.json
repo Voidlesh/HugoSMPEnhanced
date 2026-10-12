@@ -17,7 +17,8 @@
 			"com.hugosmpenhanced.test.InventoryLayoutGameTest",
 			"com.hugosmpenhanced.test.EntityHeatmapGameTest",
 			"com.hugosmpenhanced.test.SettingsGameTest",
-			"com.hugosmpenhanced.test.SellGameTest"
+			"com.hugosmpenhanced.test.SellGameTest",
+			"com.hugosmpenhanced.test.DiscordPresenceGameTest"
 		],
 		"main": [
 			"com.hugosmpenhanced.test.TestSellServer"
