@@ -185,4 +185,23 @@ public class ModConfig {
 	public boolean antiLeakOres = false;
 	public boolean antiLeakNoRotation = true;
 	public boolean antiLeakClouds = true;
+	// Streamer-Tools (Spenden-Auktion, Giveaway)
+	public int streamerAuctionSeconds = 120;
+	public long streamerStartBid = 10_000;
+	public long streamerMinStep = 5_000;
+	public boolean streamerSumPayments = true;
+	public boolean streamerExtendLateBids = true;
+	public int streamerExtendSeconds = 15;
+	public boolean streamerAnnounce = false;
+	public boolean streamerSounds = true;
+	/** Learned from a real message when the built-in patterns don't fit the server's wording; regex or "". */
+	public String streamerPaymentPattern = "";
+	public String streamerWhisperPattern = "";
+	public boolean streamerIngameJoin = true;
+	public String streamerIngameJoinWord = "join";
+	public boolean streamerTwitchJoin = true;
+	public String streamerTwitchChannel = "";
+	public String streamerTwitchJoinWord = "!join";
+	public boolean streamerTwitchSubsOnly = false;
+	public int streamerWheelSeconds = 7;
 }
