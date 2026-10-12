@@ -40,7 +40,10 @@
 		"BlockBehaviourAccessor",
 		"ClientLevelDataAccessor",
 		"AntiLeakTerrainParticleMixin",
-		"AntiLeakCloudMixin"
+		"AntiLeakCloudMixin",
+		"StreamerModeFontMixin",
+		"StreamerModeWrapMixin",
+		"StreamerModeSkinMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
