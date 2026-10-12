@@ -3,6 +3,7 @@ package com.hugosmpenhanced.client;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearch;
 import com.hugosmpenhanced.client.feature.auction.LimitedOffers;
 import com.hugosmpenhanced.client.feature.auction.PricePerItemFeature;
+import com.hugosmpenhanced.client.feature.colorcodes.ColorCodes;
 import com.hugosmpenhanced.client.feature.discord.DiscordPresence;
 import com.hugosmpenhanced.client.feature.entityheatmap.EntityHeatmap;
 import com.hugosmpenhanced.client.feature.gallery.GalleryFeature;
@@ -45,6 +46,7 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		EntityHeatmap.register();
 		SellFeature.register();
 		DiscordPresence.register();
+		ColorCodes.register();
 		LOGGER.info("HugoSMP Enhanced loaded");
 	}
 }

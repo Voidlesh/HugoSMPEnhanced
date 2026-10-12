@@ -13,6 +13,9 @@ import com.hugosmpenhanced.client.config.NametagStyleScreen;
 import com.hugosmpenhanced.client.config.SecondNametagScreen;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
 import com.hugosmpenhanced.client.feature.auction.CustomItems;
+import com.hugosmpenhanced.client.feature.colorcodes.ColorCodeScreen;
+import com.hugosmpenhanced.client.feature.colorcodes.ColorCodes;
+import com.hugosmpenhanced.client.feature.colorcodes.HexStyle;
 import com.hugosmpenhanced.client.feature.discord.DiscordOutside;
 import com.hugosmpenhanced.client.feature.discord.DiscordPresence;
 import com.hugosmpenhanced.client.feature.discord.DiscordPreviewOption;
@@ -182,7 +185,7 @@ public final class ModSettings {
 	}
 
 	private static SettingsCategory chat() {
-		return new SettingsCategory("Chat", "chat", "Erwähnungen, Filter, Rechner und TPA",
+		return new SettingsCategory("Chat", "chat", "Erwähnungen, Filter, Rechner, Farben und TPA",
 			new SettingsTab("Erwähnungen",
 				new SettingsSection("Erwähnungen",
 					toggle("Erwähnungen hervorheben", "Nachrichten mit deinem Namen werden markiert",
@@ -205,6 +208,27 @@ public final class ModSettings {
 				new SettingsSection("Verlauf",
 					toggle("Chat beim Weltwechsel behalten", null,
 						c -> c.persistentChatEnabled, (c, v) -> c.persistentChatEnabled = v))),
+			new SettingsTab("Farben",
+				new SettingsSection("Farbcode-Editor",
+					ButtonOption.page("Editor öffnen", "Farben, Verläufe und Vorlagen für /rename und /sign, mit Vorschau",
+						"Öffnen", () -> open(ColorCodeScreen::forHeldItem)).keywords("rename sign farbe hex verlauf gradient"),
+					new KeyBindOption("Taste", "Öffnet den Editor mit dem Namen des Items in der Hand", () -> ColorCodes.openKey)
+						.keywords("farbcode rename"),
+					toggle("Vorschau im Chat", "Zeigt beim Tippen von /rename und /sign, wie die Farben aussehen. Strg+E öffnet den Editor.",
+						c -> c.colorChatPreview, (c, v) -> c.colorChatPreview = v).keywords("rename sign farbcode")),
+				new SettingsSection("Server",
+					new CycleOption<>("Hex-Farben schreiben als", "Je nachdem, was der Server bei /rename und /sign liest",
+						HexStyle.class, c -> c.colorHexStyle, (c, v) -> c.colorHexStyle = v).keywords("hex rgb farbcode"),
+					new StringListOption("Befehle", "Ohne Schrägstrich, z. B. rename. Für diese Befehle gibt es Vorschau und Editor.",
+						"Keine, dann rename und sign", c -> c.colorCommands, (c, v) -> c.colorCommands = v).keywords("rename sign")),
+				new SettingsSection("Vorlagen",
+					new InfoOption("Gespeichert", null, () -> String.valueOf(ModConfigManager.CONFIG.colorTemplates.size())),
+					ButtonOption.action("Beispiele zurückholen", "Fügt die mitgelieferten Verläufe wieder hinzu", "Hinzufügen",
+						ColorCodes::restoreDefaults),
+					ButtonOption.danger("Alle Vorlagen löschen", null, "Löschen", () -> {
+						ModConfigManager.CONFIG.colorTemplates.clear();
+						ModConfigManager.save();
+					}))),
 			new SettingsTab("TPA",
 				new SettingsSection("Teleport-Anfragen",
 					toggle("TPA-Toast anzeigen", "Kleine Einblendung bei einer neuen Anfrage",
