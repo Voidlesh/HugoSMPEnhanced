@@ -25,7 +25,8 @@
 		"ChatCalculatorMixin",
 		"AuctionSearchSignMixin",
 		"InventoryLayoutSlotMixin",
-		"LimitedOfferSlotMixin"
+		"LimitedOfferSlotMixin",
+		"PlayerTabOverlayAccessor"
 	],
 	"injectors": {
 		"defaultRequire": 1
