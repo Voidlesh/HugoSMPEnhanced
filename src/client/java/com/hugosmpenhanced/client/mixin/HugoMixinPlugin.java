@@ -25,6 +25,9 @@ public class HugoMixinPlugin implements IMixinConfigPlugin {
 		if (mixinClassName.endsWith(".AntiLeakSodiumLevelSliceMixin")) {
 			return FabricLoader.getInstance().isModLoaded("sodium");
 		}
+		if (mixinClassName.contains(".AntiLeakBetterF3")) {
+			return FabricLoader.getInstance().isModLoaded("betterf3");
+		}
 		return true;
 	}
 

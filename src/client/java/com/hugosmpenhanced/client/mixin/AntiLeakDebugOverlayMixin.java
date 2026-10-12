@@ -10,6 +10,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 import com.hugosmpenhanced.client.feature.antileak.AntiLeak;
+import com.hugosmpenhanced.client.feature.antileak.BetterF3Coordinates;
 import com.hugosmpenhanced.client.feature.antileak.DebugCoordinates;
 
 import net.minecraft.client.gui.Font;
@@ -25,7 +26,8 @@ public abstract class AntiLeakDebugOverlayMixin {
 
 	@Inject(method = "renderLines", at = @At("HEAD"), cancellable = true)
 	private void hugosmpenhanced$maskCoordinates(GuiGraphics graphics, List<String> lines, boolean left, CallbackInfo ci) {
-		if (AntiLeak.maskF3()) {
+		// BetterF3 draws its own lines here; its values are masked where it sets them
+		if (AntiLeak.maskF3() && !BetterF3Coordinates.drawsF3()) {
 			DebugCoordinates.renderLines(graphics, this.font, lines, left);
 			ci.cancel();
 		}

@@ -8,6 +8,7 @@ import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.antileak.AntiLeak;
 import com.hugosmpenhanced.client.feature.antileak.CoordinateMask;
 import com.hugosmpenhanced.client.feature.antileak.DebugCoordinates;
+import com.hugosmpenhanced.client.feature.antileak.FakeCoordinates;
 import com.hugosmpenhanced.client.settings.SettingsScreen;
 
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
@@ -74,6 +75,9 @@ public class AntiLeakGameTest implements FabricClientGameTest {
 			setAntiLeak(context, true, CoordinateMask.BAR);
 			context.waitTicks(5);
 			context.takeScreenshot("antileak-3-balken");
+			setAntiLeak(context, true, CoordinateMask.RANDOM);
+			context.waitTicks(5);
+			context.takeScreenshot("antileak-3c-zufall");
 
 			// The pit itself, without F3 in front of it
 			context.runOnClient(client -> client.debugEntries.setOverlayVisible(false));
@@ -213,6 +217,7 @@ public class AntiLeakGameTest implements FabricClientGameTest {
 
 	/** No digit of a masked number survives in the visible text, only the height when it is wanted. */
 	private static void checkText() {
+		checkRandom();
 		visible("XYZ: 12345.678 / 64.00000 / -9876.543", true, "64.00000", 2);
 		visible("XYZ: 12345.678 / 64.00000 / -9876.543", false, "", 3);
 		visible("Block: 12345 64 -9876", true, "64", 2);
@@ -220,6 +225,16 @@ public class AntiLeakGameTest implements FabricClientGameTest {
 		visible("Section-relative: 09 00 12", true, "00", 2);
 		visible("\u00a7nTargeted Block: 12345, -58, -9876", false, "", 3);
 		visible("Facing: south (Towards positive Z) (0.0 / 21.0)", true, "0.0 / 21.0", 0);
+	}
+
+	/** Made-up coordinates are never the real ones and agree with each other (chunk = block / 16). */
+	private static void checkRandom() {
+		String x = FakeCoordinates.value(FakeCoordinates.Kind.BLOCK_X, "123456789");
+		String chunk = FakeCoordinates.value(FakeCoordinates.Kind.CHUNK_X, "7716049");
+		String pos = FakeCoordinates.value(FakeCoordinates.Kind.POS_X, "123456789,123");
+		if (x.equals("123456789") || Integer.parseInt(chunk) != Integer.parseInt(x) >> 4 || !pos.matches("-?\\d+,\\d{3}")) {
+			throw new AssertionError("Random coordinates: block " + x + ", chunk " + chunk + ", position " + pos);
+		}
 	}
 
 	private static void visible(String line, boolean showY, String kept, int maskedCount) {
