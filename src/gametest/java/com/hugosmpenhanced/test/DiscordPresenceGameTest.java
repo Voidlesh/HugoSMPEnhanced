@@ -54,7 +54,7 @@ public class DiscordPresenceGameTest implements FabricClientGameTest {
 			ModConfig config = ModConfigManager.CONFIG;
 			ModConfig defaults = new ModConfig();
 			config.discordEnabled = true;
-			config.discordAppId = ID;
+			DiscordPresence.appId = ID;
 			config.discordDetails = defaults.discordDetails;
 			config.discordState = defaults.discordState;
 			config.discordShowMoney = true;
@@ -68,7 +68,7 @@ public class DiscordPresenceGameTest implements FabricClientGameTest {
 
 		// Main menu: connects, says hello with the id and shows "Im Hauptmenü".
 		waitFor(context, discord, a -> "Im Hauptmenü".equals(str(a, "details")), "main menu activity");
-		check(discord.handshakes.contains(ID), "handshake with the application id");
+		context.waitFor(client -> discord.handshakes.contains(ID) && DiscordPresence.connected(), WAIT);
 		check(context.computeOnClient(client -> DiscordPresence.connected()), "status connected");
 		context.setScreen(() -> new SettingsScreen(null).select("Allgemein", "Discord"));
 		context.waitTicks(3);
@@ -207,14 +207,14 @@ public class DiscordPresenceGameTest implements FabricClientGameTest {
 			context.setScreen(() -> null);
 
 			// Unknown application id: Discord closes with 4000, the menu says so; a good id reconnects.
-			context.runOnClient(client -> ModConfigManager.CONFIG.discordAppId = FakeDiscord.BAD_ID);
-			context.waitFor(client -> DiscordPresence.statusText().getString().contains("Unbekannte Application-ID"), WAIT);
+			context.runOnClient(client -> DiscordPresence.appId = FakeDiscord.BAD_ID);
+			context.waitFor(client -> DiscordPresence.statusText().getString().contains("Discord lehnt die App ab"), WAIT);
 			context.setScreen(() -> new SettingsScreen(null).select("Allgemein", "Discord"));
 			context.waitTicks(3);
 			context.takeScreenshot("discord-falsche-id");
 			context.setScreen(() -> null);
 			int before = discord.activities.size();
-			context.runOnClient(client -> ModConfigManager.CONFIG.discordAppId = ID);
+			context.runOnClient(client -> DiscordPresence.appId = ID);
 			context.waitFor(client -> DiscordPresence.connected() && discord.activities.size() > before, WAIT);
 
 			// Switched off: the connection closes, which clears the presence in Discord.
@@ -234,7 +234,7 @@ public class DiscordPresenceGameTest implements FabricClientGameTest {
 		context.waitFor(client -> discord.activities.size() > 0 && discord.last() == null, WAIT);
 		context.runOnClient(client -> {
 			ModConfigManager.CONFIG.discordOutside = DiscordOutside.SHOW;
-			ModConfigManager.CONFIG.discordAppId = "";
+			DiscordPresence.appId = DiscordPresence.APP_ID;
 			ModConfigManager.save();
 		});
 		System.out.println("DISCORD TEST passed, activities sent: " + discord.activities.size());
