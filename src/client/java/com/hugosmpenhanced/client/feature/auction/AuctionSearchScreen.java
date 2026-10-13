@@ -239,6 +239,13 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 		for (int i = 0; i < this.rows.size(); i++) {
 			this.renderRow(graphics, this.rows.get(i), this.rowsTop + i * ROW, i == this.selected || i == hovered, i == hovered && mouseX >= this.starX());
 		}
+		// A HugoSMP item shows its own tooltip, like in the game: name, lore, model.
+		if (hovered >= 0 && mouseX < this.starX()) {
+			Row row = this.rows.get(hovered);
+			if (row.priceKey() != null && row.priceKey().startsWith("custom:") && !row.icon().isEmpty()) {
+				graphics.setTooltipForNextFrame(this.font, row.icon(), mouseX, mouseY);
+			}
+		}
 		if (this.rows.isEmpty()) {
 			graphics.drawCenteredString(this.font, "Tippe, um Items zu finden. Letzte Suchen erscheinen hier.", this.width / 2,
 				this.rowsTop + 8, 0xFF777777);
