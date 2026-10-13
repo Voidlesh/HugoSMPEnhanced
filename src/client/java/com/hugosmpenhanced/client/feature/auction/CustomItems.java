@@ -39,6 +39,7 @@ import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.component.CustomData;
 import net.minecraft.world.item.component.CustomModelData;
+import net.minecraft.world.item.component.ItemLore;
 
 /**
  * HugoSMP's own items are vanilla items with a name, lore and a model from the server's resource
@@ -274,10 +275,23 @@ public final class CustomItems {
 		return icon;
 	}
 
-	/** What the icon needs: everything that decides the model, but no lore, and a single item. */
+	/**
+	 * What the search needs: everything that decides the model, the item's own lore for its tooltip
+	 * (without the price and seller lines the auction house adds), and a single item.
+	 */
 	private static ItemStack iconCopy(ItemStack stack) {
 		ItemStack copy = stack.copyWithCount(1);
-		copy.remove(DataComponents.LORE);
+		ItemLore lore = copy.get(DataComponents.LORE);
+		if (lore != null) {
+			List<String> plain = new ArrayList<>();
+			lore.lines().forEach(line -> plain.add(line.getString()));
+			int keep = LimitedItems.withoutListingBlock(plain).size();
+			if (keep == 0) {
+				copy.remove(DataComponents.LORE);
+			} else if (keep < lore.lines().size()) {
+				copy.set(DataComponents.LORE, new ItemLore(List.copyOf(lore.lines().subList(0, keep))));
+			}
+		}
 		return copy;
 	}
 
