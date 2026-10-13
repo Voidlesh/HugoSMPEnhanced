@@ -262,6 +262,10 @@ public final class LimitedOffers {
 			return;
 		}
 		Offer offer = OFFERS.get(stack);
+		// A remembered item in the search is one example of its kind; its time left says nothing about the offers.
+		if (offer == null && Minecraft.getInstance().screen instanceof AuctionSearchScreen) {
+			return;
+		}
 		long now = System.currentTimeMillis();
 		Optional<LimitedItems.Expiry> expiry;
 		if (offer != null) {

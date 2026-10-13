@@ -185,6 +185,20 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 			context.getInput().typeChars("phön");
 			context.waitTicks(3);
 			context.takeScreenshot("ah-suche-textur-nach-neustart");
+			// Hovering the suggestion shows the item's own tooltip.
+			double[] row = context.computeOnClient(client -> {
+				double scale = client.getWindow().getGuiScale();
+				int width = Math.min(client.screen.width - 20, 300);
+				int left = (client.screen.width - width) / 2;
+				// The first suggestion is the second row, below the "search for" row.
+				int field = 20;
+				int top = Math.max(18, (client.screen.height - (field + 6 + 9 * 23 + 46)) / 2 + 10);
+				return new double[] {(left + 60) * scale, (top + field + 6 + 23 + 10) * scale};
+			});
+			context.getInput().setCursorPos(row[0], row[1]);
+			context.waitTicks(3);
+			context.takeScreenshot("ah-suche-custom-tooltip");
+			context.getInput().setCursorPos(0, 0);
 			clear(context);
 			context.getInput().typeChars("event");
 			context.waitTicks(3);
@@ -327,7 +341,12 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 			System.out.println("CUSTOM icon " + when + ": feather model=" + model + " sword data=" + modelData);
 			check(model != null && model.toString().equals("hugosmpenhanced-test:phoenix_feather"), "feather icon lost its model " + when);
 			check(modelData != null && modelData.getFloat(0) != null && modelData.getFloat(0) == 1001f, "sword icon lost its model data " + when);
-			check(feather.icon().getCount() == 1 && !feather.icon().has(DataComponents.LORE), "icon is a single item without lore");
+			List<String> lore = feather.icon().getOrDefault(DataComponents.LORE, ItemLore.EMPTY).lines().stream()
+				.map(Component::getString).toList();
+			System.out.println("CUSTOM icon lore " + when + ": " + lore);
+			check(feather.icon().getCount() == 1, "icon is a single item");
+			check(lore.contains("✦ Limitiertes Event-Item") && lore.stream().noneMatch(line -> line.startsWith("Preis")
+				|| line.startsWith("Verkäufer") || line.startsWith("-----")), "icon keeps the item's lore without the auction lines: " + lore);
 		});
 	}
 
