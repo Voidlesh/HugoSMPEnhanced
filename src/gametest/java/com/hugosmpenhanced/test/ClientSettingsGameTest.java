@@ -1,12 +1,15 @@
 package com.hugosmpenhanced.test;
 
+import java.util.List;
+
 import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.client.HudCorner;
-import com.hugosmpenhanced.client.feature.client.Zoom;
 import com.hugosmpenhanced.client.settings.ModSettings;
+import com.hugosmpenhanced.client.settings.SettingsCategory;
 import com.hugosmpenhanced.client.settings.SettingsOption;
 import com.hugosmpenhanced.client.settings.SettingsScreen;
+import com.hugosmpenhanced.client.settings.SettingsTab;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import org.lwjgl.glfw.GLFW;
@@ -16,7 +19,6 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.core.BlockPos;
@@ -24,8 +26,8 @@ import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
 /**
  * The "Client" category in a world: key O still opens the menu when another binding shares O
- * and opens its own screen (as Iris does with its shader packs), Minecraft options change from the
- * menu, fullbright, the FPS line, zoom, lower fire and the see-through pumpkin.
+ * and opens its own screen (as Iris does with its shader packs) without its letter landing in the
+ * search, only the mod's own options in the category, fullbright, the FPS line, lower fire and the see-through pumpkin.
  */
 @SuppressWarnings("UnstableApiUsage")
 public class ClientSettingsGameTest implements FabricClientGameTest {
@@ -51,7 +53,7 @@ public class ClientSettingsGameTest implements FabricClientGameTest {
 			context.waitTicks(20);
 
 			openKeyWithConflict(context);
-			minecraftOptions(context);
+			clientTabs(context);
 
 			// Fullbright at midnight.
 			server.runCommand("time set 18000");
@@ -70,32 +72,6 @@ public class ClientSettingsGameTest implements FabricClientGameTest {
 				context.takeScreenshot("client-fps-" + corner.name().toLowerCase());
 			}
 			context.runOnClient(client -> ModConfigManager.CONFIG.clientFpsHud = HudCorner.OFF);
-
-			// Zoom: hold C, the wheel zooms further, letting go ends it.
-			context.takeScreenshot("client-zoom-off");
-			context.getInput().holdKey(GLFW.GLFW_KEY_C);
-			context.waitTicks(15);
-			context.runOnClient(client -> {
-				if (!Zoom.zooming()) {
-					throw new AssertionError("Holding C did not zoom");
-				}
-			});
-			context.takeScreenshot("client-zoom-4x");
-			context.getInput().scroll(1);
-			context.getInput().scroll(1);
-			context.waitTicks(15);
-			int slot = context.computeOnClient(client -> client.player.getInventory().getSelectedSlot());
-			context.takeScreenshot("client-zoom-scrolled");
-			context.getInput().releaseKey(GLFW.GLFW_KEY_C);
-			context.waitTicks(15);
-			context.runOnClient(client -> {
-				if (Zoom.zooming()) {
-					throw new AssertionError("Zoom did not end when C was let go");
-				}
-				if (client.player.getInventory().getSelectedSlot() != slot) {
-					throw new AssertionError("Scrolling while zoomed changed the hotbar slot");
-				}
-			});
 
 			// Lower fire and the see-through pumpkin, in survival so the fire shows.
 			server.runCommand("gamemode survival @p");
@@ -137,10 +113,15 @@ public class ClientSettingsGameTest implements FabricClientGameTest {
 			KeyMapping.resetMapping();
 		});
 		context.getInput().pressKey(GLFW.GLFW_KEY_O);
+		// A real keyboard also sends the letter, which reaches the menu that just opened.
+		context.getInput().typeChars("o");
 		context.waitTicks(3);
 		context.runOnClient(client -> {
-			if (!(client.screen instanceof SettingsScreen)) {
+			if (!(client.screen instanceof SettingsScreen settings)) {
 				throw new AssertionError("Key O with a second binding on O opened " + client.screen + " instead of the settings");
+			}
+			if (!settings.searchText().isEmpty()) {
+				throw new AssertionError("The O that opened the menu went into the search: " + settings.searchText());
 			}
 		});
 		context.takeScreenshot("client-key-o-conflict");
@@ -165,56 +146,24 @@ public class ClientSettingsGameTest implements FabricClientGameTest {
 		context.waitTicks(40);
 	}
 
-	/** Rows bound to Minecraft's options change those, and "reset everything" leaves them alone. */
-	private static void minecraftOptions(ClientGameTestContext context) {
-		context.setScreen(() -> new SettingsScreen(null).select("Client", "Minecraft"));
-		context.waitTicks(3);
-		context.takeScreenshot("client-tab-minecraft");
-		boolean sprintBefore = context.computeOnClient(client -> client.options.toggleSprint().get());
-		int distanceBefore = context.computeOnClient(client -> client.options.renderDistance().get());
-		// The row sits below the fold; the search brings it up.
-		context.runOnClient(client -> {
-			for (char c : "Sprinten".toCharArray()) {
-				client.screen.charTyped(new CharacterEvent(c, 0));
+	/** The category only holds the mod's own options; Minecraft's are in its own menu. */
+	private static void clientTabs(ClientGameTestContext context) {
+		for (SettingsCategory category : ModSettings.categories()) {
+			if (category.name().equals("Client")) {
+				List<String> tabs = category.tabs().stream().map(SettingsTab::name).toList();
+				if (!tabs.equals(List.of("Anzeige"))) {
+					throw new AssertionError("Client tabs are " + tabs);
+				}
 			}
-		});
-		context.waitTicks(2);
-		context.takeScreenshot("client-search-sprint");
-		int[] sprint = option("Sprinten").bounds();
-		click(context, sprint[0] + sprint[2] - 20, sprint[1] + sprint[3] / 2.0);
-		context.waitTicks(2);
-		context.runOnClient(client -> {
-			if (client.options.toggleSprint().get() == sprintBefore) {
-				throw new AssertionError("The sprint row did not change Minecraft's toggle sprint");
+		}
+		for (SettingsOption option : ModSettings.allOptions()) {
+			if (option.minecraftOption()) {
+				throw new AssertionError("Still a copy of a Minecraft option: " + option.label());
 			}
-			int changedDistance = distanceBefore == 6 ? 7 : 6;
-			client.options.renderDistance().set(changedDistance);
-			ModSettings.resetAll();
-			if (client.options.renderDistance().get() != changedDistance || client.options.toggleSprint().get() == sprintBefore) {
-				throw new AssertionError("Resetting the mod's settings changed Minecraft's own options");
-			}
-			client.options.toggleSprint().set(sprintBefore);
-			client.options.renderDistance().set(distanceBefore);
-		});
-		context.setScreen(() -> new SettingsScreen(null).select("Client", "Minecraft"));
-		context.waitTicks(3);
-		// The FOV slider: dragging to the right end sets 110.
-		int[] fov = option("Sichtfeld").bounds();
-		int trackRight = fov[0] + fov[2] - 8 - 46;
-		context.runOnClient(client -> {
-			client.screen.mouseClicked(mouse(trackRight + 2, fov[1] + fov[3] / 2.0), false);
-			client.screen.mouseReleased(mouse(trackRight + 2, fov[1] + fov[3] / 2.0));
-			if (client.options.fov().get() != 110) {
-				throw new AssertionError("FOV slider did not set 110 but " + client.options.fov().get());
-			}
-			client.options.fov().set(70);
-		});
+		}
 		context.setScreen(() -> new SettingsScreen(null).select("Client", "Anzeige"));
 		context.waitTicks(3);
 		context.takeScreenshot("client-tab-anzeige");
-		context.setScreen(() -> new SettingsScreen(null).select("Client", "Zoom"));
-		context.waitTicks(3);
-		context.takeScreenshot("client-tab-zoom");
 		context.setScreen(() -> null);
 	}
 
