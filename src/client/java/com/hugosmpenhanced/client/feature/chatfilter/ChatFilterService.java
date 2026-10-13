@@ -56,7 +56,13 @@ public final class ChatFilterService {
 		return !TIMESTAMP_LINE.matcher(text).find() && !CONTINUATION_LINE.matcher(text).find();
 	}
 
-	private static boolean isOwnMessage(String text) {
+	/** Whether the line is a HugoSMP system line ("[HugoSMP] ..."). */
+	public static boolean isSystemLine(String text) {
+		return CATEGORY_RULES[0].pattern().matcher(text).find();
+	}
+
+	/** Whether the line was written by the player: their name right at the start, after rank tags. */
+	public static boolean isOwnMessage(String text) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.player == null) {
 			return false;
