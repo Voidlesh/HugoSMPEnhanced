@@ -64,6 +64,7 @@ public final class StreamerFeature {
 
 		SpecialGuiElementRegistry.register(context -> new ItemSpinRenderer(context.vertexConsumers()));
 		StreamerOverlay.register();
+		StreamerChatButtons.register();
 
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
 			dispatcher.register(ClientCommandManager.literal("streamer").executes(context -> {
