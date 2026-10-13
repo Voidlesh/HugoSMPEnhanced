@@ -18,8 +18,10 @@ import java.util.regex.Pattern;
 
 import com.google.gson.Gson;
 import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import com.google.gson.reflect.TypeToken;
+import com.hugosmpenhanced.client.HugoSmpEnhancedClient;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.mojang.serialization.DynamicOps;
 import com.mojang.serialization.JsonOps;
@@ -184,6 +186,17 @@ public final class CustomItems {
 				entry.lastSeen = now;
 				dirty = true;
 			}
+			if (entry.icon == null) {
+				// First sighting this session: draw this very item, and keep the stored copy up to date
+				// in case the server changed its model or texture since.
+				entry.icon = iconCopy(stack);
+				String encoded = encode(stack);
+				if (encoded != null && !encoded.equals(entry.stack)) {
+					entry.stack = encoded;
+					dirty = true;
+					AuctionSearch.invalidate();
+				}
+			}
 			return id;
 		}
 		if (name.isEmpty()) {
@@ -203,8 +216,11 @@ public final class CustomItems {
 		entry.item = itemId(stack);
 		entry.limited = entry.limited || limited;
 		entry.lastSeen = now;
-		entry.stack = encode(stack);
-		entry.icon = null;
+		String encoded = encode(stack);
+		if (encoded != null) {
+			entry.stack = encoded;
+		}
+		entry.icon = iconCopy(stack);
 		dirty = true;
 		AuctionSearch.invalidate();
 		return id;
@@ -242,7 +258,10 @@ public final class CustomItems {
 		return id == null ? null : all().get(id);
 	}
 
-	/** The item to draw for a remembered entry, with its own model; a plain item if it cannot be read back. */
+	/**
+	 * The item to draw for a remembered entry, with its own model and texture from the server's
+	 * resource pack: the item itself if it was seen this session, else the stored copy.
+	 */
 	public static ItemStack icon(Known entry) {
 		if (entry.icon != null) {
 			return entry.icon;
@@ -253,6 +272,13 @@ public final class CustomItems {
 			entry.icon = icon;
 		}
 		return icon;
+	}
+
+	/** What the icon needs: everything that decides the model, but no lore, and a single item. */
+	private static ItemStack iconCopy(ItemStack stack) {
+		ItemStack copy = stack.copyWithCount(1);
+		copy.remove(DataComponents.LORE);
+		return copy;
 	}
 
 	public static long lifetimeMs() {
@@ -269,20 +295,24 @@ public final class CustomItems {
 		if (ops == null) {
 			return null;
 		}
-		// Only what changes the look: lore and plugin data would just make the file big.
-		ItemStack copy = stack.copyWithCount(1);
-		copy.remove(DataComponents.LORE);
-		copy.remove(DataComponents.CUSTOM_DATA);
-		return ItemStack.CODEC.encodeStart(ops, copy).result().map(JsonElement::toString).orElse(null);
+		// The custom data stays: a resource pack can pick the model by any component.
+		return ItemStack.CODEC.encodeStart(ops, iconCopy(stack))
+			.resultOrPartial(error -> HugoSmpEnhancedClient.LOGGER.debug("Custom item icon not fully saved: {}", error))
+			.map(JsonElement::toString).orElse(null);
 	}
 
 	private static ItemStack decode(Known entry) {
 		DynamicOps<JsonElement> ops = ops();
 		if (ops != null && entry.stack != null) {
 			try {
-				Optional<ItemStack> stack = ItemStack.CODEC.parse(ops, JsonParser.parseString(entry.stack)).result();
+				JsonElement json = JsonParser.parseString(entry.stack);
+				Optional<ItemStack> stack = ItemStack.CODEC.parse(ops, json).result();
 				if (stack.isPresent()) {
 					return stack.get();
+				}
+				ItemStack salvaged = salvage(ops, json);
+				if (salvaged != null) {
+					return salvaged;
 				}
 			} catch (RuntimeException ignored) {
 				// fall back to the plain item
@@ -290,6 +320,31 @@ public final class CustomItems {
 		}
 		Identifier id = entry.item == null ? null : Identifier.tryParse(entry.item);
 		return id == null ? ItemStack.EMPTY : new ItemStack(BuiltInRegistries.ITEM.getValue(id));
+	}
+
+	/**
+	 * If one component can no longer be read (the server changed a registry, a mod is missing), keep
+	 * all the others, so the model and texture still show.
+	 */
+	private static ItemStack salvage(DynamicOps<JsonElement> ops, JsonElement json) {
+		if (!json.isJsonObject() || !json.getAsJsonObject().has("components")
+			|| !json.getAsJsonObject().get("components").isJsonObject()) {
+			return null;
+		}
+		JsonObject whole = json.getAsJsonObject();
+		JsonObject kept = new JsonObject();
+		for (Map.Entry<String, JsonElement> component : whole.getAsJsonObject("components").entrySet()) {
+			JsonObject single = whole.deepCopy();
+			JsonObject only = new JsonObject();
+			only.add(component.getKey(), component.getValue());
+			single.add("components", only);
+			if (ItemStack.CODEC.parse(ops, single).result().isPresent()) {
+				kept.add(component.getKey(), component.getValue());
+			}
+		}
+		JsonObject rebuilt = whole.deepCopy();
+		rebuilt.add("components", kept);
+		return ItemStack.CODEC.parse(ops, rebuilt).result().orElse(null);
 	}
 
 	/** Called on disconnect: icons are decoded with the server's registries. */
@@ -336,6 +391,13 @@ public final class CustomItems {
 		all().clear();
 		dirty = true;
 		saveIfDirty();
+		AuctionSearch.invalidate();
+	}
+
+	/** For tests: forgets what is in memory, as after a restart, and reads the file again. */
+	public static void reloadForTest() {
+		saveIfDirty();
+		known = null;
 		AuctionSearch.invalidate();
 	}
 
