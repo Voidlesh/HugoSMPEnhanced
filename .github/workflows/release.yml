@@ -1,4 +1,6 @@
-# Publishes a GitHub release whenever `version` in gradle.properties changes on main.
+# Prepares a GitHub release whenever `version` in gradle.properties changes on main.
+# The release is created as a DRAFT: Voidlesh checks it and clicks "Publish release" on GitHub,
+# only then the tag exists and players get the update.
 # The in-game updater reads these releases, so the rules below must hold:
 # tag v<version> == mod version, mod jar (not -sources) attached, not a pre-release.
 # Release text: release-notes/<version>.md if present, otherwise commit titles since the last tag.
@@ -40,7 +42,7 @@ jobs:
           echo "version=$version" >> "$GITHUB_OUTPUT"
           echo "tag=v$version" >> "$GITHUB_OUTPUT"
           if git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null; then
-            echo "Tag v$version already exists, nothing to release."
+            echo "Tag v$version already exists (release published), nothing to do."
             echo "exists=true" >> "$GITHUB_OUTPUT"
           else
             echo "exists=false" >> "$GITHUB_OUTPUT"
@@ -104,16 +106,28 @@ jobs:
           fi
           cat notes.md
 
-      - name: create release
+      - name: create or update draft release
         if: steps.version.outputs.exists == 'false'
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ steps.version.outputs.tag }}
           JAR: ${{ steps.jar.outputs.path }}
         run: |
-          gh release create "$TAG" "$JAR" \
-            --repo "$GITHUB_REPOSITORY" \
-            --target "$GITHUB_SHA" \
-            --title "$TAG" \
-            --notes-file notes.md \
-            --latest
+          # A draft has no tag yet, so a later push for the same version updates the draft instead
+          # of creating a second one.
+          if gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json isDraft --jq .isDraft 2>/dev/null | grep -q true; then
+            gh release upload "$TAG" "$JAR" --repo "$GITHUB_REPOSITORY" --clobber
+            gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --target "$GITHUB_SHA" --notes-file notes.md
+            echo "Updated draft $TAG"
+          else
+            gh release create "$TAG" "$JAR" \
+              --repo "$GITHUB_REPOSITORY" \
+              --draft \
+              --target "$GITHUB_SHA" \
+              --title "$TAG" \
+              --notes-file notes.md
+            echo "Created draft $TAG"
+          fi
+          url=$(gh release view "$TAG" --repo "$GITHUB_REPOSITORY" --json url --jq .url)
+          echo "### Entwurf $TAG bereit" >> "$GITHUB_STEP_SUMMARY"
+          echo "Prüfen und auf **Publish release** klicken: $url" >> "$GITHUB_STEP_SUMMARY"
