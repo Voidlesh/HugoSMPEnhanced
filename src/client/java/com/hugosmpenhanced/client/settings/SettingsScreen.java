@@ -89,6 +89,11 @@ public class SettingsScreen extends Screen implements StyledScreen {
 		return ModSettings.categories().get(this.category);
 	}
 
+	/** What is typed into the search field. */
+	public String searchText() {
+		return this.searchValue;
+	}
+
 	private boolean searching() {
 		return !this.searchValue.isBlank();
 	}
@@ -116,7 +121,8 @@ public class SettingsScreen extends Screen implements StyledScreen {
 		this.search = new EditBox(this.font, this.searchX + 17, this.fy + 12, searchWidth - 21, 10, Component.literal("Suchen"));
 		this.search.setBordered(false);
 		this.search.setMaxLength(40);
-		this.search.setHint(Component.literal("Suchen...").withStyle(ChatFormatting.DARK_GRAY));
+		String hint = this.font.width("Suchen (Strg+F)") <= searchWidth - 21 ? "Suchen (Strg+F)" : "Suchen...";
+		this.search.setHint(Component.literal(hint).withStyle(ChatFormatting.DARK_GRAY));
 		this.search.setValue(this.searchValue);
 		this.search.setResponder(value -> {
 			this.searchValue = value;
@@ -391,6 +397,11 @@ public class SettingsScreen extends Screen implements StyledScreen {
 		double my = event.y();
 		int button = event.button();
 
+		SettingsOption capturing = this.capturingOption();
+		if (capturing != null && capturing.captureMouse(button)) {
+			return true;
+		}
+
 		if (this.inside(mx, my, this.closeX, this.fy + 8, 17, 17)) {
 			this.onClose();
 			return true;
@@ -506,12 +517,9 @@ public class SettingsScreen extends Screen implements StyledScreen {
 		if (capturing != null) {
 			return capturing.charTyped(event);
 		}
-		if (!this.search.isFocused() && event.isAllowedChatCharacter() && !Character.isWhitespace(event.codepoint())) {
-			// Typing anywhere starts a search.
-			this.setFocused(this.search);
-			this.search.setFocused(true);
-		}
-		return super.charTyped(event);
+		// Only a clicked search field (or Ctrl+F) takes letters: the key that opened this menu and a
+		// key just given to a binding row must not end up in the search.
+		return this.search.isFocused() && super.charTyped(event);
 	}
 
 	@Override

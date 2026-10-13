@@ -5,12 +5,14 @@ import java.util.List;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.settings.ModSettings;
 import com.hugosmpenhanced.client.settings.SettingsCategory;
+import com.hugosmpenhanced.client.settings.SettingsFeature;
 import com.hugosmpenhanced.client.settings.SettingsOption;
 import com.hugosmpenhanced.client.settings.SettingsScreen;
 import com.hugosmpenhanced.client.settings.SettingsTab;
 
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
+import net.minecraft.client.KeyMapping;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -20,7 +22,7 @@ import org.lwjgl.glfw.GLFW;
 
 /**
  * The settings menu: every category and tab at GUI scale 2 and 1, the search, clicking a toggle
- * row, adding a word to a list and a key binding waiting for a key. Opening by key is in QolGameTest.
+ * row, adding a word to a list and setting a key binding (key and side mouse button). Opening by key is in QolGameTest.
  */
 @SuppressWarnings("UnstableApiUsage")
 public class SettingsGameTest implements FabricClientGameTest {
@@ -51,13 +53,17 @@ public class SettingsGameTest implements FabricClientGameTest {
 			client.resizeDisplay();
 		});
 
-		// Search: typing anywhere starts it.
+		// Search: letters typed without the field focused do nothing; Ctrl+F (or a click) starts it.
 		context.setScreen(() -> new SettingsScreen(null).select("Allgemein", "Menü"));
 		context.waitTicks(2);
 		context.runOnClient(client -> {
+			client.screen.charTyped(new CharacterEvent('x', 0));
+			check(((SettingsScreen) client.screen).searchText().isEmpty(), "a letter typed without focus went into the search");
+			client.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_F, 0, GLFW.GLFW_MOD_CONTROL));
 			for (char c : "name".toCharArray()) {
 				client.screen.charTyped(new CharacterEvent(c, 0));
 			}
+			check("name".equals(((SettingsScreen) client.screen).searchText()), "Ctrl+F then typing did not search");
 		});
 		context.waitTicks(2);
 		context.takeScreenshot("settings-search-name");
@@ -99,6 +105,27 @@ public class SettingsGameTest implements FabricClientGameTest {
 		context.waitTicks(1);
 		context.takeScreenshot("settings-key-listening");
 		context.runOnClient(client -> client.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_ESCAPE, 0, 0)));
+		// A key pressed for a binding sets it; its letter (GLFW sends one right after) stays out of the search.
+		clickGui(context, key[0] + key[2] - 14, key[1] + key[3] / 2.0);
+		context.runOnClient(client -> {
+			client.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_K, 0, 0));
+			client.screen.charTyped(new CharacterEvent('k', 0));
+			check(SettingsFeature.openKey.getTranslatedKeyMessage().getString().equalsIgnoreCase("K"),
+				"key K was not bound but " + SettingsFeature.openKey.getTranslatedKeyMessage().getString());
+			check(((SettingsScreen) client.screen).searchText().isEmpty(), "the bound key's letter went into the search");
+		});
+		context.waitTicks(2);
+		context.takeScreenshot("settings-key-set");
+		// A side mouse button can be bound too.
+		clickGui(context, key[0] + key[2] - 14, key[1] + key[3] / 2.0);
+		context.runOnClient(client -> {
+			MouseButtonEvent side = new MouseButtonEvent(key[0] + 10, key[1] + 5, new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_4, 0));
+			client.screen.mouseClicked(side, false);
+			client.screen.mouseReleased(side);
+			check(SettingsFeature.openKey.saveString().startsWith("key.mouse."), "mouse button 4 was not bound: " + SettingsFeature.openKey.saveString());
+			SettingsFeature.openKey.setKey(SettingsFeature.openKey.getDefaultKey());
+			KeyMapping.resetMapping();
+		});
 		context.setScreen(() -> null);
 	}
 
@@ -124,5 +151,11 @@ public class SettingsGameTest implements FabricClientGameTest {
 			}
 		}
 		throw new AssertionError("No option " + label);
+	}
+
+	private static void check(boolean ok, String message) {
+		if (!ok) {
+			throw new AssertionError(message);
+		}
 	}
 }

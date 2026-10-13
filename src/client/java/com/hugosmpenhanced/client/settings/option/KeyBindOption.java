@@ -17,8 +17,8 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 
 /**
- * Shows and changes a key binding in place: click, then press a key. Escape cancels,
- * Backspace or Delete removes the binding. A key used by another binding is shown in red.
+ * Shows and changes a key binding in place: click, then press a key or a mouse button other than
+ * the left one. Escape or a left click cancels, Backspace or Delete removes the binding. A key used by another binding is shown in red.
  */
 public class KeyBindOption extends SettingsOption {
 	private final Supplier<KeyMapping> mapping;
@@ -108,6 +108,16 @@ public class KeyBindOption extends SettingsOption {
 		}
 		boolean clear = event.key() == GLFW.GLFW_KEY_BACKSPACE || event.key() == GLFW.GLFW_KEY_DELETE;
 		this.apply(clear ? InputConstants.UNKNOWN : InputConstants.getKey(event));
+		return true;
+	}
+
+	@Override
+	public boolean captureMouse(int button) {
+		if (!this.listening || button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+			return false;
+		}
+		this.listening = false;
+		this.apply(InputConstants.Type.MOUSE.getOrCreate(button));
 		return true;
 	}
 

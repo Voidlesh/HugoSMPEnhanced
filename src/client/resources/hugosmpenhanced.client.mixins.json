@@ -47,8 +47,6 @@
 		"StreamerModeSkinMixin",
 		"SettingsKeyMixin",
 		"ClientFullbrightMixin",
-		"ClientZoomFovMixin",
-		"ClientZoomMouseMixin",
 		"ClientFireOverlayMixin",
 		"ClientPumpkinOverlayMixin"
 	],
