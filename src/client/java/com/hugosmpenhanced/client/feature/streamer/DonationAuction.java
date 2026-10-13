@@ -72,6 +72,7 @@ public final class DonationAuction {
 	private static String winner;
 	private static final List<Event> EVENTS = new ArrayList<>();
 	private static boolean refunded;
+	private static boolean cancelled;
 
 	private DonationAuction() {
 	}
@@ -96,6 +97,7 @@ public final class DonationAuction {
 		leader = null;
 		winner = null;
 		refunded = false;
+		cancelled = false;
 		if (!demo) {
 			log("START  " + title + "  Startgebot " + Money.format(startBid) + "  Dauer " + config.streamerAuctionSeconds + " s");
 		}
@@ -117,8 +119,24 @@ public final class DonationAuction {
 		StreamerFeature.onAuctionEnded();
 	}
 
-	/** Stops without a winner (nothing happens with the money; the log keeps every payment). */
+	/**
+	 * Stops without a winner. When real money came in, the auction ends without a winner instead of
+	 * vanishing, so everyone who paid shows up under "zurückzahlen".
+	 */
 	public static void cancel() {
+		if (state == State.RUNNING && !demo && !BIDDERS.isEmpty()) {
+			log("ABBRUCH  ohne Gewinner, " + BIDDERS.size() + " Bieter");
+			state = State.ENDED;
+			endedAt = System.currentTimeMillis();
+			winner = null;
+			leader = null;
+			cancelled = true;
+			EVENTS.add(new Event(Event.Kind.ENDED, null, 0, endedAt));
+			StreamerFeature.info(net.minecraft.network.chat.Component.literal(
+				"Auktion abgebrochen, niemand gewinnt. Über \"zurückzahlen\" bekommen alle ihr Geld wieder.")
+				.withStyle(net.minecraft.ChatFormatting.GRAY));
+			return;
+		}
 		if (state == State.RUNNING && !demo) {
 			log("ABBRUCH");
 		}
@@ -319,6 +337,11 @@ public final class DonationAuction {
 
 	public static boolean refunded() {
 		return refunded;
+	}
+
+	/** Ended by "Abbrechen" after money came in: no winner, everyone can be paid back. */
+	public static boolean cancelled() {
+		return cancelled;
 	}
 
 	public static List<Event> events() {

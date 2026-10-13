@@ -52,10 +52,30 @@ public class StreamerGameTest implements FabricClientGameTest {
 			context.waitTicks(10);
 
 			// ---------------------------------------------------------- auction setup
-			context.runOnClient(client -> client.setScreen(new StreamerScreen(null)));
+			context.runOnClient(client -> {
+				setStatic(StreamerScreen.class, "auctionItem", ItemStack.EMPTY);
+				client.setScreen(new StreamerScreen(null));
+			});
 			waitMs(context, 500);
 			context.takeScreenshot("streamer-auktion-einrichten-leer");
-			context.runOnClient(client -> setStatic(StreamerScreen.class, "auctionItem", client.player.getMainHandItem().copy()));
+			// "Aus dem Inventar", then the sword in hotbar slot 1, with real mouse clicks.
+			int[] fromInventory = context.computeOnClient(client -> {
+				Object screen = client.screen;
+				int fx = (int) getField(screen, "fx");
+				int fy = (int) getField(screen, "fy");
+				int fh = (int) getField(screen, "fh");
+				int box = (boolean) call(screen, "compact") ? Math.max(56, Math.min(112, fh - 132)) : 112;
+				return new int[] {fx + 10 + box / 2, fy + 52 + box + 4 + 19 + 8};
+			});
+			clickGui(context, fromInventory[0], fromInventory[1]);
+			waitMs(context, 300);
+			check(context.computeOnClient(c -> (boolean) getField(c.screen, "picking")), "Aus dem Inventar opens the picker");
+			context.takeScreenshot("streamer-auktion-item-waehlen");
+			int[] slot = context.computeOnClient(client -> new int[] {(client.screen.width - 196) / 2 + 8 + 9, (client.screen.height - 136) / 2 + 20 + 3 * 20 + 3 + 9});
+			clickGui(context, slot[0], slot[1]);
+			waitMs(context, 300);
+			check(context.computeOnClient(c -> !(boolean) getField(c.screen, "picking")
+				&& ((ItemStack) getStatic(StreamerScreen.class, "auctionItem")).is(net.minecraft.world.item.Items.NETHERITE_SWORD)), "picked item becomes the auction item");
 			waitMs(context, 600);
 			context.takeScreenshot("streamer-auktion-einrichten");
 			guiScale(context, 1);
@@ -85,6 +105,25 @@ public class StreamerGameTest implements FabricClientGameTest {
 				&& DonationAuction.total("KaiDerBauer") == 45_000), "Kai sums to 45k and leads");
 			waitMs(context, 1200);
 			context.takeScreenshot("streamer-auktion-live");
+			// 1080p at GUI scale 4 is 427x240: control bar, overlay and an open giveaway must not overlap.
+			context.runOnClient(client -> {
+				Giveaway.clear();
+				Giveaway.setOpen(true);
+				client.setScreen(new StreamerScreen(null));
+			});
+			tellraw(singleplayer, "[MaxBlock -> mir] join");
+			guiScale(context, 3);
+			waitMs(context, 700);
+			context.takeScreenshot("streamer-auktion-live-steuerung-klein");
+			context.runOnClient(client -> client.setScreen(new net.minecraft.client.gui.screens.ChatScreen("", false)));
+			waitMs(context, 400);
+			context.takeScreenshot("streamer-auktion-live-chat-knopf");
+			context.runOnClient(client -> {
+				Giveaway.setOpen(false);
+				Giveaway.clear();
+				client.setScreen(null);
+			});
+			guiScale(context, 2);
 			guiScale(context, 1);
 			waitMs(context, 300);
 			context.takeScreenshot("streamer-auktion-live-gross");
@@ -96,15 +135,57 @@ public class StreamerGameTest implements FabricClientGameTest {
 			Map<String, Long> refunds = context.computeOnClient(c -> DonationAuction.refunds());
 			System.out.println("STREAMER refunds " + refunds);
 			check(refunds.equals(Map.of("Alexandra", 35_000L, "noor_mc", 12_500L)), "losers to pay back");
-			context.runOnClient(client -> client.setScreen(new StreamerScreen(null)));
+			// The bar was closed: the chat shows a button that brings it back.
+			guiScale(context, 3);
+			context.runOnClient(client -> client.setScreen(new net.minecraft.client.gui.screens.ChatScreen("", false)));
+			waitMs(context, 400);
+			context.takeScreenshot("streamer-auktion-ende-chat-knopf");
+			int[] chip = context.computeOnClient(client -> {
+				int w = client.font.width("Auktion vorbei") + 20;
+				return new int[] {client.screen.width - 4 - w / 2, client.screen.height - 12 - 2 - 14 - 2 + 7};
+			});
+			clickGui(context, chip[0], chip[1]);
 			waitMs(context, 500);
+			check(context.computeOnClient(c -> StreamerScreen.liveBarTop(c.screen) >= 0), "chat button opens the control bar");
+			context.takeScreenshot("streamer-auktion-ende-steuerung-klein");
+			guiScale(context, 2);
+			waitMs(context, 300);
 			context.takeScreenshot("streamer-auktion-ende-steuerung");
+			context.runOnClient(client -> check("Alexandra".equals(DonationAuction.nextWinner()), "place two moves up"));
 			context.runOnClient(client -> setField(client.screen, "confirmRefund", true));
 			waitMs(context, 200);
 			context.takeScreenshot("streamer-auktion-zurueckzahlen");
+			int[] pay = context.computeOnClient(client -> {
+				int h = 58 + DonationAuction.refunds().size() * 11;
+				return new int[] {(client.screen.width - 240) / 2 + 240 - 8 - 65, (client.screen.height - h) / 2 + h - 22 + 8};
+			});
+			clickGui(context, pay[0], pay[1]);
+			waitMs(context, 300);
+			check(context.computeOnClient(c -> DonationAuction.refunded() && !(boolean) getField(c.screen, "confirmRefund")), "pay back button in the dialog works");
+			context.takeScreenshot("streamer-auktion-zurueckgezahlt");
 			context.runOnClient(client -> {
-				setField(client.screen, "confirmRefund", false);
-				check("Alexandra".equals(DonationAuction.nextWinner()), "place two moves up");
+				DonationAuction.close();
+				client.setScreen(null);
+			});
+
+			// ---------------------------------------------------------- cancel with money in: two clicks, then everyone can be paid back
+			context.runOnClient(client -> {
+				DonationAuction.start(client.player.getMainHandItem(), "Abbruch-Schwert", false);
+				client.setScreen(new StreamerScreen(null));
+			});
+			tellraw(singleplayer, "KaiDerBauer hat dir $20.000 gezahlt.");
+			waitMs(context, 400);
+			context.runOnClient(client -> {
+				runLiveButton(client.screen, "Abbrechen");
+				check(DonationAuction.state() == DonationAuction.State.RUNNING, "first click on Abbrechen only arms it");
+				runLiveButton(client.screen, "Wirklich abbrechen?");
+				check(DonationAuction.state() == DonationAuction.State.ENDED && DonationAuction.cancelled()
+					&& DonationAuction.winner() == null && DonationAuction.refunds().equals(Map.of("KaiDerBauer", 20_000L)),
+					"cancelled auction keeps the payers for paying back");
+			});
+			waitMs(context, 900);
+			context.takeScreenshot("streamer-auktion-abgebrochen");
+			context.runOnClient(client -> {
 				DonationAuction.close();
 				client.setScreen(null);
 			});
@@ -148,6 +229,17 @@ public class StreamerGameTest implements FabricClientGameTest {
 				client.setScreen(new StreamerScreen(null));
 			});
 			waitMs(context, 600);
+			int[] prizeButton = context.computeOnClient(client -> new int[] {
+				(int) getField(client.screen, "fx") + 10 + 26 + 156 + 80 + 38, (int) getField(client.screen, "fy") + 40 + 10 + 8});
+			clickGui(context, prizeButton[0], prizeButton[1]);
+			waitMs(context, 300);
+			check(context.computeOnClient(c -> (boolean) getField(c.screen, "picking")), "giveaway Aus Inventar opens the picker");
+			int[] prizeSlot = context.computeOnClient(client -> new int[] {(client.screen.width - 196) / 2 + 8 + 9, (client.screen.height - 136) / 2 + 20 + 3 * 20 + 3 + 9});
+			clickGui(context, prizeSlot[0], prizeSlot[1]);
+			waitMs(context, 300);
+			check(context.computeOnClient(c -> Giveaway.prize().is(net.minecraft.world.item.Items.NETHERITE_SWORD)), "picked item becomes the giveaway prize");
+			context.runOnClient(client -> Giveaway.setPrize(new ItemStack(net.minecraft.world.item.Items.ELYTRA), "Elytra"));
+			waitMs(context, 200);
 			context.takeScreenshot("streamer-giveaway");
 
 			// ---------------------------------------------------------- wheel
@@ -215,6 +307,38 @@ public class StreamerGameTest implements FabricClientGameTest {
 			client.options.guiScale().set(scale);
 			client.resizeDisplay();
 		});
+	}
+
+	/** A real mouse click at a GUI position, through the window like a player's click. */
+	private static void clickGui(ClientGameTestContext context, int guiX, int guiY) {
+		double scale = context.computeOnClient(client -> client.getWindow().getGuiScale());
+		context.getInput().setCursorPos((guiX + 0.5) * scale, (guiY + 0.5) * scale);
+		context.waitTicks(2);
+		context.getInput().pressMouse(org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT);
+		context.waitTicks(1);
+		context.getInput().setCursorPos(0, 0);
+	}
+
+	/** Runs the control bar button with this label, like a click on it. */
+	private static void runLiveButton(Object screen, String label) {
+		List<?> buttons = (List<?>) call(screen, "liveButtons");
+		for (Object button : buttons) {
+			if (label.equals(call(button, "label"))) {
+				((Runnable) call(button, "action")).run();
+				return;
+			}
+		}
+		throw new AssertionError("no control bar button " + label);
+	}
+
+	private static Object getStatic(Class<?> type, String name) {
+		try {
+			Field field = type.getDeclaredField(name);
+			field.setAccessible(true);
+			return field.get(null);
+		} catch (ReflectiveOperationException e) {
+			throw new AssertionError(e);
+		}
 	}
 
 	private static void twitchMessage(String user, String text) {
