@@ -9,6 +9,8 @@ import com.hugosmpenhanced.client.feature.chatfilter.ChatFilterService;
 import com.hugosmpenhanced.client.util.ServerCheck;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.ChatFormatting;
+import net.minecraft.util.Util;
+import net.minecraft.client.GuiMessageTag;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -37,7 +39,7 @@ public final class MentionHighlightFeature {
 	}
 
 	private static void check(String text, String senderName) {
-		if (!ModConfigManager.CONFIG.mentionsEnabled || !ServerCheck.isHugoSmp()) {
+		if (!ModConfigManager.CONFIG.mentionsEnabled || !(forceActive || ServerCheck.isHugoSmp())) {
 			return;
 		}
 		Minecraft client = Minecraft.getInstance();
@@ -54,10 +56,54 @@ public final class MentionHighlightFeature {
 		if (ModConfigManager.CONFIG.mentionsSoundEnabled) {
 			client.getSoundManager().play(SimpleSoundInstance.forUI(SoundEvents.UI_TOAST_IN, 1.0f));
 		}
+		// The events fire right before the line is added to the chat; the chat mixin marks it then.
+		pending = new Pending(text, senderName, Util.getMillis());
+	}
 
-		client.gui.getChat().addMessage(senderName != null
+	/** A mention seen by the events, waiting for its line to reach the chat. */
+	private record Pending(String text, String senderName, long seenAt) {
+	}
+
+	private static Pending pending;
+	/** Lets game tests check mentions outside HugoSMP. */
+	public static boolean forceActive;
+
+	/** Whether this chat line is the mention just seen. */
+	public static boolean isPending(Component message) {
+		Pending p = pending;
+		// endsWith: HugoGuard may have put its tag in front by now.
+		return p != null && Util.getMillis() - p.seenAt() < 1000 && message.getString().endsWith(p.text());
+	}
+
+	/** The line as drawn when it should be coloured: gold where the server set no colour. */
+	public static Component colored(Component message) {
+		if (!ModConfigManager.CONFIG.mentionStyle.color() || !isPending(message)) {
+			return message;
+		}
+		return Component.empty().withStyle(ChatFormatting.GOLD).append(message);
+	}
+
+	/** The gold stripe left of the line, with "Erwähnung" when hovering it. */
+	public static GuiMessageTag tag(Component message, GuiMessageTag tag) {
+		if (!ModConfigManager.CONFIG.mentionStyle.color() || !isPending(message)) {
+			return tag;
+		}
+		return new GuiMessageTag(0xFFAA00, null, Component.literal("Erwähnung"), "Mention");
+	}
+
+	/** After the line is in the chat: the hint line below it, if that is turned on. */
+	public static void afterAdded(Component message) {
+		if (!isPending(message)) {
+			return;
+		}
+		Pending p = pending;
+		pending = null;
+		if (!ModConfigManager.CONFIG.mentionStyle.line()) {
+			return;
+		}
+		Minecraft.getInstance().gui.getChat().addMessage(p.senderName() != null
 			? Component.literal("» ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
-				.append(Component.literal(senderName).withStyle(ChatFormatting.YELLOW))
+				.append(Component.literal(p.senderName()).withStyle(ChatFormatting.YELLOW))
 				.append(Component.literal(" hat dich erwähnt").withStyle(ChatFormatting.GOLD))
 			: Component.literal("» ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
 				.append(Component.literal("Du wurdest erwähnt").withStyle(ChatFormatting.GOLD)));

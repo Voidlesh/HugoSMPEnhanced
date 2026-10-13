@@ -18,6 +18,7 @@ import com.hugosmpenhanced.client.feature.discord.DiscordTimer;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButton;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonPosition;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonSpots;
+import com.hugosmpenhanced.client.feature.mentions.MentionStyle;
 import com.hugosmpenhanced.client.feature.inventorylayout.SavedInventoryLayout;
 import com.hugosmpenhanced.client.feature.mainmenu.MainMenuLayout;
 import com.hugosmpenhanced.client.feature.mainmenu.SplashAnimation;
@@ -34,6 +35,7 @@ public class ModConfig {
 	// Mention-Highlighting
 	public boolean mentionsEnabled = true;
 	public boolean mentionsSoundEnabled = true;
+	public MentionStyle mentionStyle = MentionStyle.LINE;
 	public List<String> mentionTriggers = new ArrayList<>();
 
 	// Preis pro Item
