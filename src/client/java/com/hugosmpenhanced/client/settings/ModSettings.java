@@ -29,6 +29,7 @@ import com.hugosmpenhanced.client.feature.discord.DiscordStatusOption;
 import com.hugosmpenhanced.client.feature.discord.DiscordTimer;
 import com.hugosmpenhanced.client.feature.discord.StatusReader;
 import com.hugosmpenhanced.client.feature.entityheatmap.EntityHeatmap;
+import com.hugosmpenhanced.client.feature.mentions.MentionStyle;
 import com.hugosmpenhanced.client.feature.streamer.ChatPatterns;
 import com.hugosmpenhanced.client.feature.streamer.DonationAuction;
 import com.hugosmpenhanced.client.feature.streamer.Giveaway;
@@ -429,6 +430,8 @@ public final class ModSettings {
 				new SettingsSection("Erwähnungen",
 					toggle("Erwähnungen hervorheben", "Nachrichten mit deinem Namen werden markiert",
 						c -> c.mentionsEnabled, (c, v) -> c.mentionsEnabled = v).keywords("mention"),
+					new CycleOption<>("Markierung", "Hinweiszeile, goldene Nachricht oder beides",
+						MentionStyle.class, c -> c.mentionStyle, (c, v) -> c.mentionStyle = v).keywords("mention farbe"),
 					toggle("Ton bei Erwähnung", null, c -> c.mentionsSoundEnabled, (c, v) -> c.mentionsSoundEnabled = v),
 					new StringListOption("Zusätzliche Wörter", "Dein Spielername wird immer erkannt", "Keine",
 						c -> c.mentionTriggers, (c, v) -> c.mentionTriggers = v).keywords("trigger"))),
