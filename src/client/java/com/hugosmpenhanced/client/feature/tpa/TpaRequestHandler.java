@@ -52,10 +52,11 @@ public final class TpaRequestHandler {
 			return;
 		}
 
-		String keyName = TpaKeybinds.acceptKey.getTranslatedKeyMessage().getString();
-
 		Component title = Component.translatable(titleKey, player).withStyle(ChatFormatting.BOLD);
-		Component subtitle = Component.translatable(subtitleKey, keyName);
+		// Without a key the toast would read "Press Not Bound to accept".
+		Component subtitle = TpaKeybinds.acceptKey.isUnbound()
+			? Component.literal("/tpaccept " + player)
+			: Component.translatable(subtitleKey, TpaKeybinds.acceptKey.getTranslatedKeyMessage().getString());
 		if (listed != null) {
 			subtitle = Component.literal("✔ HugoGuard: vertrauenswürdig").withStyle(ChatFormatting.GREEN);
 		}
