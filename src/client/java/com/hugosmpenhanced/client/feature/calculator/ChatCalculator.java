@@ -131,13 +131,24 @@ public final class ChatCalculator {
 				if (this.eat('+')) {
 					this.operators++;
 					value += this.parseTerm();
-				} else if (this.eat('-')) {
+				} else if (!this.negativeNumberAhead() && this.eat('-')) {
 					this.operators++;
 					value -= this.parseTerm();
 				} else {
 					return value;
 				}
 			}
+		}
+
+		/**
+		 * "64 -200" is two numbers (coordinates in "/tp 100 64 -200"), not a subtraction: a minus
+		 * with a space before it and a digit right after it starts a negative number.
+		 */
+		private boolean negativeNumberAhead() {
+			this.skipSpaces();
+			int at = this.pos;
+			return at > 0 && at + 1 < this.text.length() && this.text.charAt(at - 1) == ' '
+				&& this.text.charAt(at) == '-' && Character.isDigit(this.text.charAt(at + 1));
 		}
 
 		private double parseTerm() {
