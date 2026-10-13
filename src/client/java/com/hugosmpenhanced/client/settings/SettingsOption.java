@@ -179,6 +179,11 @@ public abstract class SettingsOption {
 		return false;
 	}
 
+	/** A mouse button pressed anywhere while this row captures input; true when the row took it. */
+	public boolean captureMouse(int button) {
+		return false;
+	}
+
 	public boolean hasDefault() {
 		return false;
 	}
