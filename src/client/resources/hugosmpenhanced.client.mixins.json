@@ -23,6 +23,7 @@
 		"GuiGraphicsStyleMixin",
 		"HugoGuardNametagMixin",
 		"HugoGuardChatMixin",
+		"MentionChatMixin",
 		"ChatCalculatorMixin",
 		"ColorChatPreviewMixin",
 		"EditBoxAccessor",
