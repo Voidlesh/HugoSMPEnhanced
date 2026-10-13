@@ -44,6 +44,7 @@ public class StreamerScreen extends Screen implements StyledScreen {
 	private static Tab tab = Tab.AUCTION;
 	private static ItemStack auctionItem = ItemStack.EMPTY;
 	private static String auctionName = "";
+	private static int liveBarTop = -1;
 
 	private final Screen parent;
 	private final List<Hit> hits = new ArrayList<>();
@@ -55,6 +56,7 @@ public class StreamerScreen extends Screen implements StyledScreen {
 	private boolean picking;
 	private boolean pickingPrize;
 	private boolean confirmRefund;
+	private long cancelArmedAt;
 	private int listScroll;
 	private long openedAt;
 
@@ -449,6 +451,11 @@ public class StreamerScreen extends Screen implements StyledScreen {
 		int h = 5 * cell + 36;
 		int x = (this.width - w) / 2;
 		int y = (this.height - h) / 2;
+		// The newest hit wins, so the backdrop goes in first: a click beside the panel closes it,
+		// a click on the panel between slots does nothing, a click on a slot picks it.
+		this.hit(0, 0, this.width, this.height, () -> this.picking = false);
+		this.hit(x, y, w, h, () -> {
+		});
 		Theme.panel(graphics, x, y, w, h, 0xE6141414, Theme.GOLD);
 		graphics.drawString(this.font, "Item wählen", x + 8, y + 7, Theme.WHITE, true);
 		var inventory = this.minecraft.player.getInventory();
@@ -489,7 +496,6 @@ public class StreamerScreen extends Screen implements StyledScreen {
 				});
 			}
 		}
-		this.hit(0, 0, this.width, this.height, () -> this.picking = false);
 		if (!hovered.isEmpty()) {
 			graphics.setTooltipForNextFrame(this.font, hovered, mouseX, mouseY);
 		}
@@ -497,109 +503,199 @@ public class StreamerScreen extends Screen implements StyledScreen {
 
 	// ------------------------------------------------------------------ live control bar
 
+	private record LiveButton(String label, String shortLabel, StreamerUi.Kind kind, Runnable action, String tooltip) {
+	}
+
+	private List<LiveButton> liveButtons() {
+		List<LiveButton> buttons = new ArrayList<>();
+		if (DonationAuction.state() != DonationAuction.State.ENDED) {
+			buttons.add(new LiveButton("+30 s", "+30 s", StreamerUi.Kind.NORMAL, () -> DonationAuction.addTime(30), null));
+			buttons.add(new LiveButton("Jetzt beenden", "Beenden", StreamerUi.Kind.GOLD, DonationAuction::finish, null));
+			// With real bids a slip of the mouse must not end the stream's auction: the first click arms it.
+			boolean needsConfirm = !DonationAuction.demo() && DonationAuction.bidderCount() > 0;
+			boolean armed = needsConfirm && System.currentTimeMillis() - this.cancelArmedAt < 3000;
+			buttons.add(new LiveButton(armed ? "Wirklich abbrechen?" : "Abbrechen", armed ? "Sicher?" : "Abbrechen", StreamerUi.Kind.DANGER, () -> {
+				if (!needsConfirm || System.currentTimeMillis() - this.cancelArmedAt < 3000) {
+					this.cancelArmedAt = 0;
+					DonationAuction.cancel();
+				} else {
+					this.cancelArmedAt = System.currentTimeMillis();
+				}
+			}, needsConfirm ? "Niemand gewinnt. Danach kannst du allen ihr Geld zurückzahlen." : "Ohne Gewinner beenden"));
+			return buttons;
+		}
+		String winner = DonationAuction.winner();
+		if (winner != null && !DonationAuction.demo()) {
+			buttons.add(new LiveButton("TPA zu " + winner, "TPA", StreamerUi.Kind.GOLD, () -> {
+				StreamerFeature.command("tpa " + winner);
+				this.onClose();
+			}, "Schickt /tpa " + winner));
+			buttons.add(new LiveButton("Zu mir holen", "Holen", StreamerUi.Kind.NORMAL, () -> StreamerFeature.command("tpahere " + winner),
+				"Schickt /tpahere " + winner));
+			// Not after paying back: place two would win with money they already got back.
+			if (DonationAuction.ranking().size() > 1 && !DonationAuction.refunded()) {
+				buttons.add(new LiveButton("Platz 2 gewinnt", "Platz 2", StreamerUi.Kind.NORMAL, DonationAuction::nextWinner,
+					"Wenn der Gewinner offline ist oder nicht antwortet"));
+			}
+		}
+		Map<String, Long> refunds = DonationAuction.refunds();
+		if (!refunds.isEmpty() && !DonationAuction.demo()) {
+			String label;
+			if (!DonationAuction.refunded()) {
+				label = refunds.size() + " zurückzahlen";
+			} else if (StreamerFeature.refundsLeft() > 0) {
+				label = "Zahle zurück… " + (StreamerFeature.refundTotal() - StreamerFeature.refundsLeft()) + "/" + StreamerFeature.refundTotal();
+			} else {
+				label = "Zurückgezahlt";
+			}
+			buttons.add(new LiveButton(label, label, DonationAuction.refunded() ? StreamerUi.Kind.GHOST : StreamerUi.Kind.DANGER, () -> {
+				if (!DonationAuction.refunded()) {
+					this.confirmRefund = true;
+				}
+			}, DonationAuction.refunded() ? null : "Zahlt allen, die nicht gewonnen haben, ihr Gebot zurück. Du siehst die Liste vorher."));
+		}
+		buttons.add(new LiveButton("Neue Auktion", "Neu", StreamerUi.Kind.NORMAL, DonationAuction::close, "Zurück zum Einrichten"));
+		return buttons;
+	}
+
+	/**
+	 * The control bar while an auction runs or after it ended. Its width follows the buttons, long
+	 * labels get shorter when the screen is narrow, and only then the buttons wrap onto a second row,
+	 * so nothing is ever drawn on top of something else or left out.
+	 */
 	private void renderLiveBar(GuiGraphics graphics, int mouseX, int mouseY) {
 		boolean ended = DonationAuction.state() == DonationAuction.State.ENDED;
-		List<String> labels = new ArrayList<>();
-		List<StreamerUi.Kind> kinds = new ArrayList<>();
-		List<Runnable> actions = new ArrayList<>();
 		String winner = DonationAuction.winner();
-		if (!ended) {
-			labels.add("+30 s");
-			kinds.add(StreamerUi.Kind.NORMAL);
-			actions.add(() -> DonationAuction.addTime(30));
-			labels.add("Jetzt beenden");
-			kinds.add(StreamerUi.Kind.GOLD);
-			actions.add(DonationAuction::finish);
-			labels.add("Abbrechen");
-			kinds.add(StreamerUi.Kind.DANGER);
-			actions.add(DonationAuction::cancel);
-		} else {
-			if (winner != null && !DonationAuction.demo()) {
-				labels.add("TPA zu " + winner);
-				kinds.add(StreamerUi.Kind.GOLD);
-				actions.add(() -> {
-					StreamerFeature.command("tpa " + winner);
-					this.onClose();
-				});
-				labels.add("Zu mir holen");
-				kinds.add(StreamerUi.Kind.NORMAL);
-				actions.add(() -> StreamerFeature.command("tpahere " + winner));
-				if (DonationAuction.ranking().size() > 1) {
-					labels.add("Platz 2 rückt nach");
-					kinds.add(StreamerUi.Kind.NORMAL);
-					actions.add(DonationAuction::nextWinner);
+		List<LiveButton> buttons = this.liveButtons();
+		int gap = 4;
+		int pad = 6;
+		int maxW = Math.min(this.width - 8, 480);
+		int maxInner = maxW - 2 * pad;
+
+		// Too wide: shorten the label that saves the most first ("TPA zu Name" becomes "TPA"), one at a time.
+		String[] labels = new String[buttons.size()];
+		for (int i = 0; i < labels.length; i++) {
+			labels[i] = buttons.get(i).label();
+		}
+		while (this.rowWidth(labels, gap) > maxInner) {
+			int best = -1;
+			int saving = 0;
+			for (int i = 0; i < labels.length; i++) {
+				int save = this.font.width(labels[i]) - this.font.width(buttons.get(i).shortLabel());
+				if (save > saving) {
+					saving = save;
+					best = i;
 				}
 			}
-			Map<String, Long> refunds = DonationAuction.refunds();
-			if (!refunds.isEmpty() && !DonationAuction.demo()) {
-				boolean busy = StreamerFeature.refundsLeft() > 0;
-				labels.add(DonationAuction.refunded()
-					? (busy ? "Zahle zurück… " + (StreamerFeature.refundTotal() - StreamerFeature.refundsLeft()) + "/" + StreamerFeature.refundTotal() : "Zurückgezahlt")
-					: refunds.size() + " zurückzahlen");
-				kinds.add(DonationAuction.refunded() ? StreamerUi.Kind.GHOST : StreamerUi.Kind.DANGER);
-				actions.add(() -> {
-					if (!DonationAuction.refunded()) {
-						this.confirmRefund = true;
-					}
-				});
+			if (best < 0) {
+				break;
 			}
-			labels.add("Neue Auktion");
-			kinds.add(StreamerUi.Kind.NORMAL);
-			actions.add(DonationAuction::close);
+			labels[best] = buttons.get(best).shortLabel();
 		}
-		int gap = 4;
-		int total = 0;
-		int[] widths = new int[labels.size()];
-		for (int i = 0; i < labels.size(); i++) {
-			widths[i] = this.font.width(labels.get(i)) + 16;
-			total += widths[i] + gap;
+		int[] widths = new int[buttons.size()];
+		for (int i = 0; i < buttons.size(); i++) {
+			widths[i] = Math.min(maxInner, this.font.width(labels[i]) + 16);
 		}
+
 		String info;
 		if (!ended) {
 			info = (DonationAuction.demo() ? "Testlauf  ·  " : "") + StreamerOverlay.clock(Math.max(0, DonationAuction.endsAt() - System.currentTimeMillis()))
 				+ "  ·  " + DonationAuction.bidderCount() + " Bieter  ·  " + Money.format(DonationAuction.sum());
 		} else {
-			info = winner == null ? "Keine gültigen Gebote" : (DonationAuction.demo() ? "Testlauf vorbei" : "Gewinner: " + winner);
+			info = winner == null ? (DonationAuction.cancelled() ? "Abgebrochen, niemand gewinnt" : "Keine gültigen Gebote")
+				: (DonationAuction.demo() ? "Testlauf vorbei" : "Gewinner: " + winner);
 		}
-		int w = Math.max(total + 12 - gap, this.font.width(info) + 20);
-		w = Math.min(w, this.width - 8);
-		int h = 40;
+		String giveaway = Giveaway.open() ? "Giveaway (" + Giveaway.count() + ")" : "Giveaway";
+		int gw = this.font.width(giveaway) + 10;
+		int headerTools = gw + 2 + 14;
+		int natural = this.rowWidth(labels, gap);
+		int w = Mth.clamp(Math.max(natural, this.font.width(info) + 10 + headerTools) + 2 * pad, 120, maxW);
+		int inner = w - 2 * pad;
+
+		// greedy rows
+		List<int[]> rows = new ArrayList<>();
+		int rowStart = 0;
+		int used = 0;
+		for (int i = 0; i < buttons.size(); i++) {
+			int need = (i == rowStart ? 0 : gap) + widths[i];
+			if (i > rowStart && used + need > inner) {
+				rows.add(new int[] {rowStart, i, used});
+				rowStart = i;
+				used = widths[i];
+			} else {
+				used += need;
+			}
+		}
+		rows.add(new int[] {rowStart, buttons.size(), used});
+
+		int h = 21 + rows.size() * 20;
 		int x = (this.width - w) / 2;
 		int y = this.height - h - 4;
+		liveBarTop = y;
 		float slide = StreamerUi.easeOut(StreamerUi.progress(this.openedAt, 250));
 		y += Math.round((1 - slide) * 20);
-		Theme.panel(graphics, x, y, w, h, 0xEC101010, Theme.FRAME_BORDER);
-		graphics.drawString(this.font, info, x + 8, y + 6, ended ? Theme.GOLD : Theme.WHITE, true);
-		String giveaway = "Giveaway";
-		int gw = this.font.width(giveaway) + 10;
-		StreamerUi.button(graphics, this.font, x + w - 8 - gw - 20, y + 3, gw, 14, giveaway, StreamerUi.Kind.GHOST, true, mouseX, mouseY);
-		this.hit(x + w - 8 - gw - 20, y + 3, gw, 14, () -> this.switchTab(Tab.GIVEAWAY));
-		StreamerUi.button(graphics, this.font, x + w - 22, y + 3, 14, 14, "×", StreamerUi.Kind.GHOST, true, mouseX, mouseY);
-		this.hit(x + w - 22, y + 3, 14, 14, this::onClose);
-		int bx = x + 6;
-		for (int i = 0; i < labels.size(); i++) {
-			int bw = widths[i];
-			if (bx + bw > x + w - 4) {
-				break;
-			}
-			StreamerUi.button(graphics, this.font, bx, y + 19, bw, 16, labels.get(i), kinds.get(i), true, mouseX, mouseY);
-			this.hit(bx, y + 19, bw, 16, actions.get(i));
-			bx += bw + gap;
+		Theme.panel(graphics, x, y, w, h, 0xF4101010, Theme.FRAME_BORDER);
+
+		int toolsX = x + w - pad - headerTools;
+		String shownInfo = this.font.plainSubstrByWidth(info, toolsX - 8 - (x + pad));
+		graphics.drawString(this.font, shownInfo, x + pad + 2, y + 6, ended ? Theme.GOLD : Theme.WHITE, true);
+		StreamerUi.button(graphics, this.font, toolsX, y + 3, gw, 14, giveaway, StreamerUi.Kind.GHOST, true, mouseX, mouseY);
+		this.hit(toolsX, y + 3, gw, 14, () -> this.switchTab(Tab.GIVEAWAY));
+		int closeX = toolsX + gw + 2;
+		StreamerUi.button(graphics, this.font, closeX, y + 3, 14, 14, "×", StreamerUi.Kind.GHOST, true, mouseX, mouseY);
+		this.hit(closeX, y + 3, 14, 14, this::onClose);
+		if (StreamerUi.inside(mouseX, mouseY, closeX, y + 3, 14, 14)) {
+			graphics.setTooltipForNextFrame(this.font, Component.literal("Ausblenden. Im Chat oder mit J kommst du zurück."), mouseX, mouseY);
 		}
-		if (ended && winner != null && labels.contains("Platz 2 rückt nach")) {
-			int index = labels.indexOf("Platz 2 rückt nach");
-			int px = x + 6;
-			for (int i = 0; i < index; i++) {
-				px += widths[i] + gap;
+
+		int by = y + 20;
+		for (int[] row : rows) {
+			// Rows are centred, a single short row looks balanced and a wrapped one too.
+			int bx = x + pad + (inner - row[2]) / 2;
+			for (int i = row[0]; i < row[1]; i++) {
+				LiveButton button = buttons.get(i);
+				String label = labels[i];
+				boolean over = StreamerUi.button(graphics, this.font, bx, by, widths[i], 16, label, button.kind(), true, mouseX, mouseY);
+				this.hit(bx, by, widths[i], 16, button.action());
+				if (over) {
+					String tip = button.tooltip();
+					if (!label.equals(button.label())) {
+						tip = tip == null ? button.label() : button.label() + ": " + tip;
+					}
+					if (tip != null) {
+						graphics.setTooltipForNextFrame(this.font, this.font.split(Component.literal(tip), 200), mouseX, mouseY);
+					}
+				}
+				bx += widths[i] + gap;
 			}
-			if (StreamerUi.inside(mouseX, mouseY, px, y + 19, widths[index], 16)) {
-				graphics.setTooltipForNextFrame(this.font, Component.literal("Wenn der Gewinner offline ist oder nicht antwortet"), mouseX, mouseY);
-			}
+			by += 20;
 		}
+	}
+
+	private int rowWidth(String[] labels, int gap) {
+		int total = -gap;
+		for (String label : labels) {
+			total += this.font.width(label) + 16 + gap;
+		}
+		return Math.max(0, total);
+	}
+
+	/** Top of the live control bar while it is open, so the overlay can keep the item above it; -1 otherwise. */
+	public static int liveBarTop(Screen screen) {
+		return screen instanceof StreamerScreen streamer && streamer.mode == Mode.LIVE ? liveBarTop : -1;
+	}
+
+	/** Opens the panel on the auction (live bar while one runs) or on the giveaway tab. */
+	public static void open(boolean giveawayTab) {
+		tab = giveawayTab ? Tab.GIVEAWAY : Tab.AUCTION;
+		net.minecraft.client.Minecraft.getInstance().setScreen(new StreamerScreen(null));
 	}
 
 	private void renderRefundConfirm(GuiGraphics graphics, int mouseX, int mouseY) {
 		this.hits.clear();
+		// Swallows clicks beside the dialog; added first so the dialog's own buttons win.
+		this.hit(0, 0, this.width, this.height, () -> {
+		});
 		graphics.fill(0, 0, this.width, this.height, 0x80000000);
 		Map<String, Long> refunds = DonationAuction.refunds();
 		int lines = Math.min(10, refunds.size());
@@ -630,8 +726,6 @@ public class StreamerScreen extends Screen implements StyledScreen {
 		this.hit(x + w - 8 - 130, by, 130, 16, () -> {
 			StreamerFeature.refundLosers();
 			this.confirmRefund = false;
-		});
-		this.hit(0, 0, this.width, this.height, () -> {
 		});
 	}
 

@@ -111,7 +111,7 @@ public final class StreamerOverlay {
 				}
 			}
 			float pop = StreamerUi.easeBack(StreamerUi.progress(DonationAuction.endedAt(), 450));
-			String text = DonationAuction.winner() != null ? "VERKAUFT" : "KEINE GEBOTE";
+			String text = DonationAuction.winner() != null ? "VERKAUFT" : DonationAuction.cancelled() ? "ABGEBROCHEN" : "KEINE GEBOTE";
 			int color = DonationAuction.winner() != null ? StreamerUi.GREEN : StreamerUi.RED_TEXT;
 			float s = timerScale * 0.8f * pop;
 			StreamerUi.centered(graphics, font, text, width / 2f, timerY + (timerScale * 0.8f - s) * 4, Math.max(0.01f, s), color, true);
@@ -121,7 +121,9 @@ public final class StreamerOverlay {
 		ItemStack stack = DonationAuction.item();
 		int centerX = width / 2;
 		int topEnd = timerY + (int) (timerScale * 9) + 10;
-		int bottom = height - 46;
+		// Above the hotbar, or above the streamer's control bar while it is open.
+		int barTop = StreamerScreen.liveBarTop(Minecraft.getInstance().screen);
+		int bottom = barTop >= 0 ? Math.min(height - 46, barTop - 6) : height - 46;
 		float nameScale = width >= 420 && height >= 260 ? 1.5f : 1.25f;
 		String enchants = enchantLine(stack, font, width - 40);
 		int nameH = Math.round(9 * nameScale) + (enchants.isEmpty() ? 0 : 12) + 6;
@@ -320,10 +322,14 @@ public final class StreamerOverlay {
 		String count = Giveaway.count() == 1 ? "1 Teilnehmer" : Giveaway.count() + " Teilnehmer";
 		String how = String.join("  ·  ", ways);
 		int w = Math.max(font.width(head + "  " + prize) + 30, Math.max(font.width(count) + 30, font.width(how) + 14));
-		w = Math.min(w, graphics.guiWidth() / 2);
 		boolean auctionShown = DonationAuction.state() != DonationAuction.State.IDLE;
+		// Beside an auction it gets the side column, the item in the middle stays free.
+		w = Math.min(w, auctionShown ? Mth.clamp((graphics.guiWidth() - 120) / 2 - 8, 110, 160) : graphics.guiWidth() / 2);
+		// During an auction the left column holds it, under "how to bid" when that is shown, so it
+		// never reaches down into the chat or the control bar.
+		boolean howToShown = auctionShown && DonationAuction.state() != DonationAuction.State.ENDED && graphics.guiWidth() >= 380;
 		int x = auctionShown ? 6 : graphics.guiWidth() - w - 6;
-		int y = auctionShown ? graphics.guiHeight() / 2 + 10 : 6;
+		int y = auctionShown ? (howToShown ? 34 + 54 + 6 : 34) : 6;
 		if (Giveaway.lastJoinAt() != joinFlashAt && now - Giveaway.lastJoinAt() < 100) {
 			joinFlashAt = Giveaway.lastJoinAt();
 		}
