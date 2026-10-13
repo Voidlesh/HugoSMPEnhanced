@@ -21,6 +21,7 @@ import com.hugosmpenhanced.client.settings.SettingsScreen;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ChatScreen;
@@ -46,7 +47,12 @@ public class QolGameTest implements FabricClientGameTest {
 			throw new AssertionError("HugoGuard lists did not load");
 		}
 
-		try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
+		// No menu blur and a flat world, so the world loads in time under software rendering.
+		context.runOnClient(client -> client.options.menuBackgroundBlurriness().set(0));
+		try (TestSingleplayerContext singleplayer = context.worldBuilder()
+			.adjustSettings(settings -> settings.getNormalPresetList().stream()
+				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
+			.create()) {
 			singleplayer.getClientWorld().waitForChunksRender();
 			singleplayer.getServer().runCommand("time set day");
 			int[] base = context.computeOnClient(client -> {
