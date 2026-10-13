@@ -1,0 +1,119 @@
+# Publishes a GitHub release whenever `version` in gradle.properties changes on main.
+# The in-game updater reads these releases, so the rules below must hold:
+# tag v<version> == mod version, mod jar (not -sources) attached, not a pre-release.
+# Release text: release-notes/<version>.md if present, otherwise commit titles since the last tag.
+
+name: release
+on:
+  push:
+    branches: [main]
+    paths:
+      - gradle.properties
+      - .github/workflows/release.yml
+      - release-notes/**
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: ubuntu-24.04
+    steps:
+      - name: checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
+      - name: read version
+        id: version
+        run: |
+          version=$(grep -E '^version=' gradle.properties | head -n1 | cut -d= -f2- | tr -d '\r[:space:]')
+          if ! [[ "$version" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::version '$version' in gradle.properties is not semver"
+            exit 1
+          fi
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+          echo "tag=v$version" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$version" >/dev/null; then
+            echo "Tag v$version already exists, nothing to release."
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: validate gradle wrapper
+        if: steps.version.outputs.exists == 'false'
+        uses: gradle/actions/wrapper-validation@v6
+
+      - name: setup jdk
+        if: steps.version.outputs.exists == 'false'
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'microsoft'
+
+      - name: build
+        if: steps.version.outputs.exists == 'false'
+        run: |
+          chmod +x ./gradlew
+          # gradle.properties pins a Windows JDK path for local builds; use the runner's JDK instead.
+          ./gradlew build -Dorg.gradle.java.home="$JAVA_HOME"
+
+      - name: check jar
+        id: jar
+        if: steps.version.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          jar="build/libs/hugosmpenhanced-$VERSION.jar"
+          if [ ! -f "$jar" ]; then
+            echo "::error::$jar was not built"; ls -l build/libs; exit 1
+          fi
+          mod_version=$(unzip -p "$jar" fabric.mod.json | jq -r .version)
+          if [ "$mod_version" != "$VERSION" ]; then
+            echo "::error::fabric.mod.json version '$mod_version' does not match '$VERSION'"; exit 1
+          fi
+          echo "path=$jar" >> "$GITHUB_OUTPUT"
+
+      - name: write changelog
+        if: steps.version.outputs.exists == 'false'
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          if [ -f "release-notes/$VERSION.md" ]; then
+            cp "release-notes/$VERSION.md" notes.md
+          else
+            previous=$(git describe --tags --abbrev=0 --match 'v*' HEAD 2>/dev/null || true)
+            range=${previous:+$previous..}HEAD
+            {
+              if [ -n "$previous" ]; then
+                echo "Änderungen seit ${previous#v}:"
+              else
+                echo "Änderungen:"
+              fi
+              echo
+              git log --no-merges --format='- %s' "$range" | grep -viE '^- (bump version|version [0-9])' || true
+              echo
+              echo "⚠️ Alpha: Wenn etwas nicht funktioniert, bitte melden."
+            } > notes.md
+          fi
+          cat notes.md
+
+      - name: create release
+        if: steps.version.outputs.exists == 'false'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ steps.version.outputs.tag }}
+          JAR: ${{ steps.jar.outputs.path }}
+        run: |
+          gh release create "$TAG" "$JAR" \
+            --repo "$GITHUB_REPOSITORY" \
+            --target "$GITHUB_SHA" \
+            --title "$TAG" \
+            --notes-file notes.md \
+            --latest
