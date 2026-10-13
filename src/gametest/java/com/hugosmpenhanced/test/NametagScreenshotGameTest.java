@@ -15,6 +15,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
 import net.minecraft.client.CameraType;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -60,7 +61,13 @@ public class NametagScreenshotGameTest implements FabricClientGameTest {
 
 		// The real nametag above the player, in third person.
 		context.setScreen(() -> null);
-		try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
+		// The menu blur makes every loading-screen frame slow under software rendering, and a flat
+		// world loads in time on slow machines; the nametag is all this part needs.
+		context.runOnClient(client -> client.options.menuBackgroundBlurriness().set(0));
+		try (TestSingleplayerContext singleplayer = context.worldBuilder()
+			.adjustSettings(settings -> settings.getNormalPresetList().stream()
+				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
+			.create()) {
 			singleplayer.getClientWorld().waitForChunksRender();
 			context.runOnClient(client -> client.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
 			context.runOnClient(client -> ModConfigManager.CONFIG.secondNametagPosition = SecondNametagPosition.ABOVE);

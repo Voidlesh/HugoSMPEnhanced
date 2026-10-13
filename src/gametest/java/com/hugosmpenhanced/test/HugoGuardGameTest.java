@@ -10,6 +10,7 @@ import com.mojang.authlib.GameProfile;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import net.minecraft.client.player.RemotePlayer;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.network.chat.Component;
@@ -32,7 +33,12 @@ public class HugoGuardGameTest implements FabricClientGameTest {
 			throw new AssertionError("HugoGuard list did not contain the expected scammer");
 		}
 
-		try (TestSingleplayerContext singleplayer = context.worldBuilder().create()) {
+		// No menu blur and a flat world, so the world loads in time under software rendering.
+		context.runOnClient(client -> client.options.menuBackgroundBlurriness().set(0));
+		try (TestSingleplayerContext singleplayer = context.worldBuilder()
+			.adjustSettings(settings -> settings.getNormalPresetList().stream()
+				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
+			.create()) {
 			singleplayer.getClientWorld().waitForChunksRender();
 			context.runOnClient(client -> {
 				var self = client.player;

@@ -177,6 +177,17 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 			context.getInput().typeChars("event");
 			context.waitTicks(3);
 			context.takeScreenshot("ah-suche-custom-limitiert");
+			checkIcons(context, "seen this session");
+			// After a restart the icons come from the saved copies and must still show the custom textures.
+			context.runOnClient(client -> CustomItems.reloadForTest());
+			checkIcons(context, "after restart");
+			clear(context);
+			context.getInput().typeChars("phön");
+			context.waitTicks(3);
+			context.takeScreenshot("ah-suche-textur-nach-neustart");
+			clear(context);
+			context.getInput().typeChars("event");
+			context.waitTicks(3);
 			context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_DOWN);
 			context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER);
 			context.waitTicks(10);
@@ -256,7 +267,8 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 		CompoundTag root = new CompoundTag();
 		root.put("PublicBukkitValues", bukkit);
 		stack.set(DataComponents.CUSTOM_DATA, CustomData.of(root));
-		stack.set(DataComponents.ENCHANTMENT_GLINT_OVERRIDE, true);
+		// Its own texture, like an item from HugoSMP's resource pack (here from the test mod's assets).
+		stack.set(DataComponents.ITEM_MODEL, net.minecraft.resources.Identifier.parse("hugosmpenhanced-test:phoenix_feather"));
 		List<String> lore = new ArrayList<>();
 		lore.add("✦ Limitiertes Event-Item");
 		lore.add("Verbrennt nach 3 Tagen zu Asche.");
@@ -304,6 +316,19 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 		});
 		context.getInput().setCursorPos(pos[0], pos[1]);
 		context.waitTicks(3);
+	}
+
+	private static void checkIcons(ClientGameTestContext context, String when) {
+		context.runOnClient(client -> {
+			AuctionSearch.Entry feather = AuctionSearch.search("Phönixfeder", 1).get(0).entry();
+			AuctionSearch.Entry sword = AuctionSearch.search("Eventschwert", 1).get(0).entry();
+			var model = feather.icon().get(DataComponents.ITEM_MODEL);
+			var modelData = sword.icon().get(DataComponents.CUSTOM_MODEL_DATA);
+			System.out.println("CUSTOM icon " + when + ": feather model=" + model + " sword data=" + modelData);
+			check(model != null && model.toString().equals("hugosmpenhanced-test:phoenix_feather"), "feather icon lost its model " + when);
+			check(modelData != null && modelData.getFloat(0) != null && modelData.getFloat(0) == 1001f, "sword icon lost its model data " + when);
+			check(feather.icon().getCount() == 1 && !feather.icon().has(DataComponents.LORE), "icon is a single item without lore");
+		});
 	}
 
 	private static void clear(ClientGameTestContext context) {
