@@ -10,6 +10,7 @@ import com.hugosmpenhanced.client.gui.StyledScreen;
 
 import org.lwjgl.glfw.GLFW;
 
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
@@ -34,6 +35,7 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 	private static final int FIELD = 20;
 	private static final int MAX_SUGGESTIONS = 8;
 	private static final int STAR = 16;
+	private static final int MARK = 14;
 
 	private final SignBlockEntity sign;
 	private final boolean front;
@@ -210,6 +212,8 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 			if (row.kind() != Kind.QUERY && event.x() >= this.starX()) {
 				AuctionSearch.toggleFavorite(row.send());
 				this.refresh();
+			} else if (this.canMark(row) && event.x() >= this.markX()) {
+				MarkedItems.toggle(row.priceKey());
 			} else {
 				this.submit(row.send());
 			}
@@ -230,6 +234,15 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 		return this.left + this.panelWidth - STAR - 4;
 	}
 
+	private int markX() {
+		return this.starX() - MARK;
+	}
+
+	/** Rows for one item can be marked, so that item stands out in the auction house. */
+	private boolean canMark(Row row) {
+		return row.kind() != Kind.QUERY && row.priceKey() != null && ModConfigManager.CONFIG.auctionMarkHighlight;
+	}
+
 	@Override
 	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
 		super.render(graphics, mouseX, mouseY, partialTick);
@@ -237,13 +250,24 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 
 		int hovered = this.rowAt(mouseX, mouseY);
 		for (int i = 0; i < this.rows.size(); i++) {
-			this.renderRow(graphics, this.rows.get(i), this.rowsTop + i * ROW, i == this.selected || i == hovered, i == hovered && mouseX >= this.starX());
+			Row row = this.rows.get(i);
+			boolean here = i == hovered;
+			boolean onStar = here && mouseX >= this.starX();
+			boolean onMark = here && !onStar && this.canMark(row) && mouseX >= this.markX();
+			this.renderRow(graphics, row, this.rowsTop + i * ROW, i == this.selected || here, onStar, onMark);
 		}
-		// A HugoSMP item shows its own tooltip, like in the game: name, lore, model.
-		if (hovered >= 0 && mouseX < this.starX()) {
+		if (hovered >= 0 && this.canMark(this.rows.get(hovered)) && mouseX >= this.markX() && mouseX < this.starX()) {
+			boolean marked = MarkedItems.isMarked(this.rows.get(hovered).priceKey());
+			graphics.setTooltipForNextFrame(this.font, List.of(
+				Component.literal(marked ? "Markierung entfernen" : "Im AH markieren").getVisualOrderText(),
+				Component.literal("Genau dieses Item bekommt im AH einen").withStyle(ChatFormatting.GRAY).getVisualOrderText(),
+				Component.literal("farbigen Rahmen, ähnliche nicht.").withStyle(ChatFormatting.GRAY).getVisualOrderText()),
+				mouseX, mouseY);
+		} else if (hovered >= 0 && mouseX < this.markX()) {
+			// A HugoSMP item shows its own tooltip, like in the game: name, lore, model.
 			Row row = this.rows.get(hovered);
 			if (row.priceKey() != null && row.priceKey().startsWith("custom:") && !row.icon().isEmpty()) {
-				graphics.setTooltipForNextFrame(this.font, row.icon(), mouseX, mouseY);
+				graphics.setTooltipForNextFrame(this.font, CustomItems.tooltipCopy(row.icon()), mouseX, mouseY);
 			}
 		}
 		if (this.rows.isEmpty()) {
@@ -262,10 +286,17 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 		}
 	}
 
-	private void renderRow(GuiGraphics graphics, Row row, int y, boolean active, boolean starHovered) {
+	private void renderRow(GuiGraphics graphics, Row row, int y, boolean active, boolean starHovered, boolean markHovered) {
 		int x = this.left;
 		int height = ROW - 2;
 		HugoStyle.drawBox(graphics, x, y, this.panelWidth, height, active ? HugoStyle.State.HOVER : HugoStyle.State.NORMAL);
+		boolean marked = MarkedItems.isMarked(row.priceKey()) && row.kind() != Kind.QUERY;
+		if (marked && ModConfigManager.CONFIG.auctionMarkHighlight) {
+			// The same frame the item gets in the auction house.
+			int iconY = y + (height - 16) / 2;
+			graphics.fill(x + 3, iconY - 1, x + 21, iconY + 17, MarkedItems.FILL);
+			graphics.renderOutline(x + 3, iconY - 1, 18, 18, MarkedItems.COLOR);
+		}
 		graphics.renderItem(row.icon(), x + 4, y + (height - 16) / 2);
 
 		int textX = x + 25;
@@ -275,6 +306,18 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 			boolean favorite = AuctionSearch.isFavorite(row.send());
 			int starColor = favorite ? 0xFFFFD84A : starHovered ? 0xFFDDDDDD : 0xFF666666;
 			graphics.drawString(this.font, favorite ? "★" : "☆", this.starX() + 4, y + (height - 8) / 2, starColor);
+			if (this.canMark(row)) {
+				right = this.markX() - 2;
+				int boxX = this.markX() + 2;
+				int boxY = y + (height - 9) / 2;
+				int frame = marked ? MarkedItems.COLOR : markHovered ? 0xFFDDDDDD : 0xFF666666;
+				graphics.renderOutline(boxX, boxY, 9, 9, frame);
+				if (marked) {
+					graphics.fill(boxX + 2, boxY + 2, boxX + 7, boxY + 7, MarkedItems.COLOR);
+				} else if (markHovered) {
+					graphics.fill(boxX + 2, boxY + 2, boxX + 7, boxY + 7, 0x60FFFFFF);
+				}
+			}
 		}
 
 		String priceText = null;
@@ -285,7 +328,7 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 		if (perHour != null && this.market == AuctionMarket.AUCTION) {
 			// For limited items what counts is the price per hour of time left.
 			priceText = "ab " + LimitedOffers.perHour(perHour.min);
-			ageText = age(perHour.minAt);
+			ageText = ageText(perHour.minAt);
 			int priceWidth = Math.max(this.font.width(priceText), this.font.width(ageText));
 			graphics.drawString(this.font, priceText, right - this.font.width(priceText), y + 3, 0xFFFFAA00);
 			graphics.drawString(this.font, ageText, right - this.font.width(ageText), y + 12, 0xFF777777);
@@ -294,7 +337,7 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 			// Buying in the auction house, the cheapest offer counts; selling to orders, the best one.
 			boolean orders = this.market == AuctionMarket.ORDERS;
 			priceText = orders ? "bis " + formatPrice(seen.max) : "ab " + formatPrice(seen.min);
-			ageText = age(orders ? seen.maxAt : seen.minAt);
+			ageText = ageText(orders ? seen.maxAt : seen.minAt);
 			int priceWidth = Math.max(this.font.width(priceText), this.font.width(ageText));
 			graphics.drawString(this.font, priceText, right - this.font.width(priceText), y + 3, 0xFFFFAA00);
 			graphics.drawString(this.font, ageText, right - this.font.width(ageText), y + 12, 0xFF777777);
@@ -326,7 +369,7 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 		return price >= 100 ? String.format(Locale.GERMANY, "$%,.0f", price) : String.format(Locale.GERMANY, "$%,.2f", price);
 	}
 
-	private static String age(long at) {
+	static String ageText(long at) {
 		long minutes = Math.max(0, (System.currentTimeMillis() - at) / 60_000);
 		if (minutes < 60) {
 			return minutes <= 1 ? "gerade eben" : "vor " + minutes + " Min.";
