@@ -61,6 +61,9 @@ public final class LimitedItems {
 	private static final Pattern AGO = Pattern.compile("\\bvor\\b|\\bago\\b", FLAGS);
 	/** "Verfällt 3 Tage nach der Erstellung" describes the lifetime, it is not a countdown. */
 	private static final Pattern DESCRIBES = Pattern.compile("\\bnach\\b|\\bafter\\b|\\bfor\\b|\\bf(ü|ue)r\\b", FLAGS);
+	private static final Pattern REMOVED = Pattern.compile(
+		"entfernt|gel(ö|oe)scht|verschwindet|zerf(ä|ae)llt|removed|deleted|disappears", FLAGS);
+	private static final Pattern RUNS_OUT = Pattern.compile("l(ä|ae)uft|verf(ä|ae)llt|endet|expires", FLAGS);
 	private static final Pattern TIME_OF_DAY = Pattern.compile("\\bum\\b|\\buhr\\b|\\bat\\b", FLAGS);
 
 	/** When an item runs out, and where that came from (for tests and the debug tooltip). */
@@ -91,15 +94,70 @@ public final class LimitedItems {
 		if (stack.isEmpty()) {
 			return Optional.empty();
 		}
-		Optional<Expiry> fromData = fromCustomData(stack.get(DataComponents.CUSTOM_DATA), lifetimeMs);
-		if (fromData.isPresent()) {
-			return fromData;
+		List<String> all = loreLines(stack);
+		Optional<Expiry> notice = fromRemovalNotice(all, now);
+		if (notice.isPresent()) {
+			return notice;
 		}
-		return fromLore(itemLines(stack), now, lifetimeMs);
+		Optional<Expiry> fromLore = fromLore(withoutListingBlock(all), now, lifetimeMs);
+		if (fromLore.isPresent()) {
+			return fromLore;
+		}
+		// Data keys are guessed, so a time beyond the lifetime is someone else's (e.g. when the offer was made).
+		return fromCustomData(stack.get(DataComponents.CUSTOM_DATA), lifetimeMs)
+			.filter(expiry -> expiry.remainingMs(now) <= lifetimeMs + 3_600_000L);
+	}
+
+	/**
+	 * HugoSMP repeats the item's countdown below the auction block: "Star-Tool läuft ab in: 0d 17h 21m" and
+	 * "Achtung: Läuft in 0d 17h 21m ab" / "und wird dann entfernt!". The offer's own "Läuft ab in: 23h 14m"
+	 * sits there too, so a line only counts if it names what runs out or says the item gets removed.
+	 */
+	static Optional<Expiry> fromRemovalNotice(List<String> lines, long now) {
+		List<String> joined = joinLabels(lines);
+		for (int i = 0; i < joined.size(); i++) {
+			String line = joined.get(i).strip();
+			Long duration = parseDuration(line);
+			if (duration == null || parseDate(line) != null) {
+				continue;
+			}
+			String next = i + 1 < joined.size() ? joined.get(i + 1) : "";
+			boolean removed = REMOVED.matcher(line).find() || REMOVED.matcher(next).find();
+			Matcher verb = RUNS_OUT.matcher(line);
+			boolean named = false;
+			if (verb.find()) {
+				String before = line.substring(0, verb.start()).replaceAll("[^\\p{L}\\-]", " ").strip();
+				named = !before.isEmpty() && !LISTING.matcher(before).find();
+			}
+			if (removed || named) {
+				return Optional.of(new Expiry(now + duration, "restzeit"));
+			}
+		}
+		return Optional.empty();
+	}
+
+	/** "Läuft ab in:" with the time on the line below reads as one line. */
+	static List<String> joinLabels(List<String> lines) {
+		List<String> joined = new ArrayList<>(lines.size());
+		for (int i = 0; i < lines.size(); i++) {
+			String line = lines.get(i).strip();
+			if (line.endsWith(":") && i + 1 < lines.size() && !lines.get(i + 1).isBlank()
+				&& parseDuration(line) == null && parseDate(line) == null) {
+				joined.add(line + " " + lines.get(i + 1).strip());
+				i++;
+			} else {
+				joined.add(line);
+			}
+		}
+		return joined;
 	}
 
 	/** The lore lines that belong to the item, without the block the auction house adds at the bottom. */
 	static List<String> itemLines(ItemStack stack) {
+		return withoutListingBlock(loreLines(stack));
+	}
+
+	private static List<String> loreLines(ItemStack stack) {
 		ItemLore lore = stack.get(DataComponents.LORE);
 		List<String> lines = new ArrayList<>();
 		if (lore != null) {
@@ -107,7 +165,7 @@ public final class LimitedItems {
 				lines.add(line.getString());
 			}
 		}
-		return withoutListingBlock(lines);
+		return lines;
 	}
 
 	public static List<String> withoutListingBlock(List<String> lines) {
@@ -132,7 +190,8 @@ public final class LimitedItems {
 			|| lower.contains("klicke zum kaufen") || lower.contains("click to buy");
 	}
 
-	public static Optional<Expiry> fromLore(List<String> lines, long now, long lifetimeMs) {
+	public static Optional<Expiry> fromLore(List<String> rawLines, long now, long lifetimeMs) {
+		List<String> lines = joinLabels(rawLines);
 		// A creation date is the most reliable: the lifetime is known, a countdown may be stale.
 		for (String raw : lines) {
 			String line = raw.strip();
@@ -205,10 +264,14 @@ public final class LimitedItems {
 				continue;
 			}
 			String name = key.toLowerCase(Locale.ROOT);
+			if (name.contains("list") || name.contains("auction") || name.contains("offer") || name.contains("sell")
+				|| name.contains("bought") || name.contains("price") || name.contains("last")) {
+				continue;
+			}
 			boolean end = name.contains("expir") || name.contains("ablauf") || name.contains("until") || name.contains("verfall")
 				|| name.contains("ends") || name.endsWith("end");
 			boolean created = name.contains("creat") || name.contains("erstellt") || name.contains("crafted") || name.contains("born")
-				|| name.contains("timestamp") || name.endsWith("time") || name.contains("made");
+				|| name.contains("made");
 			if (!end && !created) {
 				continue;
 			}

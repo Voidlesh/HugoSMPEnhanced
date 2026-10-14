@@ -76,6 +76,8 @@ public final class CustomItems {
 		public long firstSeen;
 		public long lastSeen;
 		transient ItemStack icon;
+		/** The icon is the item as the server sent it this session, not the stored copy. */
+		transient boolean live;
 	}
 
 	private CustomItems() {
@@ -187,16 +189,17 @@ public final class CustomItems {
 				entry.lastSeen = now;
 				dirty = true;
 			}
-			if (entry.icon == null) {
-				// First sighting this session: draw this very item, and keep the stored copy up to date
-				// in case the server changed its model or texture since.
+			if (!entry.live) {
+				// First sighting this session: draw this very item, also when the search already drew the
+				// stored copy, and keep that copy up to date in case the server changed its model or texture.
 				entry.icon = iconCopy(stack);
+				entry.live = true;
 				String encoded = encode(stack);
 				if (encoded != null && !encoded.equals(entry.stack)) {
 					entry.stack = encoded;
 					dirty = true;
-					AuctionSearch.invalidate();
 				}
+				AuctionSearch.invalidate();
 			}
 			return id;
 		}
@@ -222,6 +225,7 @@ public final class CustomItems {
 			entry.stack = encoded;
 		}
 		entry.icon = iconCopy(stack);
+		entry.live = true;
 		dirty = true;
 		AuctionSearch.invalidate();
 		return id;
@@ -276,11 +280,17 @@ public final class CustomItems {
 	}
 
 	/**
-	 * What the search needs: everything that decides the model, the item's own lore for its tooltip
-	 * (without the price and seller lines the auction house adds), and a single item.
+	 * What the search draws: the item exactly as the server sent it, only as a single item. Resource
+	 * packs and texture mods (CIT and the like) may pick the texture by name, lore or any component,
+	 * so nothing is left out.
 	 */
 	private static ItemStack iconCopy(ItemStack stack) {
-		ItemStack copy = stack.copyWithCount(1);
+		return stack.copyWithCount(1);
+	}
+
+	/** The item for its tooltip in the search: its own lore, without the price and seller lines the auction house adds. */
+	public static ItemStack tooltipCopy(ItemStack stack) {
+		ItemStack copy = stack.copy();
 		ItemLore lore = copy.get(DataComponents.LORE);
 		if (lore != null) {
 			List<String> plain = new ArrayList<>();
@@ -309,7 +319,7 @@ public final class CustomItems {
 		if (ops == null) {
 			return null;
 		}
-		// The custom data stays: a resource pack can pick the model by any component.
+		// Everything stays: a resource pack can pick the model by any component, CIT mods even by lore.
 		return ItemStack.CODEC.encodeStart(ops, iconCopy(stack))
 			.resultOrPartial(error -> HugoSmpEnhancedClient.LOGGER.debug("Custom item icon not fully saved: {}", error))
 			.map(JsonElement::toString).orElse(null);
@@ -364,7 +374,10 @@ public final class CustomItems {
 	/** Called on disconnect: icons are decoded with the server's registries. */
 	static void forgetIcons() {
 		if (known != null) {
-			known.values().forEach(entry -> entry.icon = null);
+			known.values().forEach(entry -> {
+				entry.icon = null;
+				entry.live = false;
+			});
 		}
 	}
 

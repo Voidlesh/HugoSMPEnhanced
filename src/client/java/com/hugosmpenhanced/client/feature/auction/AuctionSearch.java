@@ -111,6 +111,10 @@ public final class AuctionSearch {
 		for (int i = 1; i < 4; i++) {
 			lines[i] = sign.getText(front).getMessage(i, false).getString();
 		}
+		// New results: the pages browsed so far belong to the old search.
+		if (!query.isBlank()) {
+			LimitedOffers.newBrowse();
+		}
 		client.getConnection().send(new ServerboundSignUpdatePacket(sign.getBlockPos(), front, lines[0], lines[1], lines[2], lines[3]));
 	}
 
