@@ -53,6 +53,9 @@ public class ModConfig {
 	public boolean limitedItemsPerHour = true;
 	public boolean limitedItemsHighlightBest = true;
 	public int limitedItemsLifetimeHours = 72;
+	public boolean limitedItemsSellHint = true;
+	public boolean auctionMarkHighlight = true;
+	public List<String> auctionMarkedItems = new ArrayList<>();
 
 	// Spawner-Preise von VOID Market (über hugosmptools.com/trading)
 	public boolean spawnerPricesTooltip = true;

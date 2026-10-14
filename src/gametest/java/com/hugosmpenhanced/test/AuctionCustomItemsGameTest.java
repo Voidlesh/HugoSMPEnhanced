@@ -14,6 +14,7 @@ import com.hugosmpenhanced.client.feature.auction.AuctionSearchScreen;
 import com.hugosmpenhanced.client.feature.auction.CustomItems;
 import com.hugosmpenhanced.client.feature.auction.LimitedItems;
 import com.hugosmpenhanced.client.feature.auction.LimitedOffers;
+import com.hugosmpenhanced.client.feature.auction.MarkedItems;
 import com.hugosmpenhanced.client.mixin.AbstractContainerScreenAccessor;
 import com.hugosmpenhanced.client.settings.SettingsScreen;
 
@@ -62,6 +63,9 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 		ModConfigManager.CONFIG.limitedItemsLifetimeHours = 72;
 		ModConfigManager.CONFIG.auctionSearchHistory.clear();
 		ModConfigManager.CONFIG.auctionSearchFavorites.clear();
+		ModConfigManager.CONFIG.auctionMarkedItems.clear();
+		ModConfigManager.CONFIG.auctionMarkHighlight = true;
+		ModConfigManager.CONFIG.limitedItemsSellHint = true;
 		CustomItems.clear();
 
 		try (TestSingleplayerContext singleplayer = context.worldBuilder()
@@ -226,14 +230,32 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 			context.getInput().setCursorPos(0, 0);
 			context.setScreen(() -> null);
 
+			checkMarkButton(context, singleplayer, pos.offset(2, 0, 0));
+			checkPages(context, now);
+			// The search drew the stored copy first; the item the server sends later this session replaces it.
+			context.runOnClient(client -> {
+				CustomItems.reloadForTest();
+				AuctionSearch.search("Phönixfeder", 1).get(0).entry();
+				ItemStack changed = featherC.copy();
+				changed.set(DataComponents.ITEM_MODEL, net.minecraft.resources.Identifier.parse("minecraft:blaze_rod"));
+				CustomItems.learn(changed, true);
+				var model = AuctionSearch.search("Phönixfeder", 1).get(0).entry().icon().get(DataComponents.ITEM_MODEL);
+				System.out.println("CUSTOM icon after live sighting: " + model);
+				check(model != null && model.toString().equals("minecraft:blaze_rod"), "a live sighting must replace the stored icon, got " + model);
+			});
+
 			context.setScreen(() -> new SettingsScreen(null).select("Inventar & Handel", "Auktionshaus"));
 			context.waitTicks(5);
 			context.runOnClient(client -> client.screen.mouseScrolled(client.screen.width / 2.0, client.screen.height / 2.0, 0, -20));
 			context.waitTicks(3);
 			context.takeScreenshot("ah-einstellungen-limitiert");
+			context.runOnClient(client -> client.screen.mouseScrolled(client.screen.width / 2.0, client.screen.height / 2.0, 0, 8));
+			context.waitTicks(3);
+			context.takeScreenshot("ah-einstellungen-markieren");
 			context.setScreen(() -> null);
 			context.runOnClient(client -> client.player.getInventory().setItem(0, ItemStack.EMPTY));
 		}
+		ModConfigManager.CONFIG.auctionMarkedItems.clear();
 		CustomItems.clear();
 		AuctionSearch.forceActive = false;
 		LimitedOffers.forceActive = false;
@@ -257,6 +279,17 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 		expect(List.of("Limitiert", "Verfällt 3 Tage nach der Erstellung"), now, life, -1);
 		expect(List.of("Limitiert", "", "Verkäufer: Hugo", "Preis: $500", "Läuft ab in: 1d 23h"), now, life, -1);
 		expect(List.of("Limitiert", "Verbleibend: 5h", "-----", "Preis: $500", "Angebot läuft ab in: 1d"), now, life, now + 5 * HOUR);
+		// HugoSMP's real format: the time under "Läuft ab in:", repeated below the auction block next to the offer's own end.
+		long hugo = (17 * 60 + 21) * 60_000L;
+		expectStack(List.of("Baut 9 Blöcke im 3x3 Bereich ab", "Läuft ab in:", "0d 17h 21m", "", "Preis: $20.000.000",
+			"Verkäufer: Ebruegge", "Läuft ab in: 23h 14m 17s", "Star-Tool läuft ab in: 0d 17h 21m", "Achtung: Läuft in 0d 17h 21m ab",
+			"und wird dann entfernt!"), now, life, now + hugo);
+		expectStack(List.of("Baut 9 Blöcke im 3x3 Bereich ab", "Läuft ab in:", "0d 17h 21m", "", "Preis: $20.000.000",
+			"Verkäufer: Ebruegge", "Läuft ab in: 23h 14m 17s"), now, life, now + hugo);
+		expectStack(List.of("Preis: $20.000.000", "Verkäufer: Ebruegge", "Läuft ab in: 23h 14m 17s",
+			"Achtung: Läuft in 5h ab", "und wird dann entfernt!"), now, life, now + 5 * HOUR);
+		// A normal offer: only the offer runs out, the item does not.
+		expectStack(List.of("Effizienz V", "", "Preis: $500", "Verkäufer: Ebruegge", "Läuft ab in: 23h 14m 17s"), now, life, -1);
 		check(LimitedItems.formatRemaining(53 * HOUR).equals("2T 5Std"), "format " + LimitedItems.formatRemaining(53 * HOUR));
 		check(LimitedItems.formatRemaining(90 * 60_000L).equals("1Std 30Min"), "format " + LimitedItems.formatRemaining(90 * 60_000L));
 	}
@@ -271,6 +304,124 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 		System.out.println("CUSTOM expiry " + lines + " -> " + (got < 0 ? "none" : (got - now) / 60_000 + " min") + " "
 			+ expiry.map(LimitedItems.Expiry::source).orElse(""));
 		check(got == expected, lines + " gave " + got + ", expected " + expected);
+	}
+
+	private static void expectStack(List<String> lines, long now, long life, long expected) {
+		ItemStack stack = new ItemStack(Items.NETHERITE_PICKAXE);
+		stack.set(DataComponents.LORE, new ItemLore(lines.stream().map(line -> (Component) Component.literal(line)).toList()));
+		// A key that holds when the offer was made is not the item's creation time.
+		CompoundTag data = new CompoundTag();
+		data.putLong("listedTime", now - HOUR);
+		stack.set(DataComponents.CUSTOM_DATA, CustomData.of(data));
+		Optional<LimitedItems.Expiry> expiry = LimitedItems.expiry(stack, now, life);
+		long got = expiry.map(LimitedItems.Expiry::expiresAt).orElse(-1L);
+		System.out.println("CUSTOM expiry stack " + lines + " -> " + (got < 0 ? "none" : (got - now) / 60_000 + " min") + " "
+			+ expiry.map(LimitedItems.Expiry::source).orElse(""));
+		check(got == expected, lines + " gave " + got + ", expected " + expected);
+	}
+
+	/** The box left of the star marks exactly that item; sand and suspicious sand are told apart. */
+	private static void checkMarkButton(ClientGameTestContext context, TestSingleplayerContext singleplayer, BlockPos pos) {
+		singleplayer.getServer().runCommand("setblock " + pos.getX() + " " + pos.getY() + " " + pos.getZ()
+			+ " oak_sign{front_text:{messages:[\"\",\"^^^^^^^^^^^^^^^\",\"Suchbegriff\",\"(min. 3 Zeichen)\"]}}");
+		context.waitTicks(5);
+		openSign(singleplayer, pos);
+		context.waitTicks(10);
+		check(context.computeOnClient(client -> client.screen instanceof AuctionSearchScreen), "search screen must open for marking");
+		context.getInput().typeChars("sand");
+		context.waitTicks(3);
+		String first = context.computeOnClient(client -> AuctionSearch.search("sand", 3).get(0).entry().priceKey());
+		System.out.println("CUSTOM first suggestion for sand: " + first);
+		check("minecraft:sand".equals(first), "Sand must be the first suggestion, got " + first);
+		double[] box = context.computeOnClient(client -> {
+			double scale = client.getWindow().getGuiScale();
+			int width = Math.min(client.screen.width - 20, 300);
+			int left = (client.screen.width - width) / 2;
+			int field = 20;
+			int top = Math.max(18, (client.screen.height - (field + 6 + 9 * 23 + 46)) / 2 + 10);
+			int markX = left + width - 16 - 4 - 14;
+			return new double[] {(markX + 6) * scale, (top + field + 6 + 23 + 10) * scale};
+		});
+		context.getInput().setCursorPos(box[0], box[1]);
+		context.waitTicks(3);
+		context.takeScreenshot("ah-suche-markieren-hover");
+		context.getInput().pressMouse(org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT);
+		context.waitTicks(3);
+		check(MarkedItems.isMarked("minecraft:sand"), "clicking the box must mark sand");
+		check(!MarkedItems.isMarked("minecraft:suspicious_sand"), "suspicious sand stays unmarked");
+		check(context.computeOnClient(client -> client.screen instanceof AuctionSearchScreen), "marking must not send the search");
+		context.getInput().setCursorPos(0, 0);
+		context.waitTicks(2);
+		context.takeScreenshot("ah-suche-markiert");
+		context.setScreen(() -> null);
+		context.waitTicks(3);
+	}
+
+	/**
+	 * Two pages: the best feather is on page 2. Back on page 1 the cheaper looking feather there is
+	 * not framed, the arrow to page 2 lights up, and the own feather's tooltip suggests a price.
+	 */
+	private static void checkPages(ClientGameTestContext context, long now) {
+		ItemStack pricey = phoenixFeather(List.of("Erstellt: " + DATE.format(Instant.ofEpochMilli(now - 2 * HOUR))), 9_000);
+		ItemStack cheap = phoenixFeather(List.of("Erstellt: " + DATE.format(Instant.ofEpochMilli(now - 32 * HOUR))), 3_000);
+		ItemStack sand = offered(new ItemStack(Items.SAND, 64), List.of(), 640);
+		ItemStack suspicious = offered(new ItemStack(Items.SUSPICIOUS_SAND, 1), List.of(), 900);
+		ItemStack next = named(new ItemStack(Items.ARROW), "Nächste Seite", ChatFormatting.GREEN);
+		ItemStack previous = named(new ItemStack(Items.ARROW), "Vorherige Seite", ChatFormatting.GREEN);
+		LimitedOffers.newBrowse();
+		openPage(context, "Auktionshaus (1/2)", List.of(pricey, sand, suspicious), previous, next);
+		check(context.computeOnClient(client -> LimitedOffers.offer(pricey).best()), "alone on page 1 the feather is the best so far");
+		openPage(context, "Auktionshaus (2/2)", List.of(cheap), previous, next);
+		check(context.computeOnClient(client -> LimitedOffers.currentPage() == 2), "page 2 must be read from the title");
+		check(context.computeOnClient(client -> LimitedOffers.offer(cheap).best() && LimitedOffers.arrowHint(previous) == 0),
+			"page 2 holds the best feather; the arrow back has nothing better");
+		ItemStack pricey2 = pricey.copy();
+		ItemStack sand2 = sand.copy();
+		ItemStack suspicious2 = suspicious.copy();
+		ItemStack next2 = next.copy();
+		openPage(context, "Auktionshaus (1/2)", List.of(pricey2, sand2, suspicious2), previous.copy(), next2);
+		check(context.computeOnClient(client -> !LimitedOffers.offer(pricey2).best() && LimitedOffers.offer(pricey2).bestPage() == 2),
+			"back on page 1 the feather there is not the best, the best is on page 2");
+		check(context.computeOnClient(client -> LimitedOffers.arrowHint(next2) == 1), "the arrow to page 2 must light up");
+		check(context.computeOnClient(client -> MarkedItems.isMarked(sand2) && !MarkedItems.isMarked(suspicious2)),
+			"only sand is marked in the auction house");
+		context.takeScreenshot("ah-seiten-pfeil-markiert");
+		hoverSlotOf(context, next2);
+		context.takeScreenshot("ah-seiten-pfeil-tooltip");
+		hoverSlotOf(context, pricey2);
+		context.takeScreenshot("ah-seiten-platz-tooltip");
+
+		// The own feather has 60 hours left; the best costs 3.000 for 40 hours = 75/h, so up to 4.500 beats it.
+		ItemStack own = context.computeOnClient(client -> client.player.getInventory().getItem(0));
+		var hint = context.computeOnClient(client -> LimitedOffers.sellHintFor(own, 60 * HOUR - 60_000L, System.currentTimeMillis()));
+		System.out.println("CUSTOM sell hint: " + hint);
+		check(hint.isPresent() && hint.get().perItem() < 4_500 && hint.get().perItem() > 4_300 && hint.get().bestPage() == 2,
+			"sell hint must stay just under 4.500: " + hint);
+		hoverSlotOf(context, own);
+		context.takeScreenshot("ah-verkaufspreis-tipp");
+		context.getInput().setCursorPos(0, 0);
+		context.setScreen(() -> null);
+		context.waitTicks(3);
+	}
+
+	private static void openPage(ClientGameTestContext context, String title, List<ItemStack> offers, ItemStack previous, ItemStack next) {
+		ItemStack filler = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
+		filler.set(DataComponents.CUSTOM_NAME, Component.literal(" "));
+		context.runOnClient(client -> {
+			SimpleContainer page = new SimpleContainer(54);
+			for (int i = 0; i < offers.size(); i++) {
+				page.setItem(10 + i, offers.get(i));
+			}
+			for (int i = 45; i < 54; i++) {
+				page.setItem(i, filler.copy());
+			}
+			page.setItem(45, previous);
+			page.setItem(53, next);
+			var inventory = client.player.getInventory();
+			client.setScreen(new ContainerScreen(new ChestMenu(MenuType.GENERIC_9x6, 0, inventory, page, 6), inventory,
+				Component.literal(title)));
+		});
+		context.waitTicks(5);
 	}
 
 	private static ItemStack phoenixFeather(List<String> timeLines, double price) {
@@ -341,12 +492,12 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 			System.out.println("CUSTOM icon " + when + ": feather model=" + model + " sword data=" + modelData);
 			check(model != null && model.toString().equals("hugosmpenhanced-test:phoenix_feather"), "feather icon lost its model " + when);
 			check(modelData != null && modelData.getFloat(0) != null && modelData.getFloat(0) == 1001f, "sword icon lost its model data " + when);
-			List<String> lore = feather.icon().getOrDefault(DataComponents.LORE, ItemLore.EMPTY).lines().stream()
+			List<String> lore = CustomItems.tooltipCopy(feather.icon()).getOrDefault(DataComponents.LORE, ItemLore.EMPTY).lines().stream()
 				.map(Component::getString).toList();
 			System.out.println("CUSTOM icon lore " + when + ": " + lore);
 			check(feather.icon().getCount() == 1, "icon is a single item");
 			check(lore.contains("✦ Limitiertes Event-Item") && lore.stream().noneMatch(line -> line.startsWith("Preis")
-				|| line.startsWith("Verkäufer") || line.startsWith("-----")), "icon keeps the item's lore without the auction lines: " + lore);
+				|| line.startsWith("Verkäufer") || line.startsWith("-----")), "the tooltip keeps the item's lore without the auction lines: " + lore);
 		});
 	}
 

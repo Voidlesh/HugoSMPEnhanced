@@ -15,6 +15,7 @@ import com.hugosmpenhanced.client.feature.antileak.AntiLeak;
 import com.hugosmpenhanced.client.feature.antileak.CoordinateMask;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
 import com.hugosmpenhanced.client.feature.auction.CustomItems;
+import com.hugosmpenhanced.client.feature.auction.MarkedItems;
 import com.hugosmpenhanced.client.feature.client.ClientTweaks;
 import com.hugosmpenhanced.client.feature.client.HudCorner;
 import com.hugosmpenhanced.client.feature.colorcodes.ColorCodeScreen;
@@ -431,8 +432,16 @@ public final class ModSettings {
 						ModConfigManager.CONFIG.auctionSearchHistory.clear();
 						ModConfigManager.save();
 					})),
+				new SettingsSection("Markieren",
+					toggle("Markierte Items hervorheben", "Das Kästchen neben dem Stern in der Suche markiert genau dieses Item im AH",
+						c -> c.auctionMarkHighlight, (c, v) -> c.auctionMarkHighlight = v).keywords("ah markieren farbig rahmen"),
+					new InfoOption("Markierte Items", null, () -> {
+						int marked = ModConfigManager.CONFIG.auctionMarkedItems.size();
+						return marked == 0 ? "keine" : marked + (marked == 1 ? " Item" : " Items");
+					}),
+					ButtonOption.danger("Alle Markierungen entfernen", null, "Entfernen", MarkedItems::clear)),
 				new SettingsSection("HugoSMP-Items",
-					toggle("Eigene Items merken und suchbar machen", "Items aus AH, Orders und Inventar mit Name, Farbe und Modell",
+					toggle("Items merken und suchbar machen", "Items aus AH, Orders und Inventar mit Name, Farbe und Modell",
 						c -> c.customItemsEnabled, (c, v) -> c.customItemsEnabled = v).keywords("custom ah suche"),
 					new InfoOption("Bekannte Items", null, () -> CustomItems.count() + (CustomItems.count() == 1 ? " Item" : " Items")),
 					ButtonOption.danger("Bekannte Items vergessen", null, "Löschen", CustomItems::clear)),
@@ -441,6 +450,8 @@ public final class ModSettings {
 						c -> c.limitedItemsPerHour, (c, v) -> c.limitedItemsPerHour = v).keywords("ah limitiert ablauf zeit"),
 					toggle("Bestes Angebot markieren", "Goldener Rahmen um das günstigste pro Stunde jeder Sorte",
 						c -> c.limitedItemsHighlightBest, (c, v) -> c.limitedItemsHighlightBest = v).keywords("ah limitiert"),
+					toggle("Verkaufspreis vorschlagen", "Bei eigenen limitierten Items: welcher Preis das beste Angebot im AH wäre",
+						c -> c.limitedItemsSellHint, (c, v) -> c.limitedItemsSellHint = v).keywords("ah limitiert verkaufen preis"),
 					SliderOption.ofInt("Lebensdauer", "Ab Erstelldatum", 1, 168,
 						v -> (int) v + " Std" + ((int) v % 24 == 0 ? " (" + (int) v / 24 + " T)" : ""),
 						c -> c.limitedItemsLifetimeHours, (c, v) -> c.limitedItemsLifetimeHours = v).keywords("limitiert tage"))),
