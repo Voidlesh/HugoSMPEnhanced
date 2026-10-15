@@ -57,4 +57,22 @@ public final class Money {
 	public static String plain(long amount) {
 		return new DecimalFormat("#,##0", DecimalFormatSymbols.getInstance(Locale.GERMANY)).format(amount);
 	}
+
+	/** Short for HUDs and lists: "$950", "$12,5k", "$260,9 Mio", "$1,25 Mrd". */
+	public static String compact(long amount) {
+		long abs = Math.abs(amount);
+		String sign = amount < 0 ? "-" : "";
+		if (abs < 10_000) {
+			return sign + format(abs);
+		}
+		DecimalFormat one = new DecimalFormat("#,##0.#", DecimalFormatSymbols.getInstance(Locale.GERMANY));
+		DecimalFormat two = new DecimalFormat("#,##0.##", DecimalFormatSymbols.getInstance(Locale.GERMANY));
+		if (abs < 1_000_000) {
+			return sign + "$" + one.format(abs / 1_000.0) + "k";
+		}
+		if (abs < 1_000_000_000) {
+			return sign + "$" + (abs < 100_000_000 ? two : one).format(abs / 1_000_000.0) + " Mio";
+		}
+		return sign + "$" + two.format(abs / 1_000_000_000.0) + " Mrd";
+	}
 }

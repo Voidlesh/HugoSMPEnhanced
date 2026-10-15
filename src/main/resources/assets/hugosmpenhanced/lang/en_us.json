@@ -15,5 +15,6 @@
 	"key.categories.hugosmpenhanced.tpa": "HugoSMP Enhanced",
 	"hugosmpenhanced.tpa.title": "%s wants to teleport to you",
 	"hugosmpenhanced.tpahere.title": "%s wants you to teleport to them",
-	"hugosmpenhanced.tpa.subtitle": "Press %s to accept"
+	"hugosmpenhanced.tpa.subtitle": "Press %s to accept",
+	"key.hugosmpenhanced.hud_editor": "Open HUD editor"
 }

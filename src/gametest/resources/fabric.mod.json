@@ -26,7 +26,8 @@
 			"com.hugosmpenhanced.test.StreamerGameTest",
 			"com.hugosmpenhanced.test.StreamerModeGameTest",
 			"com.hugosmpenhanced.test.UpdateGameTest",
-			"com.hugosmpenhanced.test.ClientSettingsGameTest"
+			"com.hugosmpenhanced.test.ClientSettingsGameTest",
+			"com.hugosmpenhanced.test.EconomyGameTest"
 		],
 		"main": [
 			"com.hugosmpenhanced.test.TestSellServer",

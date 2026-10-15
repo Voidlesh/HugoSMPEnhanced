@@ -8,6 +8,7 @@ import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
+import com.hugosmpenhanced.client.formats.HugoFormats;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.PlayerInfo;
@@ -82,6 +83,12 @@ public final class ChatPatterns {
 				return payment;
 			}
 		}
+		for (Pattern pattern : HugoFormats.patterns("pay.received")) {
+			Payment payment = match(pattern, line);
+			if (payment != null) {
+				return payment;
+			}
+		}
 		for (Pattern pattern : PAYMENTS) {
 			Payment payment = match(pattern, line);
 			if (payment != null) {
@@ -96,8 +103,11 @@ public final class ChatPatterns {
 		if (!matcher.matches()) {
 			return null;
 		}
-		String name = matcher.group("name");
-		long amount = Money.parse(matcher.group("amount"));
+		String name = HugoFormats.group(matcher, "name");
+		long amount = Money.parse(HugoFormats.group(matcher, "amount"));
+		if (name == null) {
+			return null;
+		}
 		if (amount <= 0 || isSelf(name)) {
 			return null;
 		}

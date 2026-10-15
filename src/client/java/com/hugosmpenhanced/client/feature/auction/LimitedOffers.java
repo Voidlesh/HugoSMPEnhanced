@@ -495,6 +495,11 @@ public final class LimitedOffers {
 	 * where it is, or the best of each kind when several limited items were seen. Left out on screens
 	 * too small for it.
 	 */
+	/** Whether the line under the menu is drawn, so other lines can go below it. */
+	public static boolean summaryShown(AbstractContainerScreen<?> container) {
+		return summary != null && screen == container && ModConfigManager.CONFIG.limitedItemsPerHour;
+	}
+
 	private static void renderSummary(AbstractContainerScreen<?> container, GuiGraphics graphics) {
 		if (summary == null || screen != container || !ModConfigManager.CONFIG.limitedItemsPerHour) {
 			return;

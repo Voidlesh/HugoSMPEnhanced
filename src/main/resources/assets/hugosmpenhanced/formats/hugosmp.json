@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "about": "Texte und Muster von HugoSMP, die die Mod liest. Die Mod lädt diese Datei beim Start von GitHub nach, so lassen sich Erkennungen ohne neue Jar reparieren. Platzhalter: {name} = Spielername, {amount} = Geldbetrag, {count} = Zahl. Alle Muster ignorieren Groß/klein und werden auf den Text ohne Farbcodes angewendet.",
+  "patterns": {
+    "pay.received": [
+      "^(?:\\[[^\\]]{1,24}]\\s*|[»>✉$]\\s*)?{name} hat dir {amount} (?:gezahlt|bezahlt|gesendet|geschickt|überwiesen|gegeben|gespendet)[.!]?$",
+      "^(?:\\[[^\\]]{1,24}]\\s*|[»>✉$]\\s*)?du hast {amount} von {name} (?:erhalten|bekommen)[.!]?$",
+      "^(?:\\[[^\\]]{1,24}]\\s*|[»>✉$]\\s*)?du hast von {name} {amount} (?:erhalten|bekommen)[.!]?$",
+      "^(?:\\[[^\\]]{1,24}]\\s*|[»>✉$]\\s*)?{amount} (?:wurden?|wurde dir) von {name} (?:erhalten|überwiesen|gezahlt|gesendet)[.!]?$",
+      "^(?:\\[[^\\]]{1,24}]\\s*|[»>✉$]\\s*)?\\+?{amount} von {name}(?: erhalten)?[.!]?$",
+      "^(?:\\[[^\\]]{1,24}]\\s*|[»>✉$]\\s*)?you (?:have )?received {amount} from {name}[.!]?$",
+      "^(?:\\[[^\\]]{1,24}]\\s*|[»>✉$]\\s*)?{name} (?:has )?(?:paid|sent|given) you {amount}[.!]?$"
+    ],
+    "pay.sent": [
+      "^(?:\\[[^\\]]{1,24}]\\s*|[»>✉$]\\s*)?du hast {name} {amount} (?:gezahlt|bezahlt|gesendet|geschickt|überwiesen|gegeben)[.!]?$",
+      "^(?:\\[[^\\]]{1,24}]\\s*|[»>✉$]\\s*)?du hast {amount} an {name} (?:gezahlt|bezahlt|gesendet|geschickt|überwiesen|gegeben)[.!]?$",
+      "^(?:\\[[^\\]]{1,24}]\\s*|[»>✉$]\\s*)?{amount} (?:wurden?|wurde) an {name} (?:gezahlt|gesendet|überwiesen)[.!]?$",
+      "^(?:\\[[^\\]]{1,24}]\\s*|[»>✉$]\\s*)?-?{amount} an {name}(?: gesendet| gezahlt)?[.!]?$",
+      "^(?:\\[[^\\]]{1,24}]\\s*|[»>✉$]\\s*)?you (?:have )?(?:paid|sent) {name} {amount}[.!]?$",
+      "^(?:\\[[^\\]]{1,24}]\\s*|[»>✉$]\\s*)?you (?:have )?(?:paid|sent) {amount} to {name}[.!]?$"
+    ],
+    "order.price": [
+      "{amount}\\s*(?:pro stück|pro item|pro stk\\.?|je stück|je item|/\\s*stück|/\\s*stk\\.?|/\\s*item|each|per item|ea\\.?)",
+      "(?:pro stück|pro item|je stück|preis pro|preis je|each|per item|price per)[^\\d$]{0,12}{amount}",
+      "(?:preis|price|bezahlung|zahlt|pays|belohnung|reward)[^\\d$]{0,16}{amount}"
+    ],
+    "order.total": [
+      "(?:gesamt|insgesamt|total|summe)[^\\d$]{0,16}{amount}"
+    ],
+    "order.progress": [
+      "(?:geliefert|delivered|fortschritt|progress|erhalten|received|menge|amount)[^\\d]{0,16}(?<done>\\d[\\d.,]*)\\s*/\\s*(?<total>\\d[\\d.,]*)",
+      "(?<done>\\d[\\d.,]*)\\s*/\\s*(?<total>\\d[\\d.,]*)"
+    ],
+    "order.owner": [
+      "(?:von|from|ersteller|erstellt von|owner|auftraggeber|spieler|player|by)\\s*[:»]?\\s*{name}$"
+    ],
+    "spawner.storage": [
+      "(?:lager|storage|speicher|inhalt|kapazität|capacity|items)[^\\d]{0,20}(?<done>\\d[\\d.,]*)\\s*/\\s*(?<total>\\d[\\d.,]*)"
+    ],
+    "spawner.stack": [
+      "(?:^|\\s|\\()(?:x|×)\\s?(?<count>\\d{1,4})(?:\\)|\\s|$)",
+      "(?:^|\\s|\\()(?<count>\\d{1,4})\\s?(?:x|×)(?:\\)|\\s|$)",
+      "(?:anzahl|stack|gestapelt|stacked|menge)[^\\d]{0,12}(?<count>\\d{1,4})"
+    ]
+  },
+  "words": {
+    "pay.commands": ["pay", "zahlen", "bezahlen", "geben"],
+    "msg.commands": ["msg", "tell", "w", "whisper"],
+    "menu.orders": ["order", "aufträge", "auftrag", "bestellung"],
+    "menu.spawner": ["spawner"],
+    "menu.auction": ["auktion", "auction", "ah"],
+    "menu.sell": ["verkaufen", "sell"],
+    "trade.sell": ["verkaufe", "vk", "wts", "selling", "sell"],
+    "trade.buy": ["kaufe", "suche", "ankauf", "wtb", "buying", "buy"]
+  }
+}

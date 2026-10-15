@@ -3,6 +3,7 @@ package com.hugosmpenhanced.client.feature.notes;
 import java.util.List;
 
 import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
+import com.hugosmpenhanced.client.hud.HudManager;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -51,7 +52,7 @@ public final class NotesFeature {
 				addPauseButton(screen, scaledHeight);
 			}
 		});
-		NotesHud.register();
+		HudManager.add(NotesHud.INSTANCE);
 	}
 
 	/** Second icon right of "Back to Game", after the screenshot camera. */

@@ -30,6 +30,8 @@ public class SettingsScreen extends Screen implements StyledScreen {
 	private static final int SECTION_TITLE = 16;
 	private static final int SECTION_GAP = 6;
 	private static final int CATEGORY_ROW = 24;
+	/** Row height in the sidebar; smaller when the window is too low for all categories. */
+	private int categoryRow = CATEGORY_ROW;
 
 	private static int lastCategory;
 	private static int lastTab;
@@ -110,6 +112,8 @@ public class SettingsScreen extends Screen implements StyledScreen {
 			widest = Math.max(widest, this.font.width(cat.name()));
 		}
 		this.sidebarWidth = this.compact ? 30 : Math.max(112, widest + 40);
+		int room = this.fh - 38 - (this.compact ? 6 : 40);
+		this.categoryRow = Mth.clamp(room / ModSettings.categories().size(), 18, CATEGORY_ROW);
 		this.contentLeft = this.fx + this.sidebarWidth + 10;
 		this.contentWidth = this.fx + this.fw - 14 - this.contentLeft;
 		this.contentTop = this.fy + 58;
@@ -211,17 +215,17 @@ public class SettingsScreen extends Screen implements StyledScreen {
 			SettingsCategory cat = categories.get(i);
 			int y = this.categoryY(i);
 			boolean selected = i == this.category && !this.searching();
-			boolean over = this.inside(mouseX, mouseY, left + 3, y, right - left - 6, CATEGORY_ROW - 2);
+			boolean over = this.inside(mouseX, mouseY, left + 3, y, right - left - 6, this.categoryRow - 2);
 			if (selected) {
-				graphics.fill(left + 3, y, right - 3, y + CATEGORY_ROW - 2, Theme.SELECTED);
-				graphics.fill(left + 3, y, left + 5, y + CATEGORY_ROW - 2, Theme.GOLD);
+				graphics.fill(left + 3, y, right - 3, y + this.categoryRow - 2, Theme.SELECTED);
+				graphics.fill(left + 3, y, left + 5, y + this.categoryRow - 2, Theme.GOLD);
 			} else if (over) {
-				graphics.fill(left + 3, y, right - 3, y + CATEGORY_ROW - 2, Theme.ROW_HOVER);
+				graphics.fill(left + 3, y, right - 3, y + this.categoryRow - 2, Theme.ROW_HOVER);
 			}
 			int iconX = this.compact ? left + 6 : left + 9;
-			Theme.icon(graphics, cat.icon(), iconX, y + 3, 16, selected || over ? Theme.ICON_ON : Theme.ICON_OFF);
+			Theme.icon(graphics, cat.icon(), iconX, y + (this.categoryRow - 18) / 2, 16, selected || over ? Theme.ICON_ON : Theme.ICON_OFF);
 			if (!this.compact) {
-				graphics.drawString(this.font, this.font.plainSubstrByWidth(cat.name(), right - left - 34), left + 30, y + 7,
+				graphics.drawString(this.font, this.font.plainSubstrByWidth(cat.name(), right - left - 34), left + 30, y + (this.categoryRow - 10) / 2,
 					selected ? Theme.WHITE : Theme.TEXT_DIM);
 			} else if (over) {
 				graphics.setTooltipForNextFrame(this.font, Component.literal(cat.name()), mouseX, mouseY);
@@ -244,7 +248,7 @@ public class SettingsScreen extends Screen implements StyledScreen {
 	}
 
 	private int categoryY(int index) {
-		return this.fy + 38 + index * CATEGORY_ROW;
+		return this.fy + 38 + index * this.categoryRow;
 	}
 
 	private void renderHeader(GuiGraphics graphics, int mouseX, int mouseY, List<SettingsSection> sections) {
@@ -408,7 +412,7 @@ public class SettingsScreen extends Screen implements StyledScreen {
 		}
 		List<SettingsCategory> categories = ModSettings.categories();
 		for (int i = 0; i < categories.size(); i++) {
-			if (this.inside(mx, my, this.fx + 3, this.categoryY(i), this.sidebarWidth - 5, CATEGORY_ROW - 2)) {
+			if (this.inside(mx, my, this.fx + 3, this.categoryY(i), this.sidebarWidth - 5, this.categoryRow - 2)) {
 				this.stopCapturing(null);
 				this.category = i;
 				this.tab = 0;

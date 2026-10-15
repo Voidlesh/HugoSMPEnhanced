@@ -116,7 +116,7 @@ public final class StatusReader {
 
 	// ------------------------------------------------------------------ reading
 
-	static Reading read(Minecraft client) {
+	public static Reading read(Minecraft client) {
 		LocalPlayer player = client.player;
 		ClientLevel level = client.level;
 		if (player == null || level == null || client.getConnection() == null) {
@@ -216,7 +216,7 @@ public final class StatusReader {
 		if (kd == null) {
 			kd = labeledNumber(tabLines, KD_LABEL);
 		}
-		if ((killsValue == null || deathsValue == null) && DiscordPresence.onHugoSmp()) {
+		if ((killsValue == null || deathsValue == null) && config.discordEnabled && DiscordPresence.onHugoSmp()) {
 			requestStats(client);
 			// Play time is never 0 once the server has answered the request.
 			if (player.getStats().getValue(Stats.CUSTOM.get(Stats.PLAY_TIME)) > 0) {

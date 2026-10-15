@@ -1,58 +1,93 @@
 package com.hugosmpenhanced.client.feature.client;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
+import com.hugosmpenhanced.client.hud.HudElement;
+import com.hugosmpenhanced.client.hud.HudPos;
 
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.multiplayer.PlayerInfo;
-import net.minecraft.resources.Identifier;
 
-/** A small "120 FPS · 35 ms" line in a corner of the screen; ping only on a server. */
-public final class FpsHud {
+/** A small "120 FPS · 35 ms" line; ping only on a server. Placed in the HUD editor. */
+public final class FpsHud implements HudElement {
+	public static final FpsHud INSTANCE = new FpsHud();
 	private static final int TEXT = 0xFFE8E8E8;
 	private static final int MUTED = 0xFF9A9A9A;
 	private static final int GOOD = 0xFF5ADC78;
 	private static final int OK = 0xFFF0BE3C;
 	private static final int BAD = 0xFFE65050;
+	private static final String SEPARATOR = "  ·  ";
 
 	private FpsHud() {
 	}
 
-	static void register() {
-		HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("hugosmpenhanced", "fps"), (graphics, deltaTracker) -> render(graphics));
+	@Override
+	public String id() {
+		return "fps";
 	}
 
-	private static void render(GuiGraphics graphics) {
-		Minecraft client = Minecraft.getInstance();
-		HudCorner corner = ModConfigManager.CONFIG.clientFpsHud;
-		if (corner == HudCorner.OFF || client.options.hideGui || client.getDebugOverlay().showDebugScreen()) {
-			return;
+	@Override
+	public String label() {
+		return "FPS und Ping";
+	}
+
+	@Override
+	public boolean enabled() {
+		return ModConfigManager.CONFIG.clientFpsHudOn;
+	}
+
+	@Override
+	public void setEnabled(boolean enabled) {
+		ModConfigManager.CONFIG.clientFpsHudOn = enabled;
+	}
+
+	@Override
+	public boolean visible() {
+		return true;
+	}
+
+	@Override
+	public HudPos defaultPos() {
+		return new HudPos(1, 0);
+	}
+
+	private static String fps() {
+		return Minecraft.getInstance().getFps() + " FPS";
+	}
+
+	private static String pingText(boolean preview) {
+		int ping = ping(Minecraft.getInstance());
+		if (ping < 0 && preview && ModConfigManager.CONFIG.clientFpsShowPing) {
+			return "35 ms";
 		}
-		Font font = client.font;
-		String fps = client.getFps() + " FPS";
-		int ping = ping(client);
-		String pingText = ping < 0 ? null : ping + " ms";
-		String separator = "  ·  ";
-		int width = font.width(fps) + (pingText == null ? 0 : font.width(separator) + font.width(pingText)) + 8;
-		int height = 13;
-		int x = switch (corner) {
-			case TOP_RIGHT, BOTTOM_RIGHT -> graphics.guiWidth() - width - 3;
-			default -> 3;
-		};
-		int y = switch (corner) {
-			case BOTTOM_LEFT, BOTTOM_RIGHT -> graphics.guiHeight() - height - 3;
-			default -> 3;
-		};
-		graphics.fill(x, y, x + width, y + height, 0x90000000);
-		int tx = x + 4;
-		graphics.drawString(font, fps, tx, y + 3, TEXT, false);
-		if (pingText != null) {
+		return ping < 0 ? null : ping + " ms";
+	}
+
+	@Override
+	public int width(Font font, boolean preview) {
+		String ping = pingText(preview);
+		return font.width(fps()) + (ping == null ? 0 : font.width(SEPARATOR) + font.width(ping)) + 8;
+	}
+
+	@Override
+	public int height(Font font, boolean preview) {
+		return 13;
+	}
+
+	@Override
+	public void render(GuiGraphics graphics, Font font, boolean preview) {
+		String fps = fps();
+		String ping = pingText(preview);
+		graphics.fill(0, 0, this.width(font, preview), 13, 0x90000000);
+		int tx = 4;
+		graphics.drawString(font, fps, tx, 3, TEXT, false);
+		if (ping != null) {
 			tx += font.width(fps);
-			graphics.drawString(font, separator, tx, y + 3, MUTED, false);
-			tx += font.width(separator);
-			graphics.drawString(font, pingText, tx, y + 3, ping < 80 ? GOOD : ping < 150 ? OK : BAD, false);
+			graphics.drawString(font, SEPARATOR, tx, 3, MUTED, false);
+			tx += font.width(SEPARATOR);
+			int ms = Integer.parseInt(ping.substring(0, ping.indexOf(' ')));
+			graphics.drawString(font, ping, tx, 3, ms < 80 ? GOOD : ms < 150 ? OK : BAD, false);
 		}
 	}
 

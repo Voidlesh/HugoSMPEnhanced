@@ -53,6 +53,8 @@ public final class HugoGuard {
 
 	private static volatile Map<UUID, Entry> byUuid = Map.of();
 	private static volatile Map<String, Entry> byName = Map.of();
+	/** Entries game tests added; they survive a reload of the list. */
+	private static final java.util.List<Entry> TEST_ENTRIES = new java.util.concurrent.CopyOnWriteArrayList<>();
 	/** Lets game tests use the list outside HugoSMP. */
 	public static boolean forceActive;
 	private static long nextFetchAt;
@@ -120,6 +122,17 @@ public final class HugoGuard {
 		return entry != null && (entry.status() == Status.SCAMMER || ModConfigManager.CONFIG.hugoGuardTrusted) ? entry : null;
 	}
 
+	/** Game tests: adds one entry without loading the list. */
+	public static void putForTest(Entry entry) {
+		TEST_ENTRIES.add(entry);
+		Map<UUID, Entry> uuids = new HashMap<>(byUuid);
+		Map<String, Entry> names = new HashMap<>(byName);
+		uuids.put(entry.uuid(), entry);
+		names.put(entry.username().toLowerCase(Locale.ROOT), entry);
+		byUuid = uuids;
+		byName = names;
+	}
+
 	private static Entry only(Entry entry, Status status) {
 		return entry != null && entry.status() == status ? entry : null;
 	}
@@ -150,6 +163,10 @@ public final class HugoGuard {
 		} catch (Exception e) {
 			HugoSmpEnhancedClient.LOGGER.warn("HugoGuard scammer list could not be loaded: {}", e.toString());
 			return false;
+		}
+		for (Entry entry : TEST_ENTRIES) {
+			uuids.put(entry.uuid(), entry);
+			names.put(entry.username().toLowerCase(Locale.ROOT), entry);
 		}
 		byUuid = Map.copyOf(uuids);
 		byName = Map.copyOf(names);
