@@ -4,6 +4,7 @@ import java.util.List;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.gui.StyledScreen;
+import com.hugosmpenhanced.client.hud.HudEditorScreen;
 
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -101,7 +102,7 @@ public class NotesScreen extends Screen implements StyledScreen {
 			.bounds(editorLeft, buttonsY, quarter, ROW).build());
 		pin.setTooltip(Tooltip.create(Component.literal("Angeheftete Notizen bleiben beim Spielen sichtbar.")));
 		Button move = this.addRenderableWidget(Button.builder(Component.literal("Verschieben"),
-				b -> this.minecraft.setScreen(new NotesHudPositionScreen(this)))
+				b -> this.minecraft.setScreen(new HudEditorScreen(this)))
 			.bounds(editorLeft + quarter + 4, buttonsY, quarter, ROW).build());
 		move.setTooltip(Tooltip.create(Component.literal("Legt fest, wo angeheftete Notizen auf dem Bildschirm stehen.")));
 		this.addRenderableWidget(Button.builder(Component.literal(this.deleteArmed ? "Wirklich?" : "Löschen"), b -> this.delete())

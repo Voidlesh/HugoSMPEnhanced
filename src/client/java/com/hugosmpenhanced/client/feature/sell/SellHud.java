@@ -5,18 +5,20 @@ import java.util.List;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
 
-import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
-import net.minecraft.client.Minecraft;
+import com.hugosmpenhanced.client.hud.HudElement;
+import com.hugosmpenhanced.client.hud.HudPos;
+
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.resources.Identifier;
 
 /**
  * The AFK farm's status pill: a coloured dot, the state and the session's sales and income. It only
  * shows while the AFK farm runs or is paused, and for a few seconds after it stopped with the reason.
  * While the farm waits with the sell menu filling up, a thin bar under it shows how full the menu is.
+ * Placed in the HUD editor.
  */
-public final class SellHud {
+public final class SellHud implements HudElement {
+	public static final SellHud INSTANCE = new SellHud();
 	private static final int RUN = 0xFF5ADC78;
 	private static final int PAUSE = 0xFFF0BE3C;
 	private static final int STOP = 0xFFE65050;
@@ -24,24 +26,48 @@ public final class SellHud {
 	private static final int MUTED = 0xFF9A9A9A;
 	private static final int GOLD = 0xFFFFC83D;
 	private static final int SEP = 0xFF606060;
+	private static final String SEPARATOR = "  ·  ";
 
 	private record Part(String text, int color) {
+	}
+
+	private record Content(List<Part> parts, int dot, int fill) {
 	}
 
 	private SellHud() {
 	}
 
-	public static void register() {
-		HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("hugosmpenhanced", "sell_assistant"),
-			(graphics, deltaTracker) -> render(graphics));
+	@Override
+	public String id() {
+		return "sell";
 	}
 
-	private static void render(GuiGraphics graphics) {
-		Minecraft client = Minecraft.getInstance();
-		SellHudPosition position = ModConfigManager.CONFIG.sellHudPosition;
-		if (position == SellHudPosition.OFF || client.options.hideGui || client.getDebugOverlay().showDebugScreen()) {
-			return;
-		}
+	@Override
+	public String label() {
+		return "AFK-Farm";
+	}
+
+	@Override
+	public boolean enabled() {
+		return ModConfigManager.CONFIG.sellHudOn;
+	}
+
+	@Override
+	public void setEnabled(boolean enabled) {
+		ModConfigManager.CONFIG.sellHudOn = enabled;
+	}
+
+	@Override
+	public boolean visible() {
+		return content(false) != null;
+	}
+
+	@Override
+	public HudPos defaultPos() {
+		return new HudPos(0.5, 0);
+	}
+
+	private static Content content(boolean preview) {
 		List<Part> parts = new ArrayList<>();
 		int dot;
 		String stop = SellEngine.recentStop();
@@ -69,44 +95,67 @@ public final class SellHud {
 			dot = STOP;
 			parts.add(new Part("Gestoppt", STOP));
 			parts.add(new Part(stop, TEXT));
+		} else if (preview) {
+			dot = RUN;
+			parts.add(new Part("AFK-Farm", 0xFFFFFFFF));
+			parts.add(new Part("12 Verkäufe", TEXT));
+			parts.add(new Part("+$1.240.000", GOLD));
+			parts.add(new Part("$410.000/h", MUTED));
 		} else {
-			return;
-		}
-		draw(graphics, client.font, parts, dot, position);
-	}
-
-	private static void draw(GuiGraphics graphics, Font font, List<Part> parts, int dot, SellHudPosition position) {
-		String separator = "  ·  ";
-		int width = 18 + 6;
-		for (int i = 0; i < parts.size(); i++) {
-			width += font.width(parts.get(i).text()) + (i > 0 ? font.width(separator) : 0);
+			return null;
 		}
 		int fill = SellEngine.afkRunning() && SellEngine.state() == SellEngine.State.WAITING ? SellEngine.fillPercent() : -1;
-		int height = fill >= 0 ? 20 : 15;
-		int screenWidth = graphics.guiWidth();
-		int x = switch (position) {
-			case TOP_LEFT -> 4;
-			case TOP_RIGHT -> screenWidth - width - 4;
-			default -> (screenWidth - width) / 2;
-		};
-		int y = 4;
+		return new Content(parts, dot, fill);
+	}
+
+	@Override
+	public int width(Font font, boolean preview) {
+		Content content = content(preview);
+		if (content == null) {
+			return 0;
+		}
+		int width = 18 + 6;
+		for (int i = 0; i < content.parts().size(); i++) {
+			width += font.width(content.parts().get(i).text()) + (i > 0 ? font.width(SEPARATOR) : 0);
+		}
+		return width;
+	}
+
+	@Override
+	public int height(Font font, boolean preview) {
+		Content content = content(preview);
+		return content == null ? 0 : content.fill() >= 0 ? 20 : 15;
+	}
+
+	@Override
+	public void render(GuiGraphics graphics, Font font, boolean preview) {
+		Content content = content(preview);
+		if (content == null) {
+			return;
+		}
+		int width = this.width(font, preview);
+		int height = this.height(font, preview);
+		int x = 0;
+		int y = 0;
 		graphics.fill(x + 1, y, x + width - 1, y + height, 0xD80E0E0E);
 		graphics.fill(x, y + 1, x + width, y + height - 1, 0xD80E0E0E);
 		graphics.fill(x + 1, y, x + width - 1, y + 1, 0xFF464646);
 		graphics.fill(x + 1, y + height - 1, x + width - 1, y + height, 0xFF464646);
 		graphics.fill(x, y + 1, x + 1, y + height - 1, 0xFF464646);
 		graphics.fill(x + width - 1, y + 1, x + width, y + height - 1, 0xFF464646);
-		graphics.fill(x + 6, y + 5, x + 10, y + 9, dot);
+		graphics.fill(x + 6, y + 5, x + 10, y + 9, content.dot());
 		int tx = x + 15;
+		List<Part> parts = content.parts();
 		for (int i = 0; i < parts.size(); i++) {
 			if (i > 0) {
-				graphics.drawString(font, separator, tx, y + 4, SEP, false);
-				tx += font.width(separator);
+				graphics.drawString(font, SEPARATOR, tx, y + 4, SEP, false);
+				tx += font.width(SEPARATOR);
 			}
 			Part part = parts.get(i);
 			graphics.drawString(font, part.text(), tx, y + 4, part.color(), true);
 			tx += font.width(part.text());
 		}
+		int fill = content.fill();
 		if (fill >= 0) {
 			int barLeft = x + 6;
 			int barRight = x + width - 6;

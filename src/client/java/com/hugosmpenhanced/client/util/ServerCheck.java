@@ -10,6 +10,8 @@ public final class ServerCheck {
 	private static final String SERVER_HOST = "hugosmp.net";
 
 	private static volatile boolean lastKnownHugoSmp = false;
+	/** Game tests: treat the current world as HugoSMP. */
+	public static volatile boolean forceHugoSmp = false;
 
 	private ServerCheck() {
 	}
@@ -20,7 +22,7 @@ public final class ServerCheck {
 
 	public static boolean isHugoSmp() {
 		ServerData server = Minecraft.getInstance().getCurrentServer();
-		boolean result = server != null && server.ip != null
+		boolean result = forceHugoSmp || server != null && server.ip != null
 				&& server.ip.toLowerCase(Locale.ROOT).contains(SERVER_HOST);
 		lastKnownHugoSmp = result;
 		return result;

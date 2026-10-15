@@ -7,7 +7,10 @@ import com.hugosmpenhanced.client.feature.auction.AuctionPriceMemory;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearch;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchScreen;
 import com.hugosmpenhanced.client.feature.notes.Note;
-import com.hugosmpenhanced.client.feature.notes.NotesHudPositionScreen;
+import com.hugosmpenhanced.client.feature.notes.NotesHud;
+import com.hugosmpenhanced.client.hud.HudEditorScreen;
+import com.hugosmpenhanced.client.hud.HudManager;
+import com.hugosmpenhanced.client.hud.HudPos;
 
 import org.lwjgl.glfw.GLFW;
 
@@ -178,10 +181,9 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 				note.text = "- 3 Stacks Eisen\n- Elytra reparieren";
 				note.pinned = true;
 				ModConfigManager.CONFIG.notes.add(note);
-				ModConfigManager.CONFIG.notesHudX = 2000;
-				ModConfigManager.CONFIG.notesHudY = 60;
+				HudManager.setPos(NotesHud.INSTANCE, new HudPos(1, 0.2));
 			});
-			context.setScreen(() -> new NotesHudPositionScreen(null));
+			context.setScreen(() -> new HudEditorScreen(null));
 			context.waitTicks(3);
 			context.takeScreenshot("notes-position");
 			context.setScreen(() -> null);
@@ -189,8 +191,7 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 			context.takeScreenshot("notes-position-hud");
 			context.runOnClient(client -> {
 				ModConfigManager.CONFIG.notes.clear();
-				ModConfigManager.CONFIG.notesHudX = 4;
-				ModConfigManager.CONFIG.notesHudY = 4;
+				HudManager.reset(NotesHud.INSTANCE);
 			});
 
 			context.setScreen(() -> new SettingsScreen(null).select("Inventar & Handel", "Auktionshaus"));

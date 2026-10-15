@@ -27,9 +27,9 @@ import com.hugosmpenhanced.client.feature.nametag.NametagEffect;
 import com.hugosmpenhanced.client.feature.notes.Note;
 import com.hugosmpenhanced.client.feature.secondnametag.SecondNametagPosition;
 import com.hugosmpenhanced.client.feature.sell.SellAutostart;
-import com.hugosmpenhanced.client.feature.sell.SellHudPosition;
 import com.hugosmpenhanced.client.feature.sell.SellRule;
 import com.hugosmpenhanced.client.feature.sell.SellSpeed;
+import com.hugosmpenhanced.client.hud.HudPos;
 
 public class ModConfig {
 	// Mention-Highlighting
@@ -129,6 +129,8 @@ public class ModConfig {
 	public List<String> colorRecent = new ArrayList<>();
 	// Notizblock
 	public List<Note> notes = new ArrayList<>();
+	public boolean notesHudOn = true;
+	/** Before the HUD editor: pixel position of the pinned notes; read once by HudMigration. */
 	public int notesHudX = 4;
 	public int notesHudY = 4;
 	// Entity-Heatmap
@@ -167,7 +169,9 @@ public class ModConfig {
 	public int sellThreshold = 90;
 	public SellAutostart sellAutostart = SellAutostart.IF_WAS_ON;
 	public boolean sellAfkWasOn = false;
-	public SellHudPosition sellHudPosition = SellHudPosition.TOP_CENTER;
+	public boolean sellHudOn = true;
+	/** Before the HUD editor: TOP_CENTER, TOP_LEFT, TOP_RIGHT or OFF; read once by HudMigration. */
+	public String sellHudPosition;
 	/** /sell price per single item, learned from sales of one item type. */
 	public Map<String, Double> sellPrices = new HashMap<>();
 	public String sellCommand = "sell";
@@ -231,8 +235,45 @@ public class ModConfig {
 	public int streamerWheelSeconds = 7;
 	// Client: allgemeine Einstellungen (Helligkeit, Anzeige)
 	public boolean clientFullbright = false;
-	public HudCorner clientFpsHud = HudCorner.OFF;
+	public boolean clientFpsHudOn = false;
+	/** Before the HUD editor: corner or OFF; read once by HudMigration. */
+	public HudCorner clientFpsHud;
 	public boolean clientFpsShowPing = true;
 	public boolean clientLowFire = false;
 	public boolean clientNoPumpkinBlur = false;
+	// Zahlungen: Log und Warnung bei /pay
+	public boolean payLogEnabled = true;
+	public boolean payWarning = true;
+	/** Enter twice before paying a HugoGuard scammer. */
+	public boolean payConfirmScammer = true;
+	/** "An Name: $10.000" above the input while typing /pay. */
+	public boolean payPreview = true;
+	// Geld-Tracker
+	public boolean moneyTrackerEnabled = true;
+	public boolean moneyHudOn = false;
+	/** 0 = Sitzung, 1 = heute, 2 = pro Stunde */
+	public int moneyHudMode = 0;
+	// Aufträge-Helfer
+	public boolean ordersHelperEnabled = true;
+	public boolean ordersMarkFillable = true;
+	// Spawner-Lager
+	public boolean spawnerReminderEnabled = true;
+	public int spawnerReminderPercent = 90;
+	public boolean spawnerReminderToast = true;
+	public boolean spawnerHudOn = false;
+	// Stichwort-Alarm
+	public boolean keywordAlarmEnabled = true;
+	public List<String> keywordAlarmWords = new ArrayList<>();
+	public boolean keywordAlarmSound = true;
+	public boolean keywordAlarmToast = true;
+	public boolean keywordAlarmPublicOnly = true;
+	// Farm-Tracker
+	public boolean farmTrackerEnabled = true;
+	public boolean farmHudOn = false;
+	public boolean farmWarnFull = true;
+	public boolean farmWarnDurability = true;
+	public int farmDurabilityPercent = 10;
+	// HUD-Editor: Position und Größe jedes HUD-Elements
+	public Map<String, HudPos> hudPositions = new HashMap<>();
+	public int hudVersion = 0;
 }

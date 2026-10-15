@@ -2,6 +2,7 @@ package com.hugosmpenhanced.client.feature.client;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
+import com.hugosmpenhanced.client.hud.HudManager;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
@@ -19,7 +20,7 @@ public final class ClientTweaks {
 	public static void register() {
 		fullbrightKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.hugosmpenhanced.fullbright",
 			InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), TpaKeybinds.CATEGORY));
-		FpsHud.register();
+		HudManager.add(FpsHud.INSTANCE);
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (fullbrightKey.consumeClick()) {
 				ModConfigManager.CONFIG.clientFullbright = !ModConfigManager.CONFIG.clientFullbright;
