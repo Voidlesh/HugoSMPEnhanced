@@ -14,6 +14,7 @@ import java.util.regex.Pattern;
 import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.auction.AuctionLore;
+import com.hugosmpenhanced.client.feature.money.MoneyTracker;
 import com.hugosmpenhanced.client.util.ServerCheck;
 
 import net.minecraft.ChatFormatting;
@@ -797,6 +798,7 @@ public final class SellEngine {
 		if (amount > 0) {
 			income += amount;
 			incomeKnown = true;
+			MoneyTracker.exact(MoneyTracker.SELL, Math.round(amount));
 			if (sale.counts().size() == 1) {
 				Map.Entry<String, Integer> only = sale.counts().entrySet().iterator().next();
 				config.sellPrices.put(only.getKey(), amount / only.getValue());

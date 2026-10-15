@@ -48,7 +48,10 @@
 		"SettingsKeyMixin",
 		"ClientFullbrightMixin",
 		"ClientFireOverlayMixin",
-		"ClientPumpkinOverlayMixin"
+		"ClientPumpkinOverlayMixin",
+		"PayNameColorMixin",
+		"PayWarningMixin",
+		"FarmPickupMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

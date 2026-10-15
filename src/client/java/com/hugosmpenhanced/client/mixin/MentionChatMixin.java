@@ -6,6 +6,7 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import com.hugosmpenhanced.client.feature.keywords.KeywordAlarm;
 import com.hugosmpenhanced.client.feature.mentions.MentionHighlightFeature;
 
 import net.minecraft.client.GuiMessageTag;
@@ -13,7 +14,7 @@ import net.minecraft.client.gui.components.ChatComponent;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MessageSignature;
 
-/** Marks the chat line that mentions you (see {@link MentionHighlightFeature}). */
+/** Marks the chat line that mentions you or has one of your keywords ({@link MentionHighlightFeature}, {@link KeywordAlarm}). */
 @Mixin(ChatComponent.class)
 public abstract class MentionChatMixin {
 	private static final String ADD_MESSAGE =
@@ -21,16 +22,17 @@ public abstract class MentionChatMixin {
 
 	@ModifyVariable(method = ADD_MESSAGE, at = @At("HEAD"), argsOnly = true)
 	private GuiMessageTag hugosmpenhanced$mentionTag(GuiMessageTag tag, Component message, MessageSignature signature, GuiMessageTag original) {
-		return MentionHighlightFeature.tag(message, tag);
+		return KeywordAlarm.tag(message, MentionHighlightFeature.tag(message, tag));
 	}
 
 	@ModifyVariable(method = ADD_MESSAGE, at = @At("HEAD"), argsOnly = true)
 	private Component hugosmpenhanced$mentionColor(Component message) {
-		return MentionHighlightFeature.colored(message);
+		return KeywordAlarm.marked(MentionHighlightFeature.colored(message));
 	}
 
 	@Inject(method = ADD_MESSAGE, at = @At("TAIL"))
 	private void hugosmpenhanced$mentionHint(Component message, MessageSignature signature, GuiMessageTag tag, CallbackInfo ci) {
 		MentionHighlightFeature.afterAdded(message);
+		KeywordAlarm.afterAdded(message);
 	}
 }

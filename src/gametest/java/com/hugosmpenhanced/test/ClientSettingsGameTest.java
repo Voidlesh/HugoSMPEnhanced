@@ -4,7 +4,9 @@ import java.util.List;
 
 import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.config.ModConfigManager;
-import com.hugosmpenhanced.client.feature.client.HudCorner;
+import com.hugosmpenhanced.client.feature.client.FpsHud;
+import com.hugosmpenhanced.client.hud.HudManager;
+import com.hugosmpenhanced.client.hud.HudPos;
 import com.hugosmpenhanced.client.settings.ModSettings;
 import com.hugosmpenhanced.client.settings.SettingsCategory;
 import com.hugosmpenhanced.client.settings.SettingsOption;
@@ -65,13 +67,17 @@ public class ClientSettingsGameTest implements FabricClientGameTest {
 			context.runOnClient(client -> ModConfigManager.CONFIG.clientFullbright = false);
 			server.runCommand("time set 6000");
 
-			// FPS line in each corner.
-			for (HudCorner corner : new HudCorner[] {HudCorner.TOP_RIGHT, HudCorner.BOTTOM_LEFT}) {
-				context.runOnClient(client -> ModConfigManager.CONFIG.clientFpsHud = corner);
-				context.waitTicks(3);
-				context.takeScreenshot("client-fps-" + corner.name().toLowerCase());
-			}
-			context.runOnClient(client -> ModConfigManager.CONFIG.clientFpsHud = HudCorner.OFF);
+			// FPS line at its default spot and moved to the bottom left in the HUD editor.
+			context.runOnClient(client -> ModConfigManager.CONFIG.clientFpsHudOn = true);
+			context.waitTicks(3);
+			context.takeScreenshot("client-fps-top_right");
+			context.runOnClient(client -> HudManager.setPos(FpsHud.INSTANCE, new HudPos(0, 1)));
+			context.waitTicks(3);
+			context.takeScreenshot("client-fps-bottom_left");
+			context.runOnClient(client -> {
+				ModConfigManager.CONFIG.clientFpsHudOn = false;
+				HudManager.reset(FpsHud.INSTANCE);
+			});
 
 			// Lower fire and the see-through pumpkin, in survival so the fire shows.
 			server.runCommand("gamemode survival @p");
@@ -98,7 +104,7 @@ public class ClientSettingsGameTest implements FabricClientGameTest {
 		}
 		context.runOnClient(client -> {
 			ModConfig defaults = new ModConfig();
-			ModConfigManager.CONFIG.clientFpsHud = defaults.clientFpsHud;
+			ModConfigManager.CONFIG.clientFpsHudOn = defaults.clientFpsHudOn;
 			ModConfigManager.save();
 		});
 	}

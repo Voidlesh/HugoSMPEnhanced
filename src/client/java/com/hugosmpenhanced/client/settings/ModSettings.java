@@ -17,10 +17,15 @@ import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
 import com.hugosmpenhanced.client.feature.auction.CustomItems;
 import com.hugosmpenhanced.client.feature.auction.MarkedItems;
 import com.hugosmpenhanced.client.feature.client.ClientTweaks;
-import com.hugosmpenhanced.client.feature.client.HudCorner;
 import com.hugosmpenhanced.client.feature.colorcodes.ColorCodeScreen;
 import com.hugosmpenhanced.client.feature.colorcodes.ColorCodes;
 import com.hugosmpenhanced.client.feature.colorcodes.HexStyle;
+import com.hugosmpenhanced.client.feature.debug.DebugDump;
+import com.hugosmpenhanced.client.feature.farm.FarmTracker;
+import com.hugosmpenhanced.client.feature.money.MoneyScreen;
+import com.hugosmpenhanced.client.feature.money.MoneyTracker;
+import com.hugosmpenhanced.client.feature.pay.PayLogScreen;
+import com.hugosmpenhanced.client.feature.spawnerstorage.SpawnerStorageScreen;
 import com.hugosmpenhanced.client.feature.discord.DiscordOutside;
 import com.hugosmpenhanced.client.feature.discord.DiscordPresence;
 import com.hugosmpenhanced.client.feature.discord.DiscordPreviewOption;
@@ -45,11 +50,9 @@ import com.hugosmpenhanced.client.feature.mainmenu.MainMenuLayout;
 import com.hugosmpenhanced.client.feature.mainmenu.SplashAnimation;
 import com.hugosmpenhanced.client.feature.mainmenu.SplashColor;
 import com.hugosmpenhanced.client.feature.notes.NotesFeature;
-import com.hugosmpenhanced.client.feature.notes.NotesHudPositionScreen;
 import com.hugosmpenhanced.client.feature.notes.NotesScreen;
 import com.hugosmpenhanced.client.feature.sell.SellAutostart;
 import com.hugosmpenhanced.client.feature.sell.SellFeature;
-import com.hugosmpenhanced.client.feature.sell.SellHudPosition;
 import com.hugosmpenhanced.client.feature.sell.SellRulesOption;
 import com.hugosmpenhanced.client.feature.sell.SellSpeed;
 import com.hugosmpenhanced.client.feature.spawnerprices.SpawnerPrices;
@@ -58,6 +61,9 @@ import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
 import com.hugosmpenhanced.client.feature.update.ModUpdates;
 import com.hugosmpenhanced.client.feature.update.UpdateInstaller;
 import com.hugosmpenhanced.client.feature.update.UpdateStatusOption;
+import com.hugosmpenhanced.client.formats.HugoFormats;
+import com.hugosmpenhanced.client.hud.HudEditorScreen;
+import com.hugosmpenhanced.client.hud.HudKeys;
 import com.hugosmpenhanced.client.settings.option.ButtonOption;
 import com.hugosmpenhanced.client.settings.option.CycleOption;
 import com.hugosmpenhanced.client.settings.option.InfoOption;
@@ -71,6 +77,7 @@ import com.hugosmpenhanced.client.settings.option.ToggleOption;
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.Screen;
+import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
 
 /**
@@ -85,7 +92,7 @@ public final class ModSettings {
 
 	public static List<SettingsCategory> categories() {
 		if (categories == null) {
-			categories = List.of(general(), client(), chat(), players(), inventory(), tools());
+			categories = List.of(general(), client(), chat(), players(), economy(), inventory(), tools());
 		}
 		return categories;
 	}
@@ -128,6 +135,17 @@ public final class ModSettings {
 					ButtonOption.danger("Alles zurücksetzen",
 						"Setzt alle Einstellungen und Tasten zurück. Notizen, Buttons, Layouts und Suchverlauf bleiben.",
 						"Zurücksetzen", ModSettings::resetAll)),
+				new SettingsSection("HugoSMP-Texte",
+					new InfoOption("Stand", "Wie die Mod Zahlungen, Menüs und Tooltips von HugoSMP erkennt. Wird stündlich von GitHub geladen, "
+						+ "so lassen sich Erkennungen ohne neue Version reparieren.", HugoFormats::describe).keywords("formate erkennung online repo"),
+					ButtonOption.action("Jetzt neu laden", null, "Laden", HugoFormats::refresh).keywords("formate"),
+					ButtonOption.action("Datei ansehen", "Auf GitHub", "Öffnen", () -> Util.getPlatform().openUri(HugoFormats.EDIT_URL))),
+				new SettingsSection("Fehler melden",
+					ButtonOption.action("Debug-Datei", "Scoreboard, letzte Chatzeilen und letztes Menü als Text, in der Zwischenablage. "
+						+ "In einem Menü: Strg+Shift+C. Mehr mit /hse debug chat, item, menu, scoreboard.", "Erstellen",
+						DebugDump::all).keywords("debug bug fehler melden format"),
+					ButtonOption.action("Debug-Ordner", "config/hugosmpenhanced/debug", "Öffnen",
+						() -> Util.getPlatform().openPath(FabricLoader.getInstance().getConfigDir().resolve("hugosmpenhanced")))),
 				new SettingsSection("Über",
 					new InfoOption("HugoSMP Enhanced", null,
 						() -> "Version " + version(HugoSmpEnhancedClient.MOD_ID) + "  -  Minecraft " + version("minecraft")))),
@@ -307,9 +325,13 @@ public final class ModSettings {
 					new KeyBindOption("Fullbright-Taste", "Schaltet Fullbright an und aus", () -> ClientTweaks.fullbrightKey)
 						.keywords("fullbright")),
 				new SettingsSection("FPS und Ping",
-					new CycleOption<>("Anzeige", "Bildrate und Ping in einer Ecke, ausgeblendet mit F1 und F3", HudCorner.class,
-						c -> c.clientFpsHud, (c, v) -> c.clientFpsHud = v).keywords("fps ping hud"),
+					toggle("Anzeige", "Bildrate und Ping, ausgeblendet mit F1 und F3. Platz und Größe im HUD-Editor.",
+						c -> c.clientFpsHudOn, (c, v) -> c.clientFpsHudOn = v).keywords("fps ping hud"),
 					toggle("Ping zeigen", "Nur auf Servern", c -> c.clientFpsShowPing, (c, v) -> c.clientFpsShowPing = v).keywords("ping ms")),
+				new SettingsSection("HUD",
+					ButtonOption.page("HUD anordnen", "Alle Anzeigen der Mod verschieben, vergrößern und an- oder ausschalten",
+						"Öffnen", () -> open(HudEditorScreen::new)).keywords("hud position verschieben größe anzeige editor"),
+					new KeyBindOption("Taste", "Öffnet den HUD-Editor, auch per /hse hud", () -> HudKeys.editorKey).keywords("hud editor")),
 				new SettingsSection("Bildschirm",
 					toggle("Feuer tiefer", "Das Feuer beim Brennen bedeckt nur den unteren Rand",
 						c -> c.clientLowFire, (c, v) -> c.clientLowFire = v).keywords("feuer fire overlay"),
@@ -328,6 +350,18 @@ public final class ModSettings {
 					toggle("Ton bei Erwähnung", null, c -> c.mentionsSoundEnabled, (c, v) -> c.mentionsSoundEnabled = v),
 					new StringListOption("Zusätzliche Wörter", "Dein Spielername wird immer erkannt", "Keine",
 						c -> c.mentionTriggers, (c, v) -> c.mentionTriggers = v).keywords("trigger"))),
+			new SettingsTab("Stichwörter",
+				new SettingsSection("Stichwort-Alarm",
+					toggle("Stichwort-Alarm", "Meldet sich, wenn eine Chatzeile alle Wörter eines Eintrags enthält, z. B. \"verkaufe elytra\". "
+						+ "Wortanfänge reichen, Groß/klein und Umlaute egal.", c -> c.keywordAlarmEnabled, (c, v) -> c.keywordAlarmEnabled = v)
+						.keywords("keyword alarm handel deal suche"),
+					new StringListOption("Stichwörter", "Ein Eintrag pro Suche, mehrere Wörter = alle müssen vorkommen", "Keine",
+						c -> c.keywordAlarmWords, (c, v) -> c.keywordAlarmWords = v).keywords("keyword"),
+					new PillsOption("Wie", null)
+						.pill("Ton", c -> c.keywordAlarmSound, (c, v) -> c.keywordAlarmSound = v)
+						.pill("Einblendung", c -> c.keywordAlarmToast, (c, v) -> c.keywordAlarmToast = v),
+					toggle("Nur Spieler-Chat", "Zeilen mit [HugoSMP] vorne zählen nicht",
+						c -> c.keywordAlarmPublicOnly, (c, v) -> c.keywordAlarmPublicOnly = v))),
 			new SettingsTab("Filter",
 				new SettingsSection("Chat-Filter",
 					new PillsOption("Angezeigte Nachrichten", "Eigene Nachrichten werden nie ausgeblendet")
@@ -400,6 +434,76 @@ public final class ModSettings {
 						.pill("Über dem Kopf", c -> c.hugoGuardOverhead, (c, v) -> c.hugoGuardOverhead = v)
 						.pill("Im Chat", c -> c.hugoGuardChat, (c, v) -> c.hugoGuardChat = v)
 						.pill("Bei TPA-Anfragen", c -> c.hugoGuardTpa, (c, v) -> c.hugoGuardTpa = v))));
+	}
+
+	private static SettingsCategory economy() {
+		return new SettingsCategory("Wirtschaft", "economy", "Geld-Tracker, Zahlungen, Aufträge, Spawner-Lager und Farm",
+			new SettingsTab("Geld",
+				new SettingsSection("Geld-Tracker",
+					toggle("Geld-Tracker", "Liest den Kontostand aus dem Scoreboard und ordnet Änderungen Zahlungen, Menüs und Befehlen zu. Nur auf HugoSMP.",
+						c -> c.moneyTrackerEnabled, (c, v) -> c.moneyTrackerEnabled = v).keywords("geld money tracker einnahmen"),
+					ButtonOption.page("Übersicht", "Verlauf und Quellen, auch per /hse geld", "Öffnen", () -> open(MoneyScreen::new)),
+					new InfoOption("Kontostand", null, () -> MoneyTracker.balance() < 0 ? "nicht erkannt" : Money.format(MoneyTracker.balance()))),
+				new SettingsSection("Anzeige",
+					toggle("HUD-Anzeige", "Kontostand und Änderung. Platz und Größe im HUD-Editor.",
+						c -> c.moneyHudOn, (c, v) -> c.moneyHudOn = v).keywords("geld hud"),
+					new CycleOption<>("Änderung seit", null, MoneySpan.class, c -> MoneySpan.values()[Math.max(0, Math.min(1, c.moneyHudMode))],
+						(c, v) -> c.moneyHudMode = v.ordinal()))),
+			new SettingsTab("Zahlungen",
+				new SettingsSection("Zahlungs-Log",
+					toggle("Zahlungen speichern", "Jede Zahlung an dich und von dir, auch nach einem Neustart",
+						c -> c.payLogEnabled, (c, v) -> c.payLogEnabled = v).keywords("pay log zahlung"),
+					ButtonOption.page("Log öffnen", "Auch per /hse zahlungen", "Öffnen", () -> open(PayLogScreen::new))),
+				new SettingsSection("Beim Tippen von /pay",
+					toggle("Scammer-Warnung", "Name rot und Warnung über der Eingabe, wenn HugoGuard den Spieler als Scammer führt",
+						c -> c.payWarning, (c, v) -> c.payWarning = v).keywords("scammer hugoguard pay warnung"),
+					toggle("Zweimal Enter bei Scammern", "Die erste Enter-Taste schickt die Zahlung noch nicht ab",
+						c -> c.payConfirmScammer, (c, v) -> c.payConfirmScammer = v),
+					toggle("Betrag anzeigen", "\"Zahlung an Name: $10.000\" und die letzte Zahlung mit dem Spieler",
+						c -> c.payPreview, (c, v) -> c.payPreview = v).keywords("pay vorschau betrag"))),
+			new SettingsTab("Aufträge",
+				new SettingsSection("Aufträge-Helfer",
+					toggle("Aufträge-Helfer", "Im Aufträge-Menü: was du aus deinem Inventar liefern kannst und was es bringt",
+						c -> c.ordersHelperEnabled, (c, v) -> c.ordersHelperEnabled = v).keywords("order auftrag liefern"),
+					toggle("Lieferbare markieren", "Grüner Rahmen um lieferbare Aufträge, goldener um den besten",
+						c -> c.ordersMarkFillable, (c, v) -> c.ordersMarkFillable = v))),
+			new SettingsTab("Spawner-Lager",
+				new SettingsSection("Erinnerung",
+					toggle("Spawner-Lager merken", "Merkt sich beim Öffnen, wie voll ein Spawner ist, und rechnet hoch, wann er voll wird",
+						c -> c.spawnerReminderEnabled, (c, v) -> c.spawnerReminderEnabled = v).keywords("spawner lager voll storage"),
+					SliderOption.ofInt("Erinnern ab", null, 50, 100, v -> (int) v + " %",
+						c -> c.spawnerReminderPercent, (c, v) -> c.spawnerReminderPercent = v),
+					toggle("Einblendung", "Kleine Meldung oben rechts", c -> c.spawnerReminderToast, (c, v) -> c.spawnerReminderToast = v),
+					toggle("HUD-Anzeige", "Die vollsten Spawner. Platz im HUD-Editor.", c -> c.spawnerHudOn, (c, v) -> c.spawnerHudOn = v),
+					ButtonOption.page("Alle Spawner", "Auch per /hse spawner", "Öffnen", () -> open(SpawnerStorageScreen::new)))),
+			new SettingsTab("Farm",
+				new SettingsSection("Farm-Tracker",
+					toggle("Farm-Tracker", "Zählt, was du aufhebst, mit Menge und Wert pro Stunde. Pausiert nach 2 Minuten ohne Drops.",
+						c -> c.farmTrackerEnabled, (c, v) -> c.farmTrackerEnabled = v).keywords("farm drops pro stunde"),
+					toggle("HUD-Anzeige", "Platz im HUD-Editor", c -> c.farmHudOn, (c, v) -> c.farmHudOn = v).keywords("farm hud"),
+					ButtonOption.action("Zurücksetzen", "Auch per /hse farm reset", "Zurücksetzen", FarmTracker::reset)),
+				new SettingsSection("Warnungen",
+					toggle("Inventar voll", "Meldet sich beim Farmen, wenn kein Platz mehr frei ist",
+						c -> c.farmWarnFull, (c, v) -> c.farmWarnFull = v),
+					toggle("Werkzeug fast kaputt", null, c -> c.farmWarnDurability, (c, v) -> c.farmWarnDurability = v),
+					SliderOption.ofInt("Warnen ab", "Restliche Haltbarkeit", 1, 50, v -> (int) v + " %",
+						c -> c.farmDurabilityPercent, (c, v) -> c.farmDurabilityPercent = v))));
+	}
+
+	/** What the money HUD's change counts from. */
+	public enum MoneySpan implements Labeled {
+		SESSION("Spielstart"), TODAY("Heute");
+
+		private final String label;
+
+		MoneySpan(String label) {
+			this.label = label;
+		}
+
+		@Override
+		public Component getDisplayName() {
+			return Component.literal(this.label);
+		}
 	}
 
 	private static SettingsCategory inventory() {
@@ -502,8 +606,8 @@ public final class ModSettings {
 					c -> c.sellThreshold, (c, v) -> c.sellThreshold = v),
 				new CycleOption<>("Beim Join starten", "Startet die AFK-Farm 10 s nach dem Betreten von HugoSMP",
 					SellAutostart.class, c -> c.sellAutostart, (c, v) -> c.sellAutostart = v).keywords("autostart rejoin"),
-				new CycleOption<>("Status-Anzeige", "Nur solange die AFK-Farm läuft oder pausiert",
-					SellHudPosition.class, c -> c.sellHudPosition, (c, v) -> c.sellHudPosition = v).keywords("hud")));
+				toggle("Status-Anzeige", "Nur solange die AFK-Farm läuft oder pausiert. Platz im HUD-Editor.",
+					c -> c.sellHudOn, (c, v) -> c.sellHudOn = v).keywords("hud")));
 	}
 
 	private static SettingsCategory tools() {
@@ -512,8 +616,10 @@ public final class ModSettings {
 				new SettingsSection("Notizblock",
 					ButtonOption.page("Notizen öffnen", null, "Öffnen", () -> open(NotesScreen::new)),
 					new KeyBindOption("Taste", null, () -> NotesFeature.openKey).keywords("notizblock"),
-					ButtonOption.page("Angeheftete Notizen", "Position auf dem Bildschirm", "Verschieben",
-						() -> open(NotesHudPositionScreen::new)))),
+					toggle("Angeheftete Notizen zeigen", "Notizen mit Stecknadel stehen auf dem Bildschirm",
+						c -> c.notesHudOn, (c, v) -> c.notesHudOn = v).keywords("notiz hud anheften"),
+					ButtonOption.page("Position", "Im HUD-Editor, zusammen mit den anderen Anzeigen", "Verschieben",
+						() -> open(HudEditorScreen::new)).keywords("notiz hud verschieben"))),
 			new SettingsTab("Galerie",
 				new SettingsSection("Screenshot-Galerie",
 					ButtonOption.page("Galerie öffnen", null, "Öffnen", () -> open(GalleryScreen::new)),

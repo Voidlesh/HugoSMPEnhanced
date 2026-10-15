@@ -114,6 +114,10 @@ public final class DiscordPresence {
 	/** Recomputes the presence and hands it to the connection; cheap, runs once a second. */
 	public static void update(Minecraft client) {
 		ModConfig config = ModConfigManager.CONFIG;
+		if (!config.discordEnabled) {
+			// The money tracker and the debug dump read the sidebar from here, presence or not.
+			StatusReader.read(client);
+		}
 		View view = config.discordEnabled ? build(client) : null;
 		current = view;
 		CONNECTION.show(config.discordEnabled, appId, view == null ? null : toJson(view));
