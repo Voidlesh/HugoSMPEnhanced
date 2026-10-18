@@ -10,6 +10,8 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 
 import net.minecraft.client.renderer.ScreenEffectRenderer;
+import net.minecraft.client.renderer.SubmitNodeCollector;
+import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 
 /**
  * "Lower fire": the burning overlay sits lower, so the middle of the screen stays visible. The
@@ -21,7 +23,7 @@ public abstract class ClientFireOverlayMixin {
 	private static final float LOWER = -0.18F;
 
 	@Inject(method = "submitFire", at = @At("HEAD"))
-	private static void hugosmpenhanced$lowerFireBegin(PoseStack poseStack, CallbackInfo ci) {
+	private static void hugosmpenhanced$lowerFireBegin(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, TextureAtlasSprite sprite, CallbackInfo ci) {
 		if (ModConfigManager.CONFIG.clientLowFire) {
 			poseStack.pushPose();
 			poseStack.translate(0.0F, LOWER, 0.0F);
@@ -29,7 +31,7 @@ public abstract class ClientFireOverlayMixin {
 	}
 
 	@Inject(method = "submitFire", at = @At("RETURN"))
-	private static void hugosmpenhanced$lowerFireEnd(PoseStack poseStack, CallbackInfo ci) {
+	private static void hugosmpenhanced$lowerFireEnd(PoseStack poseStack, SubmitNodeCollector submitNodeCollector, TextureAtlasSprite sprite, CallbackInfo ci) {
 		if (ModConfigManager.CONFIG.clientLowFire) {
 			poseStack.popPose();
 		}
