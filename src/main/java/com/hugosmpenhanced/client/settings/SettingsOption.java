@@ -7,7 +7,7 @@ import com.hugosmpenhanced.client.config.ModConfigManager;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
@@ -67,14 +67,14 @@ public abstract class SettingsOption {
 	/** Width the control takes on the right of the row. */
 	protected abstract int controlWidth(Font font);
 
-	protected abstract void renderControl(GuiGraphics graphics, Font font, int right, int centerY, int mouseX, int mouseY);
+	protected abstract void renderControl(GuiGraphicsExtractor graphics, Font font, int right, int centerY, int mouseX, int mouseY);
 
 	/** Height of extra content under the text (chip lists), 0 for plain rows. */
 	protected int belowHeight(Font font, int width) {
 		return 0;
 	}
 
-	protected void renderBelow(GuiGraphics graphics, Font font, int left, int top, int width, int mouseX, int mouseY) {
+	protected void renderBelow(GuiGraphicsExtractor graphics, Font font, int left, int top, int width, int mouseX, int mouseY) {
 	}
 
 	private int textWidth(Font font, int width) {
@@ -93,7 +93,7 @@ public abstract class SettingsOption {
 		return below > 0 ? text - (lines == 0 ? 6 : 2) + below + 6 : text;
 	}
 
-	public final void render(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY, boolean allowHover) {
+	public final void render(GuiGraphicsExtractor graphics, int x, int y, int width, int mouseX, int mouseY, boolean allowHover) {
 		Font font = Minecraft.getInstance().font;
 		this.x = x;
 		this.y = y;
@@ -107,10 +107,10 @@ public abstract class SettingsOption {
 		int below = this.belowHeight(font, width);
 		int labelY = lines.isEmpty() && below == 0 ? y + 7 : y + 4;
 		String shown = font.plainSubstrByWidth(this.label, this.textWidth(font, width));
-		graphics.drawString(font, shown, x + PAD, labelY, Theme.TEXT);
+		graphics.text(font, shown, x + PAD, labelY, Theme.TEXT);
 		int lineY = labelY + 10;
 		for (FormattedCharSequence line : lines) {
-			graphics.drawString(font, line, x + PAD, lineY, Theme.MUTED, false);
+			graphics.text(font, line, x + PAD, lineY, Theme.MUTED, false);
 			lineY += 10;
 		}
 		int right = x + width - PAD;

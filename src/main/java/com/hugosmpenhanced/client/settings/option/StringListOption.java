@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.settings.option;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -9,11 +10,10 @@ import java.util.function.Function;
 import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.settings.Theme;
 
-import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 
@@ -60,7 +60,7 @@ public class StringListOption extends ValueOption<List<String>> {
 	}
 
 	@Override
-	protected void renderControl(GuiGraphics graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
+	protected void renderControl(GuiGraphicsExtractor graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
 	}
 
 	private String chipText(Font font, String entry, int width) {
@@ -100,7 +100,7 @@ public class StringListOption extends ValueOption<List<String>> {
 	}
 
 	@Override
-	protected void renderBelow(GuiGraphics graphics, Font font, int left, int top, int width, int mouseX, int mouseY) {
+	protected void renderBelow(GuiGraphicsExtractor graphics, Font font, int left, int top, int width, int mouseX, int mouseY) {
 		this.origin = new int[] {left, top};
 		List<String> entries = this.get();
 		List<int[]> boxes = this.layout(font, width);
@@ -109,7 +109,7 @@ public class StringListOption extends ValueOption<List<String>> {
 			int bx = left + box[0];
 			int by = top + box[1];
 			Theme.panel(graphics, bx, by, box[2], H, Theme.CHIP, Theme.CHIP_BORDER);
-			graphics.drawString(font, this.chipText(font, entries.get(i), width), bx + 4, by + 3, Theme.WHITE, false);
+			graphics.text(font, this.chipText(font, entries.get(i), width), bx + 4, by + 3, Theme.WHITE, false);
 			boolean overCross = this.inside(mouseX, mouseY, bx + box[2] - 11, by, 11, H);
 			Theme.glyph(graphics, Theme.CROSS, bx + box[2] - 9, by + 4, overCross ? 0xFFFF4040 : Theme.RED_TEXT);
 		}
@@ -120,7 +120,7 @@ public class StringListOption extends ValueOption<List<String>> {
 			Theme.panel(graphics, bx, by, last[2], H, Theme.FIELD, Theme.GOLD);
 			String text = this.input.toString();
 			String shown = font.plainSubstrByWidth(text, last[2] - 10, true);
-			graphics.drawString(font, shown, bx + 4, by + 3, Theme.WHITE, false);
+			graphics.text(font, shown, bx + 4, by + 3, Theme.WHITE, false);
 			if ((System.currentTimeMillis() / 500) % 2 == 0) {
 				int cx = bx + 4 + font.width(shown);
 				graphics.fill(cx, by + 2, cx + 1, by + H - 2, Theme.WHITE);
@@ -130,7 +130,7 @@ public class StringListOption extends ValueOption<List<String>> {
 			Theme.panel(graphics, bx, by, last[2], H, 0xFF1E1E1E, over ? Theme.GOLD : 0xFF7A7A7A);
 			Theme.glyph(graphics, Theme.PLUS, bx + 5, by + 4, Theme.WHITE);
 			if (entries.isEmpty() && this.emptyText != null) {
-				graphics.drawString(font, this.emptyText, bx + last[2] + 6, by + 3, Theme.FAINT, false);
+				graphics.text(font, this.emptyText, bx + last[2] + 6, by + 3, Theme.FAINT, false);
 			}
 		}
 	}
@@ -191,15 +191,15 @@ public class StringListOption extends ValueOption<List<String>> {
 			return false;
 		}
 		switch (event.key()) {
-			case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> this.commit();
-			case GLFW.GLFW_KEY_ESCAPE -> this.input = null;
-			case GLFW.GLFW_KEY_BACKSPACE -> {
+			case InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER -> this.commit();
+			case InputConstants.KEY_ESCAPE -> this.input = null;
+			case InputConstants.KEY_BACKSPACE -> {
 				if (!this.input.isEmpty()) {
 					this.input.setLength(this.input.length() - 1);
 				}
 			}
 			default -> {
-				if (event.key() == GLFW.GLFW_KEY_V && (event.modifiers() & GLFW.GLFW_MOD_CONTROL) != 0) {
+				if (event.key() == InputConstants.KEY_V && (event.modifiers() & InputConstants.MOD_CONTROL) != 0) {
 					String clip = Minecraft.getInstance().keyboardHandler.getClipboard().replace("\n", " ");
 					this.append(clip);
 				}

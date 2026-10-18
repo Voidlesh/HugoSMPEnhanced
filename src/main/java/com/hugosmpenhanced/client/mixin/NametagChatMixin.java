@@ -10,7 +10,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 import com.hugosmpenhanced.client.feature.nametag.NametagStyleRenderer;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.util.FormattedCharSequence;
 
 /**
@@ -33,7 +33,7 @@ public final class NametagChatMixin {
 	public abstract static class Background {
 		@Shadow
 		@Final
-		private GuiGraphics graphics;
+		private GuiGraphicsExtractor graphics;
 
 		@Inject(method = "handleMessage", at = @At("TAIL"))
 		private void hugosmpenhanced$overlayStyledName(int y, float opacity, FormattedCharSequence sequence, CallbackInfoReturnable<Boolean> cir) {
@@ -47,7 +47,7 @@ public final class NametagChatMixin {
 	public abstract static class Focused {
 		@Shadow
 		@Final
-		private GuiGraphics graphics;
+		private GuiGraphicsExtractor graphics;
 
 		@Inject(method = "handleMessage", at = @At("TAIL"))
 		private void hugosmpenhanced$overlayStyledName(int y, float opacity, FormattedCharSequence sequence, CallbackInfoReturnable<Boolean> cir) {

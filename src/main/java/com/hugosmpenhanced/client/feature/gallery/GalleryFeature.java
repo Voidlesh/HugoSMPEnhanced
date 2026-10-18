@@ -6,7 +6,7 @@ import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.KeyMapping;
@@ -32,16 +32,16 @@ public final class GalleryFeature {
 	}
 
 	public static void register() {
-		openKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+		openKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.hugosmpenhanced.open_gallery",
-			InputConstants.Type.KEYSYM,
+			InputConstants.Type.KEYBOARD,
 			InputConstants.UNKNOWN.getValue(),
 			TpaKeybinds.CATEGORY));
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (openKey.consumeClick()) {
-				if (client.screen == null) {
-					client.setScreen(new GalleryScreen(null));
+				if (client.gui.screen() == null) {
+					client.setScreenAndShow(new GalleryScreen(null));
 				}
 			}
 		});
@@ -55,7 +55,7 @@ public final class GalleryFeature {
 
 	/** A camera icon right of "Back to Game", or in the bottom-left corner if that is not found. */
 	private static void addPauseButton(Screen screen, int scaledWidth, int scaledHeight) {
-		List<AbstractWidget> widgets = Screens.getButtons(screen);
+		List<AbstractWidget> widgets = Screens.getWidgets(screen);
 		int x = 6;
 		int y = scaledHeight - 26;
 		for (AbstractWidget widget : widgets) {
@@ -68,7 +68,7 @@ public final class GalleryFeature {
 		}
 		Component label = Component.literal("Screenshots");
 		SpriteIconButton button = SpriteIconButton.builder(label,
-				b -> Minecraft.getInstance().setScreen(new GalleryScreen(screen)), true)
+				b -> Minecraft.getInstance().setScreenAndShow(new GalleryScreen(screen)), true)
 			.sprite(ICON, 16, 16)
 			.size(20, 20)
 			.build();

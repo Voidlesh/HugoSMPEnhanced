@@ -2,7 +2,7 @@ package com.hugosmpenhanced.client.feature.tpa;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.toasts.Toast;
 import net.minecraft.client.gui.components.toasts.ToastManager;
 import net.minecraft.network.chat.Component;
@@ -50,7 +50,7 @@ public final class TpaToast implements Toast {
 		if (client == null) {
 			return;
 		}
-		client.getToastManager().addToast(new TpaToast(title, subtitle, icon, durationMs, accent));
+		client.gui.toastManager().addToast(new TpaToast(title, subtitle, icon, durationMs, accent));
 	}
 
 	@Override
@@ -81,15 +81,15 @@ public final class TpaToast implements Toast {
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, Font font, long timeVisibleMs) {
+	public void extractRenderState(GuiGraphicsExtractor graphics, Font font, long timeVisibleMs) {
 		graphics.fill(0, 0, this.width, HEIGHT, BACKGROUND_COLOR);
-		graphics.renderOutline(0, 0, this.width, HEIGHT, BORDER_COLOR);
+		graphics.outline(0, 0, this.width, HEIGHT, BORDER_COLOR);
 		graphics.fill(0, 0, 3, HEIGHT, this.accent);
 
-		graphics.renderItem(icon, 9, (HEIGHT - 16) / 2);
+		graphics.item(icon, 9, (HEIGHT - 16) / 2);
 
-		graphics.drawString(font, title, 31, 8, 0xFFFFFFFF);
-		graphics.drawString(font, subtitle, 31, 19, 0xFFAAAAAA);
+		graphics.text(font, title, 31, 8, 0xFFFFFFFF);
+		graphics.text(font, subtitle, 31, 19, 0xFFAAAAAA);
 
 		float progress = 1.0f - Math.min(1.0f, timeVisibleMs / (float) durationMs);
 		int barWidth = Math.round(this.width * progress);

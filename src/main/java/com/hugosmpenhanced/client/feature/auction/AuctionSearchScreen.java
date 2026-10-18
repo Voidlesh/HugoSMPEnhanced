@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.feature.auction;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -8,10 +9,9 @@ import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.gui.HugoStyle;
 import com.hugosmpenhanced.client.gui.StyledScreen;
 
-import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
@@ -146,7 +146,7 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 		AuctionSearch.remember(query);
 		this.sent = true;
 		AuctionSearch.send(this.sign, this.front, query);
-		this.minecraft.setScreen(null);
+		this.minecraft.setScreenAndShow(null);
 	}
 
 	private void useSign() {
@@ -156,7 +156,7 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 
 	@Override
 	public void onClose() {
-		this.minecraft.setScreen(null);
+		this.minecraft.setScreenAndShow(null);
 	}
 
 	@Override
@@ -172,16 +172,16 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 	@Override
 	public boolean keyPressed(KeyEvent event) {
 		int key = event.key();
-		if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+		if (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
 			this.submit(this.rows.isEmpty() ? this.field.getValue() : this.rows.get(this.selected).send());
 			return true;
 		}
-		if ((key == GLFW.GLFW_KEY_DOWN || key == GLFW.GLFW_KEY_UP) && !this.rows.isEmpty()) {
-			int step = key == GLFW.GLFW_KEY_DOWN ? 1 : -1;
+		if ((key == InputConstants.KEY_DOWN || key == InputConstants.KEY_UP) && !this.rows.isEmpty()) {
+			int step = key == InputConstants.KEY_DOWN ? 1 : -1;
 			this.selected = Math.floorMod(this.selected + step, this.rows.size());
 			return true;
 		}
-		if (key == GLFW.GLFW_KEY_TAB) {
+		if (key == InputConstants.KEY_TAB) {
 			Row row = this.tabTarget();
 			if (row != null) {
 				this.field.setValue(row.send());
@@ -244,9 +244,9 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		super.render(graphics, mouseX, mouseY, partialTick);
-		graphics.drawCenteredString(this.font, "— " + this.market.heading + " —", this.width / 2, this.field.getY() - 12, 0xFFAAAAAA);
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+		graphics.centeredText(this.font, "— " + this.market.heading + " —", this.width / 2, this.field.getY() - 12, 0xFFAAAAAA);
 
 		int hovered = this.rowAt(mouseX, mouseY);
 		for (int i = 0; i < this.rows.size(); i++) {
@@ -271,22 +271,22 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 			}
 		}
 		if (this.rows.isEmpty()) {
-			graphics.drawCenteredString(this.font, "Tippe, um Items zu finden. Letzte Suchen erscheinen hier.", this.width / 2,
+			graphics.centeredText(this.font, "Tippe, um Items zu finden. Letzte Suchen erscheinen hier.", this.width / 2,
 				this.rowsTop + 8, 0xFF777777);
 		} else if (this.field.getValue().strip().length() > 0 && this.rows.size() == 1) {
-			graphics.drawCenteredString(this.font, "Kein passendes Item, du kannst trotzdem danach suchen.", this.width / 2,
+			graphics.centeredText(this.font, "Kein passendes Item, du kannst trotzdem danach suchen.", this.width / 2,
 				this.rowsTop + ROW + 8, 0xFF777777);
 		}
 
 		int footerY = this.height - 20;
 		if (System.currentTimeMillis() < this.tooShortUntil) {
-			graphics.drawString(this.font, "Mindestens " + AuctionSearch.MIN_LENGTH + " Zeichen.", this.left, footerY, 0xFFFF5555);
+			graphics.text(this.font, "Mindestens " + AuctionSearch.MIN_LENGTH + " Zeichen.", this.left, footerY, 0xFFFF5555);
 		} else {
-			graphics.drawString(this.font, "Enter sucht · Tab übernimmt", this.left, footerY, 0xFF777777);
+			graphics.text(this.font, "Enter sucht · Tab übernimmt", this.left, footerY, 0xFF777777);
 		}
 	}
 
-	private void renderRow(GuiGraphics graphics, Row row, int y, boolean active, boolean starHovered, boolean markHovered) {
+	private void renderRow(GuiGraphicsExtractor graphics, Row row, int y, boolean active, boolean starHovered, boolean markHovered) {
 		int x = this.left;
 		int height = ROW - 2;
 		HugoStyle.drawBox(graphics, x, y, this.panelWidth, height, active ? HugoStyle.State.HOVER : HugoStyle.State.NORMAL);
@@ -295,9 +295,9 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 			// The same frame the item gets in the auction house.
 			int iconY = y + (height - 16) / 2;
 			graphics.fill(x + 3, iconY - 1, x + 21, iconY + 17, MarkedItems.FILL);
-			graphics.renderOutline(x + 3, iconY - 1, 18, 18, MarkedItems.COLOR);
+			graphics.outline(x + 3, iconY - 1, 18, 18, MarkedItems.COLOR);
 		}
-		graphics.renderItem(row.icon(), x + 4, y + (height - 16) / 2);
+		graphics.item(row.icon(), x + 4, y + (height - 16) / 2);
 
 		int textX = x + 25;
 		int right = x + this.panelWidth - 6;
@@ -305,13 +305,13 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 			right = this.starX() - 4;
 			boolean favorite = AuctionSearch.isFavorite(row.send());
 			int starColor = favorite ? 0xFFFFD84A : starHovered ? 0xFFDDDDDD : 0xFF666666;
-			graphics.drawString(this.font, favorite ? "★" : "☆", this.starX() + 4, y + (height - 8) / 2, starColor);
+			graphics.text(this.font, favorite ? "★" : "☆", this.starX() + 4, y + (height - 8) / 2, starColor);
 			if (this.canMark(row)) {
 				right = this.markX() - 2;
 				int boxX = this.markX() + 2;
 				int boxY = y + (height - 9) / 2;
 				int frame = marked ? MarkedItems.COLOR : markHovered ? 0xFFDDDDDD : 0xFF666666;
-				graphics.renderOutline(boxX, boxY, 9, 9, frame);
+				graphics.outline(boxX, boxY, 9, 9, frame);
 				if (marked) {
 					graphics.fill(boxX + 2, boxY + 2, boxX + 7, boxY + 7, MarkedItems.COLOR);
 				} else if (markHovered) {
@@ -330,8 +330,8 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 			priceText = "ab " + LimitedOffers.perHour(perHour.min);
 			ageText = ageText(perHour.minAt);
 			int priceWidth = Math.max(this.font.width(priceText), this.font.width(ageText));
-			graphics.drawString(this.font, priceText, right - this.font.width(priceText), y + 3, 0xFFFFAA00);
-			graphics.drawString(this.font, ageText, right - this.font.width(ageText), y + 12, 0xFF777777);
+			graphics.text(this.font, priceText, right - this.font.width(priceText), y + 3, 0xFFFFAA00);
+			graphics.text(this.font, ageText, right - this.font.width(ageText), y + 12, 0xFF777777);
 			right -= priceWidth + 6;
 		} else if (seen != null) {
 			// Buying in the auction house, the cheapest offer counts; selling to orders, the best one.
@@ -339,8 +339,8 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 			priceText = orders ? "bis " + formatPrice(seen.max) : "ab " + formatPrice(seen.min);
 			ageText = ageText(orders ? seen.maxAt : seen.minAt);
 			int priceWidth = Math.max(this.font.width(priceText), this.font.width(ageText));
-			graphics.drawString(this.font, priceText, right - this.font.width(priceText), y + 3, 0xFFFFAA00);
-			graphics.drawString(this.font, ageText, right - this.font.width(ageText), y + 12, 0xFF777777);
+			graphics.text(this.font, priceText, right - this.font.width(priceText), y + 3, 0xFFFFAA00);
+			graphics.text(this.font, ageText, right - this.font.width(ageText), y + 12, 0xFF777777);
 			right -= priceWidth + 6;
 		}
 
@@ -351,16 +351,16 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 			String before = title.substring(0, row.highlight());
 			String match = title.substring(row.highlight(), row.highlight() + row.highlightLength());
 			int at = textX;
-			graphics.drawString(this.font, before, at, titleY, color);
+			graphics.text(this.font, before, at, titleY, color);
 			at += this.font.width(before);
-			graphics.drawString(this.font, match, at, titleY, 0xFFFFFF55);
+			graphics.text(this.font, match, at, titleY, 0xFFFFFF55);
 			at += this.font.width(match);
-			graphics.drawString(this.font, title.substring(row.highlight() + row.highlightLength()), at, titleY, color);
+			graphics.text(this.font, title.substring(row.highlight() + row.highlightLength()), at, titleY, color);
 		} else {
-			graphics.drawString(this.font, title, textX, titleY, color);
+			graphics.text(this.font, title, textX, titleY, color);
 		}
 		if (row.subtitle() != null) {
-			graphics.drawString(this.font, this.font.plainSubstrByWidth(row.subtitle(), right - textX), textX, y + 12, 0xFF888888);
+			graphics.text(this.font, this.font.plainSubstrByWidth(row.subtitle(), right - textX), textX, y + 12, 0xFF888888);
 		}
 	}
 
@@ -383,8 +383,8 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 	}
 
 	@Override
-	public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		super.renderBackground(graphics, mouseX, mouseY, partialTick);
+	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		super.extractBackground(graphics, mouseX, mouseY, partialTick);
 		// Dim the world so the rows and the hint stay readable over the HUD.
 		graphics.fill(0, 0, this.width, this.height, 0x90000000);
 	}

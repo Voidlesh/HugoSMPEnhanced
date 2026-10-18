@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.settings;
 
+import com.hugosmpenhanced.client.util.Desktop;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -134,7 +135,7 @@ public final class ModSettings {
 				updatesSection(),
 				new SettingsSection("Daten",
 					ButtonOption.action("Konfig-Ordner", "config/hugosmpenhanced.json", "Öffnen",
-						() -> Util.getPlatform().openPath(FabricLoader.getInstance().getConfigDir())),
+						() -> Desktop.openPath(FabricLoader.getInstance().getConfigDir())),
 					ButtonOption.danger("Alles zurücksetzen",
 						"Setzt alle Einstellungen und Tasten zurück. Notizen, Buttons, Layouts und Suchverlauf bleiben.",
 						"Zurücksetzen", ModSettings::resetAll)),
@@ -142,13 +143,13 @@ public final class ModSettings {
 					new InfoOption("Stand", "Wie die Mod Zahlungen, Menüs und Tooltips von HugoSMP erkennt. Wird stündlich von GitHub geladen, "
 						+ "so lassen sich Erkennungen ohne neue Version reparieren.", HugoFormats::describe).keywords("formate erkennung online repo"),
 					ButtonOption.action("Jetzt neu laden", null, "Laden", HugoFormats::refresh).keywords("formate"),
-					ButtonOption.action("Datei ansehen", "Auf GitHub", "Öffnen", () -> Util.getPlatform().openUri(HugoFormats.EDIT_URL))),
+					ButtonOption.action("Datei ansehen", "Auf GitHub", "Öffnen", () -> Desktop.openUri(HugoFormats.EDIT_URL))),
 				new SettingsSection("Fehler melden",
 					ButtonOption.action("Debug-Datei", "Scoreboard, letzte Chatzeilen und letztes Menü als Text, in der Zwischenablage. "
 						+ "In einem Menü: Strg+Shift+C. Mehr mit /hse debug chat, item, menu, scoreboard.", "Erstellen",
 						DebugDump::all).keywords("debug bug fehler melden format"),
 					ButtonOption.action("Debug-Ordner", "config/hugosmpenhanced/debug", "Öffnen",
-						() -> Util.getPlatform().openPath(FabricLoader.getInstance().getConfigDir().resolve("hugosmpenhanced")))),
+						() -> Desktop.openPath(FabricLoader.getInstance().getConfigDir().resolve("hugosmpenhanced")))),
 				new SettingsSection("Über",
 					new InfoOption("HugoSMP Enhanced", null,
 						() -> "Version " + version(HugoSmpEnhancedClient.MOD_ID) + "  -  Minecraft " + version("minecraft")))),
@@ -236,7 +237,7 @@ public final class ModSettings {
 					ModUpdates.check();
 				}).keywords("update beta alpha pre-release"),
 			ButtonOption.action("Alle Releases", ModUpdates.RELEASES_PAGE.replace("https://", ""), "Öffnen",
-				() -> Util.getPlatform().openUri(ModUpdates.RELEASES_PAGE)).keywords("update changelog github"));
+				() -> Desktop.openUri(ModUpdates.RELEASES_PAGE)).keywords("update changelog github"));
 	}
 
 	private static SettingsTab antiLeakTab() {
@@ -300,7 +301,7 @@ public final class ModSettings {
 				ButtonOption.action("Erkennung prüfen", "Schreibt in den Chat, was die Mod sieht und woher jeder Wert kommt", "Im Chat zeigen",
 					() -> {
 						Minecraft client = Minecraft.getInstance();
-						client.setScreen(null);
+						client.setScreenAndShow(null);
 						DiscordPresence.printDiagnosis(client);
 					}),
 				new StringListOption("Orte", "Wort=Name: das erste Wort, das gefunden wird, gibt den Ort an", null,
@@ -708,7 +709,7 @@ public final class ModSettings {
 					ChatPatterns.forget(ChatPatterns.Learning.WHISPER);
 				}),
 				ButtonOption.action("Zahlungs-Protokoll", "Jede erkannte Zahlung mit Uhrzeit, zum Nachprüfen und Zurückzahlen",
-					"Ordner öffnen", () -> Util.getPlatform().openPath(DonationAuction.logFile().getParent()))),
+					"Ordner öffnen", () -> Desktop.openPath(DonationAuction.logFile().getParent()))),
 			new SettingsSection("Giveaway: Ingame",
 				toggle("Beitritt per /msg", "Zuschauer schreiben dir das Wort privat", c -> c.streamerIngameJoin, (c, v) -> c.streamerIngameJoin = v),
 				new TextOption("Wort", "Groß/klein egal, mit oder ohne !", "join", 24,
@@ -760,7 +761,7 @@ public final class ModSettings {
 
 	private static void open(Function<Screen, ? extends Screen> factory) {
 		Minecraft client = Minecraft.getInstance();
-		client.setScreen(factory.apply(client.screen));
+		client.setScreenAndShow(factory.apply(client.gui.screen()));
 	}
 
 	private static String version(String modId) {

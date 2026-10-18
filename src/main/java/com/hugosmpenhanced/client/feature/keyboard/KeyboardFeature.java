@@ -17,10 +17,10 @@ public final class KeyboardFeature {
 		ScreenEvents.AFTER_INIT.register((client, screen, scaledWidth, scaledHeight) -> {
 			if (screen instanceof KeyBindsScreen) {
 				Button button = Button.builder(Component.literal("Tastatur-Ansicht"),
-						b -> Minecraft.getInstance().setScreen(new KeyboardScreen(screen)))
+						b -> Minecraft.getInstance().setScreenAndShow(new KeyboardScreen(screen)))
 					.bounds(scaledWidth - 106, 6, 100, 20).build();
 				button.setTooltip(Tooltip.create(Component.literal("Alle Belegungen auf einer Tastatur ansehen und ändern")));
-				Screens.getButtons(screen).add(button);
+				Screens.getWidgets(screen).add(button);
 			}
 		});
 	}

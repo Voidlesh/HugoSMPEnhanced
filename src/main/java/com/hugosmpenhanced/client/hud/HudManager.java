@@ -8,7 +8,7 @@ import com.hugosmpenhanced.client.config.ModConfigManager;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.resources.Identifier;
 
 /**
@@ -44,7 +44,7 @@ public final class HudManager {
 	public static void register() {
 		HudElementRegistry.addLast(Identifier.fromNamespaceAndPath("hugosmpenhanced", "hud"), (graphics, deltaTracker) -> {
 			Minecraft client = Minecraft.getInstance();
-			if (client.options.hideGui || client.getDebugOverlay().showDebugScreen() || client.screen instanceof HudEditorScreen) {
+			if (client.gui.hud.isHidden() || client.getDebugOverlay().showDebugScreen() || client.gui.screen() instanceof HudEditorScreen) {
 				return;
 			}
 			HudMigration.runIfNeeded(graphics.guiWidth(), graphics.guiHeight());
@@ -127,13 +127,13 @@ public final class HudManager {
 		return current;
 	}
 
-	public static void renderAll(GuiGraphics graphics, Font font, boolean preview) {
+	public static void renderAll(GuiGraphicsExtractor graphics, Font font, boolean preview) {
 		for (Placed placed : layout(font, graphics.guiWidth(), graphics.guiHeight(), preview)) {
 			draw(graphics, font, placed);
 		}
 	}
 
-	public static void draw(GuiGraphics graphics, Font font, Placed placed) {
+	public static void draw(GuiGraphicsExtractor graphics, Font font, Placed placed) {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(placed.box().x(), placed.box().y());
 		graphics.pose().scale(placed.scale(), placed.scale());

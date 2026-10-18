@@ -11,7 +11,7 @@ import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.FormattedText;
 import net.minecraft.network.chat.Style;
@@ -116,7 +116,7 @@ public final class PayWarning {
 	// ------------------------------------------------------------------ box
 
 	/** Draws the box with its bottom edge at {@code bottom}, right-aligned to {@code right}. */
-	public static void render(GuiGraphics graphics, Font font, Info info, String input, int right, int bottom, int maxWidth) {
+	public static void render(GuiGraphicsExtractor graphics, Font font, Info info, String input, int right, int bottom, int maxWidth) {
 		List<Line> lines = new ArrayList<>();
 		String name = info.pay().name();
 		boolean scam = info.scammer() != null;
@@ -172,7 +172,7 @@ public final class PayWarning {
 		int ty = y + 3;
 		for (Line line : lines) {
 			FormattedText cut = font.substrByWidth(FormattedText.of(line.text()), width - 10);
-			graphics.drawString(font, cut.getString(), x + 6, ty, line.color(), false);
+			graphics.text(font, cut.getString(), x + 6, ty, line.color(), false);
 			ty += 10;
 		}
 	}

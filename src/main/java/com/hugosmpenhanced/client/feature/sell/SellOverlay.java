@@ -5,7 +5,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.lwjgl.glfw.GLFW;
 
 import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.config.ModConfigManager;
@@ -19,7 +18,7 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -60,12 +59,12 @@ public final class SellOverlay {
 			if (!(screen instanceof AbstractContainerScreen<?> container)) {
 				return;
 			}
-			ScreenEvents.beforeRender(screen).register((s, graphics, mouseX, mouseY, delta) -> beforeRender(container));
-			ScreenEvents.afterRender(screen).register((s, graphics, mouseX, mouseY, delta) -> afterRender(container, graphics, mouseX, mouseY));
+			ScreenEvents.beforeExtract(screen).register((s, graphics, mouseX, mouseY, delta) -> beforeRender(container));
+			ScreenEvents.afterExtract(screen).register((s, graphics, mouseX, mouseY, delta) -> afterRender(container, graphics, mouseX, mouseY));
 			ScreenMouseEvents.allowMouseClick(screen).register((s, event) -> allowClick(container, event));
 			ScreenKeyboardEvents.allowKeyPress(screen).register((s, event) -> {
 				if (container == SellEngine.boundScreen() && SellEngine.state() == SellEngine.State.CONFIRM
-					&& (event.key() == GLFW.GLFW_KEY_ENTER || event.key() == GLFW.GLFW_KEY_KP_ENTER || SellFeature.sellKey.matches(event))) {
+					&& (event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER || SellFeature.sellKey.matches(event))) {
 					SellEngine.confirm();
 					return false;
 				}
@@ -93,7 +92,7 @@ public final class SellOverlay {
 		framePlan = (marking || config.sellEnabled) && client.player != null ? SellPlan.compute(client.player.getInventory(), config) : null;
 	}
 
-	public static void renderSlot(GuiGraphics graphics, Slot slot) {
+	public static void renderSlot(GuiGraphicsExtractor graphics, Slot slot) {
 		ModConfig config = ModConfigManager.CONFIG;
 		if (!config.sellEnabled || framePlan == null || !(slot.container instanceof Inventory)) {
 			return;
@@ -120,7 +119,7 @@ public final class SellOverlay {
 
 	private static boolean altDown() {
 		var window = Minecraft.getInstance().getWindow();
-		return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
+		return InputConstants.isKeyDown(InputConstants.KEY_LALT) || InputConstants.isKeyDown(InputConstants.KEY_RALT);
 	}
 
 	// ------------------------------------------------------------------ clicks
@@ -162,7 +161,7 @@ public final class SellOverlay {
 	public static void toggleRule(ItemStack stack) {
 		ModConfig config = ModConfigManager.CONFIG;
 		String id = SellPlan.itemId(stack);
-		String name = stack.getItem().getName().getString();
+		String name = stack.getHoverName().getString();
 		boolean removed = config.sellRules.removeIf(rule -> rule.item.equals(id));
 		if (!removed) {
 			config.sellRules.add(new SellRule(id));
@@ -186,7 +185,7 @@ public final class SellOverlay {
 	private static void message(Component text) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.player != null) {
-			client.player.displayClientMessage(Component.literal("[Verkaufen] ").withStyle(ChatFormatting.GOLD).append(text), false);
+			client.player.sendSystemMessage(Component.literal("[Verkaufen] ").withStyle(ChatFormatting.GOLD).append(text));
 		}
 	}
 
@@ -202,7 +201,7 @@ public final class SellOverlay {
 		return box == null ? null : new int[] {box[0] + box[2] / 2, box[1] + box[3] / 2};
 	}
 
-	private static void afterRender(AbstractContainerScreen<?> screen, GuiGraphics graphics, int mouseX, int mouseY) {
+	private static void afterRender(AbstractContainerScreen<?> screen, GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		if (screen != SellEngine.boundScreen() || framePlan == null) {
 			confirmBox = null;
 			cancelBox = null;
@@ -270,35 +269,35 @@ public final class SellOverlay {
 			}
 		}
 		int chipW = font.width(chip) + 8;
-		graphics.drawString(font, title, cx, cy, Theme.WHITE);
+		graphics.text(font, title, cx, cy, Theme.WHITE);
 		Theme.panel(graphics, right - chipW, cy - 2, chipW, 12, Theme.GOLD_FILL, Theme.GOLD);
-		graphics.drawString(font, chip, right - chipW + 4, cy, Theme.GOLD, false);
+		graphics.text(font, chip, right - chipW + 4, cy, Theme.GOLD, false);
 		cy += 12;
 		graphics.fill(cx, cy + 2, right, cy + 3, Theme.FRAME_BORDER);
 		cy += 6;
 
-		graphics.drawString(font, "WIRD VERKAUFT", cx, cy, 0xFF6ED982, false);
+		graphics.text(font, "WIRD VERKAUFT", cx, cy, 0xFF6ED982, false);
 		cy += 12;
 		if (selling.isEmpty()) {
-			graphics.drawString(font, fit(font, "Nichts mehr einzulegen", inner), cx, cy + 4, Theme.MUTED, false);
+			graphics.text(font, fit(font, "Nichts mehr einzulegen", inner), cx, cy + 4, Theme.MUTED, false);
 			cy += ROW;
 		}
 		double total = 0;
 		boolean allKnown = true;
 		for (SellPlan.Line line : selling) {
-			graphics.renderItem(line.stack(), cx, cy);
+			graphics.item(line.stack(), cx, cy);
 			String count = SellEngine.formatCount(line.count()) + "x";
 			Double price = config.sellPrices.get(SellPlan.itemId(line.stack()));
 			String money = price != null ? SellEngine.formatMoney(price * line.count()) : null;
 			int used = font.width(count) + (money != null ? 6 + font.width(money) : 0);
-			drawName(graphics, font, line.stack().getItem().getName().getString(), cx + 20, cy + 4, right - cx - 20 - used - 6);
+			drawName(graphics, font, line.stack().getHoverName().getString(), cx + 20, cy + 4, right - cx - 20 - used - 6);
 			if (money != null) {
-				graphics.drawString(font, money, right - font.width(money), cy + 4, Theme.GOLD, false);
-				graphics.drawString(font, count, right - font.width(money) - 6 - font.width(count), cy + 4, Theme.MUTED, false);
+				graphics.text(font, money, right - font.width(money), cy + 4, Theme.GOLD, false);
+				graphics.text(font, count, right - font.width(money) - 6 - font.width(count), cy + 4, Theme.MUTED, false);
 				total += price * line.count();
 			} else {
 				allKnown = false;
-				graphics.drawString(font, count, right - font.width(count), cy + 4, Theme.MUTED, false);
+				graphics.text(font, count, right - font.width(count), cy + 4, Theme.MUTED, false);
 			}
 			cy += ROW;
 		}
@@ -307,37 +306,37 @@ public final class SellOverlay {
 		if (allKnown && !selling.isEmpty()) {
 			String sum = SellEngine.formatMoney(total);
 			String label = font.width("Summe (geschätzt)") <= inner - font.width(sum) - 6 ? "Summe (geschätzt)" : "Summe ca.";
-			graphics.drawString(font, fit(font, label, inner - font.width(sum) - 6), cx, cy, Theme.MUTED, false);
-			graphics.drawString(font, sum, right - font.width(sum), cy, Theme.GOLD, false);
+			graphics.text(font, fit(font, label, inner - font.width(sum) - 6), cx, cy, Theme.MUTED, false);
+			graphics.text(font, sum, right - font.width(sum), cy, Theme.GOLD, false);
 		} else {
-			graphics.drawString(font, fit(font, inner >= font.width("Erlös kommt danach im Chat") ? "Erlös kommt danach im Chat" : "Erlös: siehe Chat", inner),
+			graphics.text(font, fit(font, inner >= font.width("Erlös kommt danach im Chat") ? "Erlös kommt danach im Chat" : "Erlös: siehe Chat", inner),
 				cx, cy, Theme.FAINT, false);
 		}
 		cy += 12 + 6;
 
 		if (!kept.isEmpty()) {
-			graphics.drawString(font, fit(font, "BLEIBT IM INVENTAR", inner), cx, cy, 0xFFE07878, false);
+			graphics.text(font, fit(font, "BLEIBT IM INVENTAR", inner), cx, cy, 0xFFE07878, false);
 			cy += 12;
 			for (int i = 0; i < shownKept; i++) {
 				SellPlan.Line line = kept.get(i);
-				graphics.renderItem(line.stack(), cx, cy);
+				graphics.item(line.stack(), cx, cy);
 				String reason = fit(font, line.reason(), inner - 20);
 				int reasonColor = reason.startsWith("Regel") || reason.startsWith("erst") ? 0xFF96C8FF : 0xFFE68282;
 				int reasonW = font.width(reason);
-				drawName(graphics, font, line.stack().getItem().getName().getString() + " x" + SellEngine.formatCount(line.count()),
+				drawName(graphics, font, line.stack().getHoverName().getString() + " x" + SellEngine.formatCount(line.count()),
 					cx + 20, cy + 4, inner - 20 - reasonW - 6);
-				graphics.drawString(font, reason, right - reasonW, cy + 4, reasonColor, false);
+				graphics.text(font, reason, right - reasonW, cy + 4, reasonColor, false);
 				cy += ROW;
 			}
 			if (kept.size() > shownKept) {
-				graphics.drawString(font, "+ " + (kept.size() - shownKept) + (shownKept == 0 ? " Items" : " weitere"), cx + (shownKept == 0 ? 0 : 20), cy, Theme.FAINT, false);
+				graphics.text(font, "+ " + (kept.size() - shownKept) + (shownKept == 0 ? " Items" : " weitere"), cx + (shownKept == 0 ? 0 : 20), cy, Theme.FAINT, false);
 				cy += 10;
 			}
 		}
 
 		if (confirming) {
 			String hint = inner >= font.width("Rückfrage nur beim ersten Mal") ? "Rückfrage nur beim ersten Mal" : "Nur beim ersten Mal";
-			graphics.drawString(font, fit(font, hint, inner), cx, cy, Theme.FAINT, false);
+			graphics.text(font, fit(font, hint, inner), cx, cy, Theme.FAINT, false);
 			cy += 12;
 			if (stackedButtons) {
 				confirmBox = new int[] {cx, cy, inner, 18};
@@ -350,10 +349,10 @@ public final class SellOverlay {
 			boolean overCancel = inside(cancelBox, mouseX, mouseY);
 			Theme.panel(graphics, confirmBox[0], confirmBox[1], confirmBox[2], 18, overConfirm ? 0xFFFFD866 : Theme.GOLD, 0xFF966E14);
 			String sell = "Verkaufen";
-			graphics.drawString(font, sell, confirmBox[0] + (confirmBox[2] - font.width(sell)) / 2, confirmBox[1] + 5, 0xFF2A1C00, false);
+			graphics.text(font, sell, confirmBox[0] + (confirmBox[2] - font.width(sell)) / 2, confirmBox[1] + 5, 0xFF2A1C00, false);
 			Theme.panel(graphics, cancelBox[0], cancelBox[1], cancelBox[2], 18, overCancel ? 0xFF383838 : 0xFF282828, overCancel ? Theme.GOLD : 0xFF5A5A5A);
 			String cancel = "Abbrechen";
-			graphics.drawString(font, cancel, cancelBox[0] + (cancelBox[2] - font.width(cancel)) / 2, cancelBox[1] + 5, Theme.WHITE, false);
+			graphics.text(font, cancel, cancelBox[0] + (cancelBox[2] - font.width(cancel)) / 2, cancelBox[1] + 5, Theme.WHITE, false);
 		} else {
 			confirmBox = null;
 			cancelBox = null;
@@ -361,14 +360,14 @@ public final class SellOverlay {
 			if (font.width(status) > inner && SellEngine.state() == SellEngine.State.WAITING) {
 				status = "Menü " + Math.max(0, SellEngine.fillPercent()) + " % (ab " + config.sellThreshold + " %)";
 			}
-			graphics.drawString(font, fit(font, status, inner), cx, cy + 2, Theme.MUTED, false);
+			graphics.text(font, fit(font, status, inner), cx, cy + 2, Theme.MUTED, false);
 		}
 	}
 
 	/** Item name, shortened with "..."; left out when there is no sensible room (the icon says enough). */
-	private static void drawName(GuiGraphics graphics, Font font, String name, int x, int y, int width) {
+	private static void drawName(GuiGraphicsExtractor graphics, Font font, String name, int x, int y, int width) {
 		if (width >= 24) {
-			graphics.drawString(font, fit(font, name, width), x, y, Theme.TEXT, false);
+			graphics.text(font, fit(font, name, width), x, y, Theme.TEXT, false);
 		}
 	}
 

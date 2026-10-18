@@ -270,7 +270,7 @@ public final class SpawnerStorage {
 		long capacity = 0;
 		for (int i = 0; i < lootSlots; i++) {
 			ItemStack stack = menu.get(i).getItem();
-			if (!stack.isEmpty() && (stack.has(DataComponents.LORE) || stack.is(Items.BLACK_STAINED_GLASS_PANE) || stack.is(Items.GRAY_STAINED_GLASS_PANE))) {
+			if (!stack.isEmpty() && (stack.has(DataComponents.LORE) || stack.is(Items.STAINED_GLASS_PANE.black()) || stack.is(Items.STAINED_GLASS_PANE.gray()))) {
 				continue;
 			}
 			stored += stack.getCount();

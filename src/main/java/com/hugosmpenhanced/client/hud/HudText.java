@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
  * A small HUD box of text lines, each made of coloured parts, in the same look as the AFK farm
@@ -94,7 +94,7 @@ public final class HudText {
 		return this.lines.isEmpty() ? 0 : height + 5;
 	}
 
-	public void render(GuiGraphics graphics, Font font) {
+	public void render(GuiGraphicsExtractor graphics, Font font) {
 		if (this.lines.isEmpty()) {
 			return;
 		}
@@ -110,7 +110,7 @@ public final class HudText {
 		for (Line line : this.lines) {
 			int x = 5;
 			for (Part part : line.parts) {
-				graphics.drawString(font, part.text(), x, y, part.color(), true);
+				graphics.text(font, part.text(), x, y, part.color(), true);
 				x += Math.max(part.minWidth(), font.width(part.text()));
 			}
 			y += LINE;

@@ -6,7 +6,7 @@ import com.hugosmpenhanced.client.settings.SettingsOption;
 import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /** Read-only text on the right, e.g. the version. */
 public class InfoOption extends SettingsOption {
@@ -23,8 +23,8 @@ public class InfoOption extends SettingsOption {
 	}
 
 	@Override
-	protected void renderControl(GuiGraphics graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
+	protected void renderControl(GuiGraphicsExtractor graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
 		String text = this.value.get();
-		graphics.drawString(font, text, right - font.width(text), centerY - 4, Theme.MUTED, false);
+		graphics.text(font, text, right - font.width(text), centerY - 4, Theme.MUTED, false);
 	}
 }

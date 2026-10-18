@@ -10,7 +10,7 @@ import it.unimi.dsi.fastutil.objects.Object2IntMap;
 import net.fabricmc.fabric.api.client.rendering.v1.hud.HudElementRegistry;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.Holder;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -45,13 +45,13 @@ public final class StreamerOverlay {
 			(graphics, deltaTracker) -> render(graphics));
 	}
 
-	private static void render(GuiGraphics graphics) {
+	private static void render(GuiGraphicsExtractor graphics) {
 		Minecraft client = Minecraft.getInstance();
-		if (client.options.hideGui || client.getDebugOverlay().showDebugScreen()) {
+		if (client.gui.hud.isHidden() || client.getDebugOverlay().showDebugScreen()) {
 			return;
 		}
 		// A full panel on top would only show the overlay as clutter behind it.
-		boolean covered = client.screen instanceof WheelScreen || StreamerScreen.coversHud(client.screen);
+		boolean covered = client.gui.screen() instanceof WheelScreen || StreamerScreen.coversHud(client.gui.screen());
 		if (DonationAuction.state() != DonationAuction.State.IDLE && !covered) {
 			renderAuction(graphics, client.font);
 		} else {
@@ -60,14 +60,14 @@ public final class StreamerOverlay {
 		if (Giveaway.open() && !covered) {
 			renderGiveawayPill(graphics, client.font);
 		}
-		if (ChatPatterns.learning() != ChatPatterns.Learning.NONE && !(client.screen instanceof StreamerScreen)) {
+		if (ChatPatterns.learning() != ChatPatterns.Learning.NONE && !(client.gui.screen() instanceof StreamerScreen)) {
 			renderLearningPill(graphics, client.font);
 		}
 	}
 
 	// ------------------------------------------------------------------ auction
 
-	private static void renderAuction(GuiGraphics graphics, Font font) {
+	private static void renderAuction(GuiGraphicsExtractor graphics, Font font) {
 		int width = graphics.guiWidth();
 		int height = graphics.guiHeight();
 		long now = System.currentTimeMillis();
@@ -122,7 +122,7 @@ public final class StreamerOverlay {
 		int centerX = width / 2;
 		int topEnd = timerY + (int) (timerScale * 9) + 10;
 		// Above the hotbar, or above the streamer's control bar while it is open.
-		int barTop = StreamerScreen.liveBarTop(Minecraft.getInstance().screen);
+		int barTop = StreamerScreen.liveBarTop(Minecraft.getInstance().gui.screen());
 		int bottom = barTop >= 0 ? Math.min(height - 46, barTop - 6) : height - 46;
 		float nameScale = width >= 420 && height >= 260 ? 1.5f : 1.25f;
 		String enchants = enchantLine(stack, font, width - 40);
@@ -140,7 +140,7 @@ public final class StreamerOverlay {
 		if (!stack.isEmpty() && pop > 0.02f) {
 			int size = Math.max(8, Math.round(itemSize * pop));
 			float yaw = (now % 4000L) / 4000f * 360f;
-			graphics.guiRenderState.submitPicturesInPictureState(
+			graphics.guiRenderState.addPicturesInPictureState(
 				ItemSpinRenderState.of(stack, yaw, 0, centerX, Math.round(centerY + bob), size, graphics.scissorStack.peek()));
 		}
 		int nameY = centerY + itemSize / 2 + 6;
@@ -148,7 +148,7 @@ public final class StreamerOverlay {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(centerX - font.width(name) * nameScale / 2f, nameY);
 		graphics.pose().scale(nameScale, nameScale);
-		graphics.drawString(font, name, 0, 0, StreamerUi.alpha(Theme.WHITE, appear), true);
+		graphics.text(font, name, 0, 0, StreamerUi.alpha(Theme.WHITE, appear), true);
 		graphics.pose().popMatrix();
 		if (!enchants.isEmpty()) {
 			StreamerUi.centered(graphics, font, enchants, centerX, nameY + 9 * nameScale + 3, 1f, StreamerUi.alpha(StreamerUi.LAVENDER, appear), true);
@@ -173,19 +173,19 @@ public final class StreamerOverlay {
 		CONFETTI.render(graphics);
 	}
 
-	private static void renderBids(GuiGraphics graphics, Font font, int x, int y, int w, boolean ended, long now) {
+	private static void renderBids(GuiGraphicsExtractor graphics, Font font, int x, int y, int w, boolean ended, long now) {
 		List<DonationAuction.Bidder> ranking = DonationAuction.ranking();
 		int rows = Math.min(MAX_ROWS, ranking.size());
 		int h = 20 + Math.max(1, rows) * ROW + 4 + (ranking.size() > MAX_ROWS ? 10 : 0) + (ended ? 0 : 12);
 		StreamerUi.glass(graphics, x, y, w, h);
-		graphics.drawString(font, "GEBOTE", x + 7, y + 6, 0xFFC8C8C8, true);
+		graphics.text(font, "GEBOTE", x + 7, y + 6, 0xFFC8C8C8, true);
 		String count = ranking.size() == 1 ? "1 Bieter" : ranking.size() + " Bieter";
-		graphics.drawString(font, count, x + w - 7 - font.width(count), y + 6, 0xFFA0A0A0, true);
+		graphics.text(font, count, x + w - 7 - font.width(count), y + 6, 0xFFA0A0A0, true);
 		int listTop = y + 18;
 		if (ranking.isEmpty()) {
 			String wait = ended ? "Niemand hat geboten" : "Warte auf das erste Gebot…";
 			float blink = ended ? 1 : 0.55f + 0.45f * (float) Math.sin(now / 300.0);
-			graphics.drawString(font, wait, x + 7, listTop + 3, StreamerUi.alpha(0xFFB4B4B4, blink), true);
+			graphics.text(font, wait, x + 7, listTop + 3, StreamerUi.alpha(0xFFB4B4B4, blink), true);
 		}
 		String leader = DonationAuction.leader();
 		if (leader != null && !leader.equals(shimmerFor)) {
@@ -224,7 +224,7 @@ public final class StreamerOverlay {
 			boolean numbers = w >= 150;
 			int faceX = numbers ? x + 19 : x + 7;
 			if (numbers) {
-				graphics.drawString(font, (i + 1) + ".", x + 7, textY, first ? Theme.GOLD : 0xFFB4B4B4, true);
+				graphics.text(font, (i + 1) + ".", x + 7, textY, first ? Theme.GOLD : 0xFFB4B4B4, true);
 			}
 			StreamerUi.face(graphics, bidder.name, faceX, rowY + 1, 9);
 			int amountColor = first ? Theme.GOLD : Theme.TEXT;
@@ -232,21 +232,21 @@ public final class StreamerOverlay {
 			int amountX = x + w - 7 - font.width(amount);
 			int nameX = faceX + 13;
 			String shownName = font.plainSubstrByWidth(bidder.name, amountX - nameX - 4);
-			graphics.drawString(font, shownName, nameX, textY, Theme.WHITE, true);
-			graphics.drawString(font, amount, amountX, textY, amountColor, true);
+			graphics.text(font, shownName, nameX, textY, Theme.WHITE, true);
+			graphics.text(font, amount, amountX, textY, amountColor, true);
 			if (fresh > 0 && !ended) {
 				String plus = "+" + Money.format(bidder.lastAmount);
 				int px = amountX - 6 - font.width(plus);
 				if (px > nameX + font.width(shownName) + 2) {
 					Theme.panel(graphics, px - 3, rowY, font.width(plus) + 6, ROW - 2, StreamerUi.alpha(StreamerUi.GREEN_FILL, fresh), 0);
-					graphics.drawString(font, plus, px, textY, StreamerUi.alpha(Theme.WHITE, Math.max(0.1f, fresh)), false);
+					graphics.text(font, plus, px, textY, StreamerUi.alpha(Theme.WHITE, Math.max(0.1f, fresh)), false);
 				}
 			}
 		}
 		graphics.disableScissor();
 		int footY = listTop + Math.max(1, rows) * ROW + 3;
 		if (ranking.size() > MAX_ROWS) {
-			graphics.drawString(font, "+ " + (ranking.size() - MAX_ROWS) + " weitere", x + 7, footY, 0xFF8C8C8C, true);
+			graphics.text(font, "+ " + (ranking.size() - MAX_ROWS) + " weitere", x + 7, footY, 0xFF8C8C8C, true);
 			footY += 10;
 		}
 		if (!ended) {
@@ -254,7 +254,7 @@ public final class StreamerOverlay {
 			if (font.width(next) > w - 14) {
 				next = "Ab " + Money.format(DonationAuction.nextMinimum()) + " vorn";
 			}
-			graphics.drawString(font, next, x + 7, footY, Theme.GOLD, true);
+			graphics.text(font, next, x + 7, footY, Theme.GOLD, true);
 		}
 		// A payment that was not enough to lead.
 		for (DonationAuction.Event event : DonationAuction.events()) {
@@ -263,26 +263,26 @@ public final class StreamerOverlay {
 				String text = event.name() + " fehlen " + Money.format(event.amount());
 				int boxY = y + h + 3;
 				Theme.panel(graphics, x, boxY, w, 13, StreamerUi.alpha(StreamerUi.GLASS, t), 0);
-				graphics.drawString(font, font.plainSubstrByWidth(text, w - 10), x + 5, boxY + 3, StreamerUi.alpha(0xFFE6B450, t), true);
+				graphics.text(font, font.plainSubstrByWidth(text, w - 10), x + 5, boxY + 3, StreamerUi.alpha(0xFFE6B450, t), true);
 			}
 		}
 	}
 
-	private static void renderHowTo(GuiGraphics graphics, Font font, int x, int y, int w) {
+	private static void renderHowTo(GuiGraphicsExtractor graphics, Font font, int x, int y, int w) {
 		String self = Minecraft.getInstance().player != null ? Minecraft.getInstance().player.getGameProfile().name() : "Name";
 		int h = 54;
 		StreamerUi.glass(graphics, x, y, w, h);
-		graphics.drawString(font, "SO BIETEST DU", x + 7, y + 6, 0xFFC8C8C8, true);
+		graphics.text(font, "SO BIETEST DU", x + 7, y + 6, 0xFFC8C8C8, true);
 		String command = "/pay " + self + " <Betrag>";
 		float scale = font.width(command) * 1.25f <= w - 14 ? 1.25f : 1f;
 		StreamerUi.text(graphics, font, command, x + 7, y + 18, scale, Theme.WHITE, true);
-		graphics.drawString(font, "Startgebot " + Money.format(DonationAuction.startBid()), x + 7, y + 31, Theme.GOLD, true);
+		graphics.text(font, "Startgebot " + Money.format(DonationAuction.startBid()), x + 7, y + 31, Theme.GOLD, true);
 		String rule = ModConfigManager.CONFIG.streamerExtendLateBids
 			? "Spätes Gebot: +" + ModConfigManager.CONFIG.streamerExtendSeconds + " s" : "Höchste Summe gewinnt";
-		graphics.drawString(font, rule, x + 7, y + 42, 0xFFB4B4B4, true);
+		graphics.text(font, rule, x + 7, y + 42, 0xFFB4B4B4, true);
 	}
 
-	private static void renderWinner(GuiGraphics graphics, Font font, int width, int top) {
+	private static void renderWinner(GuiGraphicsExtractor graphics, Font font, int width, int top) {
 		String winner = DonationAuction.winner();
 		if (winner == null) {
 			return;
@@ -298,15 +298,15 @@ public final class StreamerOverlay {
 		}
 		StreamerUi.glass(graphics, x, y, w, h, StreamerUi.alpha(Theme.GOLD, slide));
 		StreamerUi.face(graphics, winner, x + 7, y + 7, h - 14);
-		graphics.drawString(font, "GEWONNEN", x + h, y + 6, StreamerUi.alpha(Theme.GOLD, slide), true);
+		graphics.text(font, "GEWONNEN", x + h, y + 6, StreamerUi.alpha(Theme.GOLD, slide), true);
 		String amount = "mit " + Money.format(DonationAuction.total(winner));
-		graphics.drawString(font, amount, x + w - 7 - font.width(amount), y + 6, StreamerUi.alpha(Theme.GOLD, slide), true);
+		graphics.text(font, amount, x + w - 7 - font.width(amount), y + 6, StreamerUi.alpha(Theme.GOLD, slide), true);
 		StreamerUi.text(graphics, font, font.plainSubstrByWidth(winner, (int) ((w - h - 8) / 1.5f)), x + h, y + 17, 1.5f, fade, true);
 	}
 
 	// ------------------------------------------------------------------ giveaway and learning pills
 
-	private static void renderGiveawayPill(GuiGraphics graphics, Font font) {
+	private static void renderGiveawayPill(GuiGraphicsExtractor graphics, Font font) {
 		long now = System.currentTimeMillis();
 		var config = ModConfigManager.CONFIG;
 		String self = Minecraft.getInstance().player != null ? Minecraft.getInstance().player.getGameProfile().name() : "";
@@ -335,16 +335,16 @@ public final class StreamerOverlay {
 		}
 		float flash = 1 - Mth.clamp((now - Giveaway.lastJoinAt()) / 1200f, 0f, 1f);
 		StreamerUi.glass(graphics, x, y, w, 36, StreamerUi.mix(StreamerUi.GLASS_EDGE, Theme.GOLD, flash));
-		graphics.drawString(font, head, x + 7, y + 6, Theme.GOLD, true);
+		graphics.text(font, head, x + 7, y + 6, Theme.GOLD, true);
 		if (!prize.isEmpty()) {
-			graphics.drawString(font, font.plainSubstrByWidth(prize, w - 30 - font.width(head)), x + 12 + font.width(head), y + 6, Theme.WHITE, true);
+			graphics.text(font, font.plainSubstrByWidth(prize, w - 30 - font.width(head)), x + 12 + font.width(head), y + 6, Theme.WHITE, true);
 		}
 		if (!Giveaway.prize().isEmpty()) {
-			graphics.renderItem(Giveaway.prize(), x + w - 21, y + 3);
+			graphics.item(Giveaway.prize(), x + w - 21, y + 3);
 		}
 		float bump = 1 + 0.25f * flash;
 		StreamerUi.text(graphics, font, count, x + 7, y + 16 - (bump - 1) * 4, bump, StreamerUi.mix(Theme.WHITE, StreamerUi.GREEN, flash), true);
-		graphics.drawString(font, font.plainSubstrByWidth(how, w - 14), x + 7, y + 26, 0xFFA0A0A0, true);
+		graphics.text(font, font.plainSubstrByWidth(how, w - 14), x + 7, y + 26, 0xFFA0A0A0, true);
 		// The newest names drop in under the pill.
 		List<Giveaway.Participant> list = Giveaway.participants();
 		int shown = 0;
@@ -362,11 +362,11 @@ public final class StreamerOverlay {
 			} else {
 				StreamerUi.face(graphics, p.name(), x + 4, rowY + 1, 9);
 			}
-			graphics.drawString(font, p.name() + " ist dabei", x + 16, rowY + 2, StreamerUi.alpha(Theme.WHITE, alpha), true);
+			graphics.text(font, p.name() + " ist dabei", x + 16, rowY + 2, StreamerUi.alpha(Theme.WHITE, alpha), true);
 		}
 	}
 
-	private static void renderLearningPill(GuiGraphics graphics, Font font) {
+	private static void renderLearningPill(GuiGraphicsExtractor graphics, Font font) {
 		String text = ChatPatterns.learning() == ChatPatterns.Learning.PAYMENT
 			? "Lerne Zahlungs-Nachricht: lass dir von jemandem $1 schicken"
 			: "Lerne /msg-Nachricht: lass dir \"" + ModConfigManager.CONFIG.streamerIngameJoinWord + "\" schreiben";
@@ -376,7 +376,7 @@ public final class StreamerOverlay {
 		StreamerUi.glass(graphics, x, y, w, 15, Theme.GOLD);
 		float blink = 0.5f + 0.5f * (float) Math.sin(System.currentTimeMillis() / 200.0);
 		graphics.fill(x + 6, y + 5, x + 10, y + 9, StreamerUi.alpha(Theme.GOLD, blink));
-		graphics.drawString(font, text, x + 15, y + 4, Theme.WHITE, true);
+		graphics.text(font, text, x + 15, y + 4, Theme.WHITE, true);
 	}
 
 	// ------------------------------------------------------------------ helpers

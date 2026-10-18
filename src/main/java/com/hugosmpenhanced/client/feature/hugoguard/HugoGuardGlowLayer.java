@@ -3,10 +3,10 @@ package com.hugosmpenhanced.client.feature.hugoguard;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.mojang.blaze3d.vertex.PoseStack;
 
-import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityFeatureRendererRegistrationCallback;
+import net.fabricmc.fabric.api.client.rendering.v1.LivingEntityRenderLayerRegistrationCallback;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.model.player.PlayerModel;
-import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.RenderLayerParent;
 import net.minecraft.client.renderer.entity.layers.RenderLayer;
@@ -39,7 +39,7 @@ public class HugoGuardGlowLayer extends RenderLayer<AvatarRenderState, PlayerMod
 	}
 
 	public static void register() {
-		LivingEntityFeatureRendererRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {
+		LivingEntityRenderLayerRegistrationCallback.EVENT.register((type, renderer, helper, context) -> {
 			if (renderer instanceof AvatarRenderer<?> avatar) {
 				helper.register(new HugoGuardGlowLayer(avatar));
 			}
@@ -70,7 +70,7 @@ public class HugoGuardGlowLayer extends RenderLayer<AvatarRenderState, PlayerMod
 		poseStack.scale(GROW, GROW, GROW);
 		poseStack.translate(0.0F, -CENTER_Y, 0.0F);
 		collector.submitModel(this.getParentModel(), state, poseStack, RenderTypes.entityTranslucentEmissive(TEXTURE),
-			LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, color, null, 0, null);
+			LightCoordsUtil.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, color, null, 0);
 		poseStack.popPose();
 	}
 }

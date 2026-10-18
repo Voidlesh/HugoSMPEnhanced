@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.hud;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -8,11 +9,10 @@ import com.hugosmpenhanced.client.gui.HugoStyle;
 import com.hugosmpenhanced.client.gui.StyledScreen;
 import com.hugosmpenhanced.client.settings.Theme;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.network.chat.Component;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Every HUD element of the mod in one place: drag to move (snaps to the edges, the middle and
@@ -78,7 +78,7 @@ public class HudEditorScreen extends Screen implements StyledScreen {
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		graphics.fill(0, 0, this.width, this.height, 0x60000000);
 		// Thin centre lines help lining things up.
 		graphics.fill(this.width / 2, 0, this.width / 2 + 1, this.height, 0x18FFFFFF);
@@ -106,10 +106,10 @@ public class HudEditorScreen extends Screen implements StyledScreen {
 		this.renderChips(graphics, mouseX, mouseY);
 		this.renderButtons(graphics, mouseX, mouseY);
 		String help = "Ziehen: verschieben  ·  Mausrad: Größe  ·  Rechtsklick: zurücksetzen";
-		graphics.drawCenteredString(this.font, help, this.width / 2, this.buttonsY - 13, 0xFFB0B0B0);
+		graphics.centeredText(this.font, help, this.width / 2, this.buttonsY - 13, 0xFFB0B0B0);
 	}
 
-	private void renderLabel(GuiGraphics graphics, HudManager.Placed placed) {
+	private void renderLabel(GuiGraphicsExtractor graphics, HudManager.Placed placed) {
 		HudManager.Box box = placed.box();
 		String text = placed.element().label() + "  " + Math.round(placed.scale() * 100) + " %"
 			+ (placed.examples() ? "  (Beispiel)" : "");
@@ -117,31 +117,31 @@ public class HudEditorScreen extends Screen implements StyledScreen {
 		int x = Math.max(2, Math.min(box.x(), this.width - width - 2));
 		int y = box.y() - 13 >= 0 ? box.y() - 13 : box.y() + box.height() + 2;
 		graphics.fill(x, y, x + width, y + 11, 0xE0101010);
-		graphics.drawString(this.font, text, x + 3, y + 2, Theme.GOLD, false);
+		graphics.text(this.font, text, x + 3, y + 2, Theme.GOLD, false);
 	}
 
-	private void renderChips(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderChips(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		for (Chip chip : this.chips) {
 			boolean on = chip.element().enabled();
 			boolean over = mouseX >= chip.x() && mouseX < chip.x() + chip.width() && mouseY >= chip.y() && mouseY < chip.y() + CHIP_H;
 			graphics.fill(chip.x(), chip.y(), chip.x() + chip.width(), chip.y() + CHIP_H, over ? 0xF0303030 : 0xF0181818);
 			HugoStyle.drawOutline(graphics, chip.x(), chip.y(), chip.width(), CHIP_H, on ? Theme.GREEN : Theme.CHIP_BORDER);
 			graphics.fill(chip.x() + 5, chip.y() + 5, chip.x() + 9, chip.y() + 9, on ? Theme.GREEN : Theme.FAINT);
-			graphics.drawString(this.font, chip.element().label(), chip.x() + 13, chip.y() + 3, on ? Theme.TEXT : Theme.MUTED, false);
+			graphics.text(this.font, chip.element().label(), chip.x() + 13, chip.y() + 3, on ? Theme.TEXT : Theme.MUTED, false);
 		}
 	}
 
-	private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderButtons(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		this.button(graphics, this.resetAllX, this.confirmReset ? "Wirklich alles?" : "Alles zurücksetzen", mouseX, mouseY,
 			this.confirmReset ? Theme.RED : Theme.CHIP_BORDER);
 		this.button(graphics, this.doneX, "Fertig", mouseX, mouseY, Theme.GOLD);
 	}
 
-	private void button(GuiGraphics graphics, int x, String text, int mouseX, int mouseY, int border) {
+	private void button(GuiGraphicsExtractor graphics, int x, String text, int mouseX, int mouseY, int border) {
 		boolean over = mouseX >= x && mouseX < x + 100 && mouseY >= this.buttonsY && mouseY < this.buttonsY + 18;
 		graphics.fill(x, this.buttonsY, x + 100, this.buttonsY + 18, over ? 0xF0303030 : 0xF0181818);
 		HugoStyle.drawOutline(graphics, x, this.buttonsY, 100, 18, border);
-		graphics.drawCenteredString(this.font, text, x + 50, this.buttonsY + 5, Theme.TEXT);
+		graphics.centeredText(this.font, text, x + 50, this.buttonsY + 5, Theme.TEXT);
 	}
 
 	private static boolean in(double x, double y, int left, int top, int width, int height) {
@@ -178,12 +178,12 @@ public class HudEditorScreen extends Screen implements StyledScreen {
 			if (!one.box().contains(x, y)) {
 				continue;
 			}
-			if (event.button() == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+			if (event.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
 				HudManager.reset(one.element());
 				ModConfigManager.save();
 				return true;
 			}
-			if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+			if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
 				this.dragging = one.element();
 				this.grabX = (int) x - one.box().x();
 				this.grabY = (int) y - one.box().y();
@@ -301,14 +301,14 @@ public class HudEditorScreen extends Screen implements StyledScreen {
 	}
 
 	@Override
-	public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		// The world stays visible, so the HUD can be placed against the real game view.
 	}
 
 	@Override
 	public void onClose() {
 		ModConfigManager.save();
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	@Override

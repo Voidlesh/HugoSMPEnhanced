@@ -22,7 +22,7 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.client.player.LocalPlayer;
 import net.minecraft.core.component.DataComponents;
@@ -71,8 +71,8 @@ public final class OrdersHelper {
 			if (!(opened instanceof AbstractContainerScreen<?> container)) {
 				return;
 			}
-			ScreenEvents.beforeRender(container).register((s, graphics, mouseX, mouseY, delta) -> update(container));
-			ScreenEvents.afterRender(container).register((s, graphics, mouseX, mouseY, delta) -> renderSummary(container, graphics));
+			ScreenEvents.beforeExtract(container).register((s, graphics, mouseX, mouseY, delta) -> update(container));
+			ScreenEvents.afterExtract(container).register((s, graphics, mouseX, mouseY, delta) -> renderSummary(container, graphics));
 			ScreenEvents.remove(container).register(s -> {
 				if (screen == container) {
 					screen = null;
@@ -255,7 +255,7 @@ public final class OrdersHelper {
 
 	// ------------------------------------------------------------------ drawing
 
-	public static void renderSlotBackground(GuiGraphics graphics, Slot slot) {
+	public static void renderSlotBackground(GuiGraphicsExtractor graphics, Slot slot) {
 		if (screen == null || !ModConfigManager.CONFIG.ordersMarkFillable || slot.getItem().isEmpty()) {
 			return;
 		}
@@ -272,7 +272,7 @@ public final class OrdersHelper {
 			return;
 		}
 		graphics.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, order.best() ? GOLD_FILL : GREEN_FILL);
-		graphics.renderOutline(slot.x - 1, slot.y - 1, 18, 18, order.best() ? GOLD : GREEN);
+		graphics.outline(slot.x - 1, slot.y - 1, 18, 18, order.best() ? GOLD : GREEN);
 	}
 
 	private static boolean containsIdentity(List<ItemStack> list, ItemStack stack) {
@@ -284,7 +284,7 @@ public final class OrdersHelper {
 		return false;
 	}
 
-	private static void renderSummary(AbstractContainerScreen<?> container, GuiGraphics graphics) {
+	private static void renderSummary(AbstractContainerScreen<?> container, GuiGraphicsExtractor graphics) {
 		if (screen != container || ORDERS.isEmpty()) {
 			return;
 		}
@@ -310,8 +310,8 @@ public final class OrdersHelper {
 			y = Math.max(1, accessor.hugosmpenhanced$getTopPos() - 14);
 		}
 		graphics.fill(x, y, x + width, y + 12, 0xE0101010);
-		graphics.renderOutline(x, y, width, 12, count > 0 ? 0xFF2F7A40 : 0xFF444444);
-		graphics.drawString(font, text, x + 4, y + 2, count > 0 ? 0xFF8CF0A0 : 0xFFAAAAAA);
+		graphics.outline(x, y, width, 12, count > 0 ? 0xFF2F7A40 : 0xFF444444);
+		graphics.text(font, text, x + 4, y + 2, count > 0 ? 0xFF8CF0A0 : 0xFFAAAAAA);
 	}
 
 	private static void addTooltip(ItemStack stack, List<Component> lines) {

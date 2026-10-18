@@ -26,7 +26,7 @@ public abstract class SecondNametagShowOwnNameMixin {
 		Minecraft minecraft = Minecraft.getInstance();
 		if (entity == minecraft.player
 			&& !minecraft.options.getCameraType().isFirstPerson()
-			&& Minecraft.renderNames()
+			&& !minecraft.gui.hud.isHidden()
 			&& !entity.isInvisibleTo(minecraft.player)
 			&& !entity.isVehicle()) {
 			cir.setReturnValue(true);

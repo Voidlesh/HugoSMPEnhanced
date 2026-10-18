@@ -7,7 +7,7 @@ import com.hugosmpenhanced.client.hud.HudManager;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.KeyMapping;
@@ -33,16 +33,16 @@ public final class NotesFeature {
 	}
 
 	public static void register() {
-		openKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+		openKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.hugosmpenhanced.open_notes",
-			InputConstants.Type.KEYSYM,
+			InputConstants.Type.KEYBOARD,
 			InputConstants.UNKNOWN.getValue(),
 			TpaKeybinds.CATEGORY));
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (openKey.consumeClick()) {
-				if (client.screen == null) {
-					client.setScreen(new NotesScreen(null));
+				if (client.gui.screen() == null) {
+					client.setScreenAndShow(new NotesScreen(null));
 				}
 			}
 		});
@@ -57,7 +57,7 @@ public final class NotesFeature {
 
 	/** Second icon right of "Back to Game", after the screenshot camera. */
 	private static void addPauseButton(Screen screen, int scaledHeight) {
-		List<AbstractWidget> widgets = Screens.getButtons(screen);
+		List<AbstractWidget> widgets = Screens.getWidgets(screen);
 		int x = 30;
 		int y = scaledHeight - 26;
 		for (AbstractWidget widget : widgets) {
@@ -69,7 +69,7 @@ public final class NotesFeature {
 			}
 		}
 		SpriteIconButton button = SpriteIconButton.builder(Component.literal("Notizblock"),
-				b -> Minecraft.getInstance().setScreen(new NotesScreen(screen)), true)
+				b -> Minecraft.getInstance().setScreenAndShow(new NotesScreen(screen)), true)
 			.sprite(ICON, 16, 16)
 			.size(20, 20)
 			.build();

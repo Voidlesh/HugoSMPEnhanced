@@ -11,8 +11,8 @@ import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.PlayerFaceExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
@@ -43,7 +43,7 @@ public class DiscordPreviewOption extends SettingsOption {
 	}
 
 	@Override
-	protected void renderControl(GuiGraphics graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
+	protected void renderControl(GuiGraphicsExtractor graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
 	}
 
 	/** Live presence on HugoSMP, otherwise how it would look there with example values. */
@@ -80,17 +80,17 @@ public class DiscordPreviewOption extends SettingsOption {
 	}
 
 	@Override
-	protected void renderBelow(GuiGraphics graphics, Font font, int left, int top, int width, int mouseX, int mouseY) {
+	protected void renderBelow(GuiGraphicsExtractor graphics, Font font, int left, int top, int width, int mouseX, int mouseY) {
 		DiscordPresence.View view = this.view();
 		int w = Math.min(width, MAX_WIDTH);
 		int h = this.cardHeight(view);
 		Theme.panel(graphics, left, top, w, h, CARD, CARD_BORDER);
 		if (view == null) {
 			String text = ModConfigManager.CONFIG.discordEnabled ? "Außerhalb von HugoSMP wird nichts angezeigt" : "Rich Presence ist aus";
-			graphics.drawString(font, text, left + 8, top + 9, Theme.MUTED, false);
+			graphics.text(font, text, left + 8, top + 9, Theme.MUTED, false);
 			return;
 		}
-		graphics.drawString(font, "SPIELT EIN SPIEL", left + 8, top + 7, 0xFFB5BAC1, false);
+		graphics.text(font, "SPIELT EIN SPIEL", left + 8, top + 7, 0xFFB5BAC1, false);
 
 		int imageX = left + 8;
 		int imageY = top + 20;
@@ -100,17 +100,17 @@ public class DiscordPreviewOption extends SettingsOption {
 			int hx = imageX + IMAGE - size + 4;
 			int hy = imageY + IMAGE - size + 4;
 			graphics.fill(hx - 2, hy - 2, hx + size + 2, hy + size + 2, CARD);
-			PlayerFaceRenderer.draw(graphics, this.skin(), hx, hy, size);
+			PlayerFaceExtractor.extractRenderState(graphics, this.skin(), hx, hy, size);
 		}
 
 		int textX = imageX + IMAGE + 10;
 		int room = left + w - 8 - textX;
 		int y = imageY + 2;
-		graphics.drawString(font, font.plainSubstrByWidth("HugoSMP", room), textX, y, Theme.WHITE, false);
+		graphics.text(font, font.plainSubstrByWidth("HugoSMP", room), textX, y, Theme.WHITE, false);
 		y += 12;
 		for (String line : new String[] {view.details(), view.state()}) {
 			if (line != null) {
-				graphics.drawString(font, fit(font, line, room), textX, y, line == view.details() ? 0xFFDBDEE1 : 0xFFB5BAC1, false);
+				graphics.text(font, fit(font, line, room), textX, y, line == view.details() ? 0xFFDBDEE1 : 0xFFB5BAC1, false);
 				y += 11;
 			}
 		}
@@ -119,18 +119,18 @@ public class DiscordPreviewOption extends SettingsOption {
 			String elapsed = seconds >= 3600
 				? String.format("%d:%02d:%02d", seconds / 3600, seconds / 60 % 60, seconds % 60)
 				: String.format("%02d:%02d", seconds / 60, seconds % 60);
-			graphics.drawString(font, elapsed, textX, y, ELAPSED, false);
+			graphics.text(font, elapsed, textX, y, ELAPSED, false);
 		}
 
 		int by = imageY + IMAGE + 8;
 		for (String[] button : view.buttons()) {
 			boolean over = this.inside(mouseX, mouseY, left + 8, by, w - 16, 16);
 			Theme.panel(graphics, left + 8, by, w - 16, 16, over ? 0xFF6D6F78 : BUTTON, 0);
-			graphics.drawCenteredString(font, button[0], left + w / 2, by + 4, Theme.WHITE);
+			graphics.centeredText(font, button[0], left + w / 2, by + 4, Theme.WHITE);
 			by += 20;
 		}
 		if (!this.live()) {
-			graphics.drawString(font, "Beispielwerte, auf HugoSMP live", left + 2, top + h + 3, Theme.FAINT, false);
+			graphics.text(font, "Beispielwerte, auf HugoSMP live", left + 2, top + h + 3, Theme.FAINT, false);
 		}
 	}
 

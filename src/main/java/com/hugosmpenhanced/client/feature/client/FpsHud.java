@@ -6,7 +6,7 @@ import com.hugosmpenhanced.client.hud.HudPos;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.multiplayer.PlayerInfo;
 
 /** A small "120 FPS · 35 ms" line; ping only on a server. Placed in the HUD editor. */
@@ -76,18 +76,18 @@ public final class FpsHud implements HudElement {
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, Font font, boolean preview) {
+	public void render(GuiGraphicsExtractor graphics, Font font, boolean preview) {
 		String fps = fps();
 		String ping = pingText(preview);
 		graphics.fill(0, 0, this.width(font, preview), 13, 0x90000000);
 		int tx = 4;
-		graphics.drawString(font, fps, tx, 3, TEXT, false);
+		graphics.text(font, fps, tx, 3, TEXT, false);
 		if (ping != null) {
 			tx += font.width(fps);
-			graphics.drawString(font, SEPARATOR, tx, 3, MUTED, false);
+			graphics.text(font, SEPARATOR, tx, 3, MUTED, false);
 			tx += font.width(SEPARATOR);
 			int ms = Integer.parseInt(ping.substring(0, ping.indexOf(' ')));
-			graphics.drawString(font, ping, tx, 3, ms < 80 ? GOOD : ms < 150 ? OK : BAD, false);
+			graphics.text(font, ping, tx, 3, ms < 80 ? GOOD : ms < 150 ? OK : BAD, false);
 		}
 	}
 

@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.feature.pay;
 
+import com.hugosmpenhanced.client.util.Desktop;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -21,7 +22,7 @@ import com.hugosmpenhanced.client.settings.Theme;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Util;
@@ -66,7 +67,7 @@ public class PayLogScreen extends PanelScreen {
 	}
 
 	@Override
-	protected void renderSummary(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
+	protected void renderSummary(GuiGraphicsExtractor graphics, int x, int y, int width, int mouseX, int mouseY) {
 		long todayIn = 0;
 		long todayOut = 0;
 		long weekIn = 0;
@@ -97,15 +98,15 @@ public class PayLogScreen extends PanelScreen {
 		this.figure(graphics, x, y, "Heute", todayIn, todayOut);
 		this.figure(graphics, x + column, y, "Letzte 7 Tage", weekIn, weekOut);
 		long net = weekIn - weekOut;
-		graphics.drawString(this.font, "Saldo 7 Tage", x + 2 * column, y + 2, Theme.MUTED, false);
-		graphics.drawString(this.font, (net >= 0 ? "+" : "−") + Money.format(Math.abs(net)), x + 2 * column, y + 13, net >= 0 ? IN : OUT, false);
+		graphics.text(this.font, "Saldo 7 Tage", x + 2 * column, y + 2, Theme.MUTED, false);
+		graphics.text(this.font, (net >= 0 ? "+" : "−") + Money.format(Math.abs(net)), x + 2 * column, y + 13, net >= 0 ? IN : OUT, false);
 	}
 
-	private void figure(GuiGraphics graphics, int x, int y, String label, long in, long out) {
-		graphics.drawString(this.font, label, x, y + 2, Theme.MUTED, false);
+	private void figure(GuiGraphicsExtractor graphics, int x, int y, String label, long in, long out) {
+		graphics.text(this.font, label, x, y + 2, Theme.MUTED, false);
 		String received = "+" + Money.format(in);
-		graphics.drawString(this.font, received, x, y + 13, IN, false);
-		graphics.drawString(this.font, "−" + Money.format(out), x + this.font.width(received) + 6, y + 13, OUT, false);
+		graphics.text(this.font, received, x, y + 13, IN, false);
+		graphics.text(this.font, "−" + Money.format(out), x + this.font.width(received) + 6, y + 13, OUT, false);
 	}
 
 	@Override
@@ -180,14 +181,14 @@ public class PayLogScreen extends PanelScreen {
 		}
 
 		@Override
-		public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, boolean hovered) {
+		public void render(GuiGraphicsExtractor graphics, Font font, int x, int y, int width, int height, boolean hovered) {
 			int ty = y + (height - 8) / 2;
 			boolean sure = this.entry.confirmed();
-			graphics.drawString(font, TIME.format(Instant.ofEpochMilli(this.entry.time()).atZone(ZoneId.systemDefault())), x + 4, ty, Theme.MUTED, false);
+			graphics.text(font, TIME.format(Instant.ofEpochMilli(this.entry.time()).atZone(ZoneId.systemDefault())), x + 4, ty, Theme.MUTED, false);
 			int arrowX = x + 72;
-			graphics.drawString(font, this.entry.incoming() ? "⬇" : "⬆", arrowX, ty, sure ? (this.entry.incoming() ? IN : OUT) : Theme.FAINT, false);
+			graphics.text(font, this.entry.incoming() ? "⬇" : "⬆", arrowX, ty, sure ? (this.entry.incoming() ? IN : OUT) : Theme.FAINT, false);
 			String verb = this.entry.incoming() ? "von " : "an ";
-			graphics.drawString(font, verb, arrowX + 12, ty, Theme.MUTED, false);
+			graphics.text(font, verb, arrowX + 12, ty, Theme.MUTED, false);
 			int nameX = arrowX + 12 + font.width(verb);
 			clipped(graphics, font, this.entry.name(), nameX, ty, width - (nameX - x) - 110, sure ? nameColor(this.entry.name()) : Theme.FAINT);
 			String amount = (this.entry.incoming() ? "+" : "−") + Money.format(this.entry.amount()) + (sure ? "" : " ?");
@@ -218,12 +219,12 @@ public class PayLogScreen extends PanelScreen {
 		}
 
 		@Override
-		public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, boolean hovered) {
+		public void render(GuiGraphicsExtractor graphics, Font font, int x, int y, int width, int height, boolean hovered) {
 			int ty = y + (height - 8) / 2;
 			clipped(graphics, font, this.name, x + 4, ty, 110, nameColor(this.name));
-			graphics.drawString(font, this.sum[2] + "×", x + 120, ty, Theme.MUTED, false);
-			graphics.drawString(font, "+" + Money.format(this.sum[0]), x + 150, ty, IN, false);
-			graphics.drawString(font, "−" + Money.format(this.sum[1]), x + 150 + (width - 150) / 3, ty, OUT, false);
+			graphics.text(font, this.sum[2] + "×", x + 120, ty, Theme.MUTED, false);
+			graphics.text(font, "+" + Money.format(this.sum[0]), x + 150, ty, IN, false);
+			graphics.text(font, "−" + Money.format(this.sum[1]), x + 150 + (width - 150) / 3, ty, OUT, false);
 			long net = this.sum[0] - this.sum[1];
 			right(graphics, font, (net >= 0 ? "+" : "−") + Money.format(Math.abs(net)), x + width - 6, ty, net >= 0 ? IN : OUT);
 		}
@@ -250,7 +251,7 @@ public class PayLogScreen extends PanelScreen {
 			Files.createDirectories(file.getParent());
 			Files.writeString(file, csv, StandardCharsets.UTF_8);
 			this.note = "Gespeichert: zahlungen.csv";
-			Util.getPlatform().openFile(file.getParent().toFile());
+			Desktop.openFile(file.getParent().toFile());
 		} catch (Exception e) {
 			this.note = "Speichern fehlgeschlagen";
 		}

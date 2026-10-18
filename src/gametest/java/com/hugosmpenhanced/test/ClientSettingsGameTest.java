@@ -14,7 +14,6 @@ import com.hugosmpenhanced.client.settings.SettingsScreen;
 import com.hugosmpenhanced.client.settings.SettingsTab;
 import com.mojang.blaze3d.platform.InputConstants;
 
-import org.lwjgl.glfw.GLFW;
 
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
@@ -40,7 +39,7 @@ public class ClientSettingsGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			TestServerContext server = singleplayer.getServer();
 			server.runCommand("gamerule doDaylightCycle false");
 			server.runCommand("gamerule doMobSpawning false");
@@ -115,37 +114,37 @@ public class ClientSettingsGameTest implements FabricClientGameTest {
 	 */
 	private static void openKeyWithConflict(ClientGameTestContext context) {
 		context.runOnClient(client -> {
-			client.options.keyAdvancements.setKey(InputConstants.Type.KEYSYM.getOrCreate(GLFW.GLFW_KEY_O));
+			client.options.keyAdvancements.setKey(InputConstants.Type.KEYBOARD.getOrCreate(InputConstants.KEY_O));
 			KeyMapping.resetMapping();
 		});
-		context.getInput().pressKey(GLFW.GLFW_KEY_O);
+		context.getInput().pressKey(InputConstants.KEY_O);
 		// A real keyboard also sends the letter, which reaches the menu that just opened.
 		context.getInput().typeChars("o");
 		context.waitTicks(3);
 		context.runOnClient(client -> {
-			if (!(client.screen instanceof SettingsScreen settings)) {
-				throw new AssertionError("Key O with a second binding on O opened " + client.screen + " instead of the settings");
+			if (!(client.gui.screen() instanceof SettingsScreen settings)) {
+				throw new AssertionError("Key O with a second binding on O opened " + client.gui.screen() + " instead of the settings");
 			}
 			if (!settings.searchText().isEmpty()) {
 				throw new AssertionError("The O that opened the menu went into the search: " + settings.searchText());
 			}
 		});
 		context.takeScreenshot("client-key-o-conflict");
-		context.getInput().pressKey(GLFW.GLFW_KEY_O);
+		context.getInput().pressKey(InputConstants.KEY_O);
 		context.waitTicks(3);
 		context.runOnClient(client -> {
-			if (client.screen != null) {
-				throw new AssertionError("Key O did not close the settings, screen is " + client.screen);
+			if (client.gui.screen() != null) {
+				throw new AssertionError("Key O did not close the settings, screen is " + client.gui.screen());
 			}
 			client.options.keyAdvancements.setKey(client.options.keyAdvancements.getDefaultKey());
 			KeyMapping.resetMapping();
 		});
 		// Without a conflict it still opens.
-		context.getInput().pressKey(GLFW.GLFW_KEY_O);
+		context.getInput().pressKey(InputConstants.KEY_O);
 		context.waitTicks(3);
 		context.runOnClient(client -> {
-			if (!(client.screen instanceof SettingsScreen)) {
-				throw new AssertionError("Key O did not open the settings, screen is " + client.screen);
+			if (!(client.gui.screen() instanceof SettingsScreen)) {
+				throw new AssertionError("Key O did not open the settings, screen is " + client.gui.screen());
 			}
 		});
 		context.setScreen(() -> null);
@@ -175,13 +174,13 @@ public class ClientSettingsGameTest implements FabricClientGameTest {
 
 	private static void click(ClientGameTestContext context, double x, double y) {
 		context.runOnClient(client -> {
-			client.screen.mouseClicked(mouse(x, y), false);
-			client.screen.mouseReleased(mouse(x, y));
+			client.gui.screen().mouseClicked(mouse(x, y), false);
+			client.gui.screen().mouseReleased(mouse(x, y));
 		});
 	}
 
 	private static MouseButtonEvent mouse(double x, double y) {
-		return new MouseButtonEvent(x, y, new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0));
+		return new MouseButtonEvent(x, y, new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0));
 	}
 
 	private static SettingsOption option(String label) {

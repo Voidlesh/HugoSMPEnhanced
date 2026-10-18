@@ -228,7 +228,7 @@ public final class ModUpdates {
 	/** On the render thread after every check: toast, and the automatic download if wanted. */
 	private static void afterCheck() {
 		Minecraft client = Minecraft.getInstance();
-		if (client.screen instanceof TitleScreen title) {
+		if (client.gui.screen() instanceof TitleScreen title) {
 			// lays the title screen out again, so the badge appears or goes away
 			title.resize(title.width, title.height);
 		}
@@ -244,7 +244,7 @@ public final class ModUpdates {
 		if (client.player != null) {
 			// in a world the chat line says it, with a link
 			announceInChat(client);
-		} else if (!release.version().equals(toastShownFor) && !(client.screen instanceof UpdateScreen)) {
+		} else if (!release.version().equals(toastShownFor) && !(client.gui.screen() instanceof UpdateScreen)) {
 			toastShownFor = release.version();
 			TpaToast.show(Component.literal("Update verfügbar: " + release.version()),
 				Component.literal("Oben im Hauptmenü ansehen"), new ItemStack(Items.NETHER_STAR), 7000, GOLD);
@@ -265,18 +265,18 @@ public final class ModUpdates {
 			.append(Component.literal("[Ansehen]").withStyle(Style.EMPTY.withColor(GOLD & 0xFFFFFF).withUnderlined(true)
 				.withClickEvent(new ClickEvent.RunCommand("/hugosmpenhanced update"))
 				.withHoverEvent(new HoverEvent.ShowText(Component.literal("Änderungen ansehen und installieren")))));
-		client.player.displayClientMessage(line, false);
+		client.player.sendSystemMessage(line);
 	}
 
 	/** {@code /hugosmpenhanced update}: the update screen, or a fresh check with the answer in chat. */
 	public static void openOrCheck(Minecraft client) {
 		Release release = available();
 		if (release != null) {
-			client.setScreen(new UpdateScreen(client.screen, release));
+			client.setScreenAndShow(new UpdateScreen(client.gui.screen(), release));
 			return;
 		}
 		if (client.player != null) {
-			client.player.displayClientMessage(Component.literal("Suche nach Updates…").withStyle(ChatFormatting.GRAY), false);
+			client.player.sendSystemMessage(Component.literal("Suche nach Updates…").withStyle(ChatFormatting.GRAY));
 		}
 		check().thenRun(() -> client.execute(() -> {
 			if (client.player == null) {
@@ -289,7 +289,7 @@ public final class ModUpdates {
 				case FAILED -> Component.literal("Update-Suche fehlgeschlagen: " + lastError).withStyle(ChatFormatting.RED);
 				default -> Component.literal("HugoSMP Enhanced " + currentVersion() + " ist aktuell.").withStyle(ChatFormatting.GREEN);
 			};
-			client.player.displayClientMessage(answer, false);
+			client.player.sendSystemMessage(answer);
 		}));
 	}
 

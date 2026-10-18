@@ -6,7 +6,7 @@ import com.hugosmpenhanced.client.hud.HudManager;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.network.chat.Component;
 
@@ -18,15 +18,15 @@ public final class ClientTweaks {
 	}
 
 	public static void register() {
-		fullbrightKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.hugosmpenhanced.fullbright",
-			InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), TpaKeybinds.CATEGORY));
+		fullbrightKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.hugosmpenhanced.fullbright",
+			InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), TpaKeybinds.CATEGORY));
 		HudManager.add(FpsHud.INSTANCE);
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (fullbrightKey.consumeClick()) {
 				ModConfigManager.CONFIG.clientFullbright = !ModConfigManager.CONFIG.clientFullbright;
 				ModConfigManager.save();
 				if (client.player != null) {
-					client.player.displayClientMessage(Component.literal("Fullbright " + (fullbright() ? "an" : "aus")), true);
+					client.player.sendOverlayMessage(Component.literal("Fullbright " + (fullbright() ? "an" : "aus")));
 				}
 			}
 		});

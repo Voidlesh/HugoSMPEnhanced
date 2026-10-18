@@ -14,7 +14,7 @@ import net.minecraft.world.level.block.state.BlockState;
 public abstract class AntiLeakTerrainParticleMixin {
 	@ModifyArg(method = "<init>(Lnet/minecraft/client/multiplayer/ClientLevel;DDDDDDLnet/minecraft/world/level/block/state/BlockState;Lnet/minecraft/core/BlockPos;)V",
 		at = @At(value = "INVOKE",
-			target = "Lnet/minecraft/client/renderer/block/BlockModelShaper;getParticleIcon(Lnet/minecraft/world/level/block/state/BlockState;)Lnet/minecraft/client/renderer/texture/TextureAtlasSprite;"))
+			target = "Lnet/minecraft/client/renderer/block/BlockStateModelSet;getParticleMaterial(Lnet/minecraft/world/level/block/state/BlockState;)Lnet/minecraft/client/resources/model/sprite/Material$Baked;"))
 	private static BlockState hugosmpenhanced$disguise(BlockState state) {
 		return AntiLeak.disguiseParticle(state);
 	}

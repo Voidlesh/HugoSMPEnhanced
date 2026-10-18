@@ -7,7 +7,7 @@ import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /** On/off switch; a click anywhere on the row flips it. */
 public class ToggleOption extends ValueOption<Boolean> {
@@ -25,7 +25,7 @@ public class ToggleOption extends ValueOption<Boolean> {
 	}
 
 	@Override
-	protected void renderControl(GuiGraphics graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
+	protected void renderControl(GuiGraphicsExtractor graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
 		Theme.toggle(graphics, right - 22, centerY - 5, this.get(), this.hovered);
 	}
 

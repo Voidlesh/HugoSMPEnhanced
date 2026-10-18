@@ -9,7 +9,7 @@ import com.hugosmpenhanced.client.feature.secondnametag.SecondNametagPosition;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -36,7 +36,7 @@ final class NametagPreview {
 	 * @param showSecond whether to show the second line at all; the caller decides, since the
 	 *                   second-nametag editor shows it even while the feature is switched off
 	 */
-	static void render(GuiGraphics graphics, Font font, int left, int top, int width, int height, boolean showSecond) {
+	static void render(GuiGraphicsExtractor graphics, Font font, int left, int top, int width, int height, boolean showSecond) {
 		ModConfig config = ModConfigManager.CONFIG;
 		graphics.fillGradient(left, top, left + width, top + height, 0xFF6F9EE8, 0xFFB9D3F5);
 		graphics.enableScissor(left, top, left + width, top + height);
@@ -64,7 +64,7 @@ final class NametagPreview {
 		graphics.disableScissor();
 	}
 
-	private static void renderName(GuiGraphics graphics, Font font, float centerX, float y, float scale) {
+	private static void renderName(GuiGraphicsExtractor graphics, Font font, float centerX, float y, float scale) {
 		String name = previewName();
 		Set<NametagEffect> effects = NametagStyleRenderer.activeEffects();
 		if (effects.isEmpty()) {
@@ -82,7 +82,7 @@ final class NametagPreview {
 		graphics.pose().popMatrix();
 	}
 
-	private static void renderLine(GuiGraphics graphics, Font font, float centerX, float y, float scale, Component text, int background) {
+	private static void renderLine(GuiGraphicsExtractor graphics, Font font, float centerX, float y, float scale, Component text, int background) {
 		int width = font.width(text);
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(centerX - width * scale / 2.0F, y);
@@ -90,7 +90,7 @@ final class NametagPreview {
 		if (background != 0) {
 			graphics.fill(-1, -1, width + 1, 9, background);
 		}
-		graphics.drawString(font, text, 0, 0, 0xFFFFFFFF, false);
+		graphics.text(font, text, 0, 0, 0xFFFFFFFF, false);
 		graphics.pose().popMatrix();
 	}
 

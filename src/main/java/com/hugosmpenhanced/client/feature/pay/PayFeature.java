@@ -2,7 +2,7 @@ package com.hugosmpenhanced.client.feature.pay;
 
 import com.hugosmpenhanced.client.ConfigCommand;
 
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 
 /** Payment log, {@code /hse zahlungen} and the /pay warning (the warning itself lives in mixins). */
 public final class PayFeature {
@@ -11,7 +11,7 @@ public final class PayFeature {
 
 	public static void register() {
 		PayLog.register();
-		ConfigCommand.addSubcommand(root -> root.then(ClientCommandManager.literal("zahlungen")
+		ConfigCommand.addSubcommand(root -> root.then(ClientCommands.literal("zahlungen")
 			.executes(context -> ConfigCommand.open(PayLogScreen::new))));
 	}
 }

@@ -15,7 +15,7 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
@@ -66,7 +66,7 @@ public final class InventoryButtonsFeature {
 
 		private void install() {
 			ModConfig config = ModConfigManager.CONFIG;
-			List<AbstractWidget> widgets = Screens.getButtons(this.screen);
+			List<AbstractWidget> widgets = Screens.getWidgets(this.screen);
 
 			// Built-in buttons come first so they keep their spot when a custom button was put on it.
 			if (config.inventoryLayoutEnabled) {
@@ -88,7 +88,7 @@ public final class InventoryButtonsFeature {
 
 			if (config.inventoryButtonsEnabled) {
 				this.edit = new IconButton("✎", Component.literal("Inventar-Buttons bearbeiten"),
-					b -> Minecraft.getInstance().setScreen(new InventoryButtonsScreen(this.screen)));
+					b -> Minecraft.getInstance().setScreenAndShow(new InventoryButtonsScreen(this.screen)));
 				this.edit.setTooltip(Tooltip.create(Component.literal("Inventar-Buttons bearbeiten")
 					.append(Component.literal("\nButtons kannst du im Inventar per Ziehen verschieben.").withStyle(ChatFormatting.GRAY))));
 				widgets.add(this.edit);
@@ -118,10 +118,10 @@ public final class InventoryButtonsFeature {
 		}
 
 		private void registerEvents() {
-			ScreenEvents.beforeRender(this.screen).register((s, graphics, mouseX, mouseY, tickDelta) -> this.layout());
+			ScreenEvents.beforeExtract(this.screen).register((s, graphics, mouseX, mouseY, tickDelta) -> this.layout());
 			ScreenMouseEvents.allowMouseDrag(this.screen).register((s, event, dx, dy) -> this.onDrag(event));
 			ScreenMouseEvents.allowMouseRelease(this.screen).register((s, event) -> this.onRelease(event));
-			ScreenEvents.afterRender(this.screen).register((s, graphics, mouseX, mouseY, tickDelta) -> this.renderSpots(graphics, mouseX, mouseY));
+			ScreenEvents.afterExtract(this.screen).register((s, graphics, mouseX, mouseY, tickDelta) -> this.renderSpots(graphics, mouseX, mouseY));
 		}
 
 		private int left() {
@@ -170,7 +170,7 @@ public final class InventoryButtonsFeature {
 				// Drawn last so it stays on top of the other buttons, and without its tooltip in the way.
 				IconButton button = this.pressed.button();
 				button.setTooltipHidden(true);
-				List<AbstractWidget> widgets = Screens.getButtons(this.screen);
+				List<AbstractWidget> widgets = Screens.getWidgets(this.screen);
 				widgets.remove(button);
 				widgets.add(button);
 			}
@@ -232,7 +232,7 @@ public final class InventoryButtonsFeature {
 		}
 
 		/** While dragging, outlines every spot and highlights the one under the mouse. */
-		private void renderSpots(GuiGraphics graphics, int mouseX, int mouseY) {
+		private void renderSpots(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 			if (!this.dragging) {
 				return;
 			}
@@ -264,7 +264,7 @@ public final class InventoryButtonsFeature {
 		if (connection == null || text.isEmpty()) {
 			return;
 		}
-		minecraft.gui.getChat().addRecentChat(text);
+		minecraft.gui.hud.getChat().addRecentChat(text);
 		if (text.startsWith("/")) {
 			connection.sendCommand(text.substring(1));
 		} else {

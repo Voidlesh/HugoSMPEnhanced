@@ -1,5 +1,7 @@
 package com.hugosmpenhanced.client.feature.debug;
 
+import com.hugosmpenhanced.client.util.Formats;
+import com.mojang.blaze3d.platform.InputConstants;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -41,7 +43,6 @@ import net.minecraft.world.item.TooltipFlag;
 import net.minecraft.world.item.component.ItemLore;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.core.registries.BuiltInRegistries;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Copies what HugoSMP really sends (chat lines, an item's tooltip and data, a menu, the sidebar)
@@ -78,13 +79,13 @@ public final class DebugDump {
 				return;
 			}
 			ScreenKeyboardEvents.allowKeyPress(container).register((s, event) -> {
-				if (event.key() == GLFW.GLFW_KEY_C && event.hasControlDownWithQuirk() && event.hasShiftDown()) {
+				if (event.key() == InputConstants.KEY_C && event.hasControlDownWithQuirk() && event.hasShiftDown()) {
 					copyMenu(container);
 					return false;
 				}
 				return true;
 			});
-			ScreenEvents.afterRender(container).register((s, graphics, mouseX, mouseY, delta) -> {
+			ScreenEvents.afterExtract(container).register((s, graphics, mouseX, mouseY, delta) -> {
 				Slot hovered = ((AbstractContainerScreenAccessor) container).hugosmpenhanced$getHoveredSlot();
 				if (hovered != null && hovered.hasItem()) {
 					lastHovered = hovered.getItem().copy();
@@ -297,7 +298,7 @@ public final class DebugDump {
 		Minecraft client = Minecraft.getInstance();
 		Component line = Component.literal("[HugoSMP Enhanced] ").withStyle(ChatFormatting.GOLD).append(text);
 		if (client.player != null) {
-			client.gui.getChat().addMessage(line);
+			client.gui.hud.getChat().addClientSystemMessage(line);
 		}
 	}
 }

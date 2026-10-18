@@ -25,7 +25,7 @@ public class MainMenuGameTest implements FabricClientGameTest {
 		});
 		context.setScreen(TitleScreen::new);
 		context.waitTicks(10);
-		boolean replaced = context.computeOnClient(client -> client.screen instanceof HugoTitleScreen);
+		boolean replaced = context.computeOnClient(client -> client.gui.screen() instanceof HugoTitleScreen);
 		if (!replaced) {
 			throw new AssertionError("Title screen was not replaced by HugoTitleScreen");
 		}
@@ -33,9 +33,9 @@ public class MainMenuGameTest implements FabricClientGameTest {
 
 		// press the layout switch in the top right corner like a player would
 		context.runOnClient(client -> {
-			for (GuiEventListener child : client.screen.children()) {
+			for (GuiEventListener child : client.gui.screen().children()) {
 				if (child instanceof MenuButton button && button.getMessage().getString().startsWith("⇄")) {
-					client.screen.mouseClicked(new MouseButtonEvent(button.getX() + 2, button.getY() + 2,
+					client.gui.screen().mouseClicked(new MouseButtonEvent(button.getX() + 2, button.getY() + 2,
 							new MouseButtonInfo(0, 0)), false);
 					return;
 				}
@@ -66,7 +66,7 @@ public class MainMenuGameTest implements FabricClientGameTest {
 		context.waitTicks(3);
 		context.runOnClient(client -> {
 			for (int i = 0; i < 60; i++) {
-				client.screen.mouseScrolled(client.screen.width / 2.0, client.screen.height / 2.0, 0, -5);
+				client.gui.screen().mouseScrolled(client.gui.screen().width / 2.0, client.gui.screen().height / 2.0, 0, -5);
 			}
 		});
 		context.waitTicks(3);
@@ -78,7 +78,7 @@ public class MainMenuGameTest implements FabricClientGameTest {
 		});
 		context.setScreen(TitleScreen::new);
 		context.waitTicks(5);
-		boolean vanilla = context.computeOnClient(client -> client.screen != null && client.screen.getClass() == TitleScreen.class);
+		boolean vanilla = context.computeOnClient(client -> client.gui.screen() != null && client.gui.screen().getClass() == TitleScreen.class);
 		if (!vanilla) {
 			throw new AssertionError("Vanilla title screen expected with the custom menu off");
 		}

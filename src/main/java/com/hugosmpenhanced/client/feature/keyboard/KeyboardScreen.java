@@ -10,10 +10,10 @@ import com.hugosmpenhanced.client.gui.HugoStyle;
 import com.hugosmpenhanced.client.gui.StyledScreen;
 import com.mojang.blaze3d.platform.InputConstants;
 
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -71,7 +71,7 @@ public class KeyboardScreen extends Screen implements StyledScreen {
 	}
 
 	private static InputConstants.Key boundKey(KeyMapping mapping) {
-		return KeyBindingHelper.getBoundKeyOf(mapping);
+		return KeyMappingHelper.getBoundKeyOf(mapping);
 	}
 
 	/**
@@ -214,7 +214,7 @@ public class KeyboardScreen extends Screen implements StyledScreen {
 
 	/** Selects a key for the panel below, or deselects it; Escape cannot be bound and is ignored. */
 	public void select(InputConstants.Key key) {
-		if (key.getType() == InputConstants.Type.KEYSYM && key.getValue() == org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE) {
+		if (key.getType() == InputConstants.Type.KEYBOARD && key.getValue() == InputConstants.KEY_ESCAPE) {
 			return;
 		}
 		this.selected = key.equals(this.selected) ? null : key;
@@ -273,13 +273,13 @@ public class KeyboardScreen extends Screen implements StyledScreen {
 
 	@Override
 	public void onClose() {
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		super.render(graphics, mouseX, mouseY, partialTick);
-		graphics.drawCenteredString(this.font, "— TASTATUR-ANSICHT —", this.width / 2, 5, 0xFFAAAAAA);
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+		graphics.centeredText(this.font, "— TASTATUR-ANSICHT —", this.width / 2, 5, 0xFFAAAAAA);
 
 		String needle = query.strip().toLowerCase(Locale.ROOT);
 		KeyDef hovered = this.keyAt(mouseX, mouseY);
@@ -291,7 +291,7 @@ public class KeyboardScreen extends Screen implements StyledScreen {
 		if (this.filtered.size() > this.rows.size()) {
 			String page = (this.scroll + 1) + "–" + Math.min(this.filtered.size(), this.scroll + this.rows.size())
 				+ " von " + this.filtered.size();
-			graphics.drawString(this.font, page, this.listX + this.listWidth - this.font.width(page), this.panelTop - 10, TEXT_DIM);
+			graphics.text(this.font, page, this.listX + this.listWidth - this.font.width(page), this.panelTop - 10, TEXT_DIM);
 		}
 
 		if (hovered != null) {
@@ -312,7 +312,7 @@ public class KeyboardScreen extends Screen implements StyledScreen {
 		}
 	}
 
-	private void renderKey(GuiGraphics graphics, KeyDef def, boolean hovered, String needle) {
+	private void renderKey(GuiGraphicsExtractor graphics, KeyDef def, boolean hovered, String needle) {
 		int x = this.keyX(def);
 		int y = this.keyY(def);
 		int w = this.keyW(def);
@@ -345,34 +345,34 @@ public class KeyboardScreen extends Screen implements StyledScreen {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x + w / 2.0F, y + h / 2.0F);
 		graphics.pose().scale(scale, scale);
-		graphics.drawString(this.font, def.label(), -textWidth / 2, -4, on.isEmpty() ? TEXT_DIM : TEXT, false);
+		graphics.text(this.font, def.label(), -textWidth / 2, -4, on.isEmpty() ? TEXT_DIM : TEXT, false);
 		graphics.pose().popMatrix();
 	}
 
-	private void renderInfo(GuiGraphics graphics) {
+	private void renderInfo(GuiGraphicsExtractor graphics) {
 		int x = this.originX;
 		int infoWidth = this.listX - 8 - x;
 		if (this.selected == null) {
-			graphics.drawString(this.font, "Klick auf eine Taste,", x, this.panelTop + 2, TEXT_DIM);
-			graphics.drawString(this.font, "um sie zu belegen.", x, this.panelTop + 12, TEXT_DIM);
-			graphics.drawString(this.font, "Grün = belegt", x, this.panelTop + 28, BOUND_BORDER);
-			graphics.drawString(this.font, "Rot = doppelt belegt", x, this.panelTop + 38, CONFLICT_BORDER);
+			graphics.text(this.font, "Klick auf eine Taste,", x, this.panelTop + 2, TEXT_DIM);
+			graphics.text(this.font, "um sie zu belegen.", x, this.panelTop + 12, TEXT_DIM);
+			graphics.text(this.font, "Grün = belegt", x, this.panelTop + 28, BOUND_BORDER);
+			graphics.text(this.font, "Rot = doppelt belegt", x, this.panelTop + 38, CONFLICT_BORDER);
 			return;
 		}
 		KeyDef def = KeyboardLayout.KEYS.stream().filter(d -> d.key().equals(this.selected)).findFirst().orElse(null);
 		String title = "Taste: " + (def != null ? def.label() : this.selected.getDisplayName().getString());
-		graphics.drawString(this.font, title, x, this.panelTop + 2, 0xFFFFFFFF);
+		graphics.text(this.font, title, x, this.panelTop + 2, 0xFFFFFFFF);
 		List<KeyMapping> on = this.on(this.selected);
 		int y = this.panelTop + 12;
 		if (on.isEmpty()) {
-			graphics.drawString(this.font, "frei – rechts eine Aktion wählen", x, y + 6, TEXT_DIM);
+			graphics.text(this.font, "frei – rechts eine Aktion wählen", x, y + 6, TEXT_DIM);
 		}
 		for (KeyMapping mapping : on) {
 			if (y + ROW > this.height - 6 - ROW - 4) {
 				break;
 			}
 			String label = this.font.plainSubstrByWidth(name(mapping), infoWidth - ROW - 4);
-			graphics.drawString(this.font, label, x, y + 6, isConflict(on) ? CONFLICT_BORDER : TEXT);
+			graphics.text(this.font, label, x, y + 6, isConflict(on) ? CONFLICT_BORDER : TEXT);
 			y += ROW + 2;
 		}
 	}

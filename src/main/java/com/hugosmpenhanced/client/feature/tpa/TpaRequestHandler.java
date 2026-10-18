@@ -81,7 +81,7 @@ public final class TpaRequestHandler {
 		Component subtitle = Component.literal("Laut HugoGuard: " + scammer.reports() + " Meldung(en)");
 		TpaToast.show(title, subtitle, new ItemStack(Items.BARRIER), 8000, TpaToast.WARNING_COLOR);
 		Minecraft minecraft = Minecraft.getInstance();
-		minecraft.execute(() -> minecraft.gui.getChat().addMessage(Component.empty().append(HugoGuardChat.tag(scammer))
+		minecraft.execute(() -> minecraft.gui.hud.getChat().addClientSystemMessage(Component.empty().append(HugoGuardChat.tag(scammer))
 			.append(Component.literal(" Vorsicht: Die TPA-Anfrage kommt von " + scammer.username()
 				+ ", der auf HugoGuard als Scammer gelistet ist.").withStyle(ChatFormatting.RED))));
 		minecraft.getSoundManager().play(net.minecraft.client.resources.sounds.SimpleSoundInstance.forUI(

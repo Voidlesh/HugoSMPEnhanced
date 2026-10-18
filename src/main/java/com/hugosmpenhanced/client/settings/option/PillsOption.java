@@ -13,7 +13,7 @@ import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /** Several related on/off switches as a row of labels: green = on. */
 public class PillsOption extends SettingsOption {
@@ -55,7 +55,7 @@ public class PillsOption extends SettingsOption {
 	}
 
 	@Override
-	protected void renderControl(GuiGraphics graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
+	protected void renderControl(GuiGraphicsExtractor graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
 	}
 
 	/** Positions of the pills for a given width, as x/y offsets and widths. */
@@ -82,7 +82,7 @@ public class PillsOption extends SettingsOption {
 	}
 
 	@Override
-	protected void renderBelow(GuiGraphics graphics, Font font, int left, int top, int width, int mouseX, int mouseY) {
+	protected void renderBelow(GuiGraphicsExtractor graphics, Font font, int left, int top, int width, int mouseX, int mouseY) {
 		this.belowOrigin = new int[] {left, top};
 		List<int[]> boxes = this.layout(font, width);
 		for (int i = 0; i < this.pills.size(); i++) {
@@ -97,7 +97,7 @@ public class PillsOption extends SettingsOption {
 			} else {
 				Theme.panel(graphics, bx, by, box[2], H, 0xFF161616, over ? 0xFF9A9A9A : Theme.CONTROL_BORDER);
 			}
-			graphics.drawString(font, pill.name(), bx + 5, by + 3, on ? Theme.WHITE : Theme.MUTED, on);
+			graphics.text(font, pill.name(), bx + 5, by + 3, on ? Theme.WHITE : Theme.MUTED, on);
 		}
 	}
 

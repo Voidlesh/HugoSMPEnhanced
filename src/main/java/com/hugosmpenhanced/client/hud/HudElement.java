@@ -1,7 +1,7 @@
 package com.hugosmpenhanced.client.hud;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
  * One block of information on the HUD (FPS, pinned notes, money tracker ...). Elements draw at
@@ -29,7 +29,7 @@ public interface HudElement {
 	int height(Font font, boolean preview);
 
 	/** Draws at 0,0. {@code preview}: example content for the editor when there is nothing real yet. */
-	void render(GuiGraphics graphics, Font font, boolean preview);
+	void render(GuiGraphicsExtractor graphics, Font font, boolean preview);
 
 	/** Where it sits until the player moves it. */
 	HudPos defaultPos();

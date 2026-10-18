@@ -6,8 +6,7 @@ import com.mojang.math.Axis;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.render.pip.PictureInPictureRenderer;
-import net.minecraft.client.renderer.MultiBufferSource;
-import net.minecraft.client.renderer.feature.FeatureRenderDispatcher;
+import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.item.ItemStackRenderState;
 import net.minecraft.client.renderer.texture.OverlayTexture;
 import net.minecraft.world.item.ItemDisplayContext;
@@ -20,17 +19,13 @@ import net.minecraft.world.phys.AABB;
 public class ItemSpinRenderer extends PictureInPictureRenderer<ItemSpinRenderState> {
 	private final ItemStackRenderState item = new ItemStackRenderState();
 
-	public ItemSpinRenderer(MultiBufferSource.BufferSource bufferSource) {
-		super(bufferSource);
-	}
-
 	@Override
 	public Class<ItemSpinRenderState> getRenderStateClass() {
 		return ItemSpinRenderState.class;
 	}
 
 	@Override
-	protected void renderToTexture(ItemSpinRenderState state, PoseStack pose) {
+	protected void renderToTexture(ItemSpinRenderState state, PoseStack pose, SubmitNodeCollector submitNodeCollector) {
 		Minecraft client = Minecraft.getInstance();
 		this.item.clear();
 		client.getItemModelResolver().updateForTopItem(this.item, state.stack(), ItemDisplayContext.GROUND, client.level, null, 0);
@@ -43,13 +38,11 @@ public class ItemSpinRenderer extends PictureInPictureRenderer<ItemSpinRenderSta
 		double extent = Math.max(Math.max(across, box.getYsize()), 0.05);
 		float fit = (float) (0.92 / extent);
 		pose.scale(fit, -fit, -fit);
-		pose.mulPose(Axis.XP.rotationDegrees(state.tilt()));
-		pose.mulPose(Axis.YP.rotationDegrees(state.yaw()));
+		pose.rotate(Axis.XP.rotationDegrees(state.tilt()));
+		pose.rotate(Axis.YP.rotationDegrees(state.yaw()));
 		pose.translate(-box.getCenter().x, -box.getCenter().y, -box.getCenter().z);
-		client.gameRenderer.getLighting().setupFor(this.item.usesBlockLight() ? Lighting.Entry.ITEMS_3D : Lighting.Entry.ENTITY_IN_UI);
-		FeatureRenderDispatcher dispatcher = client.gameRenderer.getFeatureRenderDispatcher();
-		this.item.submit(pose, dispatcher.getSubmitNodeStorage(), 0xF000F0, OverlayTexture.NO_OVERLAY, 0);
-		dispatcher.renderAllFeatures();
+		client.gameRenderer.lighting().setupFor(this.item.usesBlockLight() ? Lighting.Entry.ITEMS_3D : Lighting.Entry.ENTITY_IN_UI);
+		this.item.submit(pose, submitNodeCollector, 0xF000F0, OverlayTexture.NO_OVERLAY, 0);
 	}
 
 	@Override

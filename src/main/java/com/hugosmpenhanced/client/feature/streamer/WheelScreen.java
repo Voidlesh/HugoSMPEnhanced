@@ -1,10 +1,10 @@
 package com.hugosmpenhanced.client.feature.streamer;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
-import org.lwjgl.glfw.GLFW;
 
 import com.hugosmpenhanced.client.HugoSmpEnhancedClient;
 import com.hugosmpenhanced.client.config.ModConfigManager;
@@ -12,7 +12,7 @@ import com.hugosmpenhanced.client.gui.StyledScreen;
 import com.hugosmpenhanced.client.settings.Theme;
 import com.mojang.blaze3d.platform.NativeImage;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -80,7 +80,7 @@ public class WheelScreen extends Screen implements StyledScreen {
 	}
 
 	@Override
-	public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		float fade = StreamerUi.easeOut(StreamerUi.progress(this.openedAt, 300));
 		graphics.fillGradient(0, 0, this.width, this.height, StreamerUi.alpha(0x40000000, fade), StreamerUi.alpha(0x80000000, fade));
 	}
@@ -95,7 +95,7 @@ public class WheelScreen extends Screen implements StyledScreen {
 
 	@Override
 	public void onClose() {
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	// ------------------------------------------------------------------ spin
@@ -381,8 +381,8 @@ public class WheelScreen extends Screen implements StyledScreen {
 	// ------------------------------------------------------------------ render
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		super.render(graphics, mouseX, mouseY, partialTick);
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 		this.hits.clear();
 		this.updateSpin();
 		long now = System.currentTimeMillis();
@@ -415,7 +415,7 @@ public class WheelScreen extends Screen implements StyledScreen {
 			pose.pushMatrix();
 			float s = hub / 16f;
 			pose.scale(s, s);
-			graphics.renderItem(Giveaway.prize(), -8, -8);
+			graphics.item(Giveaway.prize(), -8, -8);
 			pose.popMatrix();
 		} else {
 			Theme.icon(graphics, "brand", -hub / 2, -hub / 2, hub, 0xFFFFFFFF);
@@ -444,14 +444,14 @@ public class WheelScreen extends Screen implements StyledScreen {
 			int lw = this.font.width(label) + 14;
 			int ly = cy - r - ph - 16;
 			StreamerUi.glass(graphics, cx - lw / 2, ly, lw, 14, Theme.GOLD);
-			graphics.drawCenteredString(this.font, label, cx, ly + 3, Theme.WHITE);
+			graphics.centeredText(this.font, label, cx, ly + 3, Theme.WHITE);
 		}
 
 		this.renderPanel(graphics, mouseX, mouseY, cx + r + 24, now);
 		this.confetti.render(graphics);
 	}
 
-	private void renderNames(GuiGraphics graphics, int r) {
+	private void renderNames(GuiGraphicsExtractor graphics, int r) {
 		int n = this.wheel.size();
 		if (n == 0 || n > MAX_NAMES) {
 			return;
@@ -475,12 +475,12 @@ public class WheelScreen extends Screen implements StyledScreen {
 			int w = this.font.width(name);
 			// names sit at the outer end so short and long names line up on the rim
 			float x = left ? -outer / scale : outer / scale - w;
-			graphics.drawString(this.font, name, (int) x, -4, color, true);
+			graphics.text(this.font, name, (int) x, -4, color, true);
 			pose.popMatrix();
 		}
 	}
 
-	private void renderPanel(GuiGraphics graphics, int mouseX, int mouseY, int x, long now) {
+	private void renderPanel(GuiGraphicsExtractor graphics, int mouseX, int mouseY, int x, long now) {
 		int w = this.panelW();
 		int h = Math.min(this.height - 40, 230);
 		int y = this.wheelY() - h / 2;
@@ -490,24 +490,24 @@ public class WheelScreen extends Screen implements StyledScreen {
 		String prize = Giveaway.prizeName().isBlank() ? (Giveaway.prize().isEmpty() ? "" : Giveaway.prize().getHoverName().getString())
 			: Giveaway.prizeName();
 		String head = prize.isEmpty() ? "GIVEAWAY" : "GIVEAWAY  ·  " + prize.toUpperCase(java.util.Locale.ROOT);
-		graphics.drawString(this.font, this.font.plainSubstrByWidth(head, w - 34), x + 10, y + 10, Theme.GOLD, false);
+		graphics.text(this.font, this.font.plainSubstrByWidth(head, w - 34), x + 10, y + 10, Theme.GOLD, false);
 		if (!Giveaway.prize().isEmpty()) {
-			graphics.renderItem(Giveaway.prize(), x + w - 26, y + 6);
+			graphics.item(Giveaway.prize(), x + w - 26, y + 6);
 		}
 		int iy = y + 30;
 		int bx = x + 10;
 		int bw = w - 20;
 		Giveaway.Participant winner = this.result;
 		if (winner == null) {
-			graphics.drawString(this.font, this.spinning ? "Das Rad dreht…" : "Bereit", bx, iy, Theme.MUTED, false);
+			graphics.text(this.font, this.spinning ? "Das Rad dreht…" : "Bereit", bx, iy, Theme.MUTED, false);
 			String count = String.valueOf(this.wheel.size());
 			StreamerUi.text(graphics, this.font, count, bx, iy + 14, 3f, Theme.WHITE, true);
-			graphics.drawString(this.font, "Teilnehmer", bx + (int) (this.font.width(count) * 3) + 6, iy + 30, Theme.TEXT, false);
+			graphics.text(this.font, "Teilnehmer", bx + (int) (this.font.width(count) * 3) + 6, iy + 30, Theme.TEXT, false);
 			int ig = Giveaway.count(Giveaway.Source.INGAME);
 			int tw = Giveaway.count(Giveaway.Source.TWITCH);
-			graphics.drawString(this.font, ig + " ingame  ·  " + tw + " über Twitch", bx, iy + 48, Theme.MUTED, false);
-			graphics.drawString(this.font, "Zufall entscheidet beim Start,", bx, iy + 66, Theme.FAINT, false);
-			graphics.drawString(this.font, "das Rad zeigt nur den Weg.", bx, iy + 76, Theme.FAINT, false);
+			graphics.text(this.font, ig + " ingame  ·  " + tw + " über Twitch", bx, iy + 48, Theme.MUTED, false);
+			graphics.text(this.font, "Zufall entscheidet beim Start,", bx, iy + 66, Theme.FAINT, false);
+			graphics.text(this.font, "das Rad zeigt nur den Weg.", bx, iy + 76, Theme.FAINT, false);
 			boolean can = !this.spinning && this.wheel.size() >= 2;
 			StreamerUi.button(graphics, this.font, bx, y + h - 46, bw, 18, "Drehen", StreamerUi.Kind.GOLD, can, mouseX, mouseY);
 			this.hit(bx, y + h - 46, bw, 18, () -> {
@@ -517,7 +517,7 @@ public class WheelScreen extends Screen implements StyledScreen {
 			});
 		} else {
 			float pop = StreamerUi.easeBack(StreamerUi.progress(this.resultAt, 400));
-			graphics.drawString(this.font, "Gewinner", bx, iy, Theme.MUTED, false);
+			graphics.text(this.font, "Gewinner", bx, iy, Theme.MUTED, false);
 			var pose = graphics.pose();
 			pose.pushMatrix();
 			pose.translate(bx, iy + 14);
@@ -534,14 +534,14 @@ public class WheelScreen extends Screen implements StyledScreen {
 			StreamerUi.text(graphics, this.font, winner.name(), 26, 10 - 4 * nameScale, nameScale, Theme.WHITE, true);
 			pose.popMatrix();
 			String source = (winner.source() == Giveaway.Source.TWITCH ? "Twitch" : "Ingame") + "  ·  1 von " + this.wheel.size();
-			graphics.drawString(this.font, source, bx, iy + 40, Theme.MUTED, false);
+			graphics.text(this.font, source, bx, iy + 40, Theme.MUTED, false);
 			String mc = winner.source() == Giveaway.Source.INGAME ? winner.name() : winner.mcName();
 			int by = iy + 56;
 			if (mc != null) {
 				StreamerUi.button(graphics, this.font, bx, by, bw, 18, "TPA zu " + mc, StreamerUi.Kind.GOLD, true, mouseX, mouseY);
 				this.hit(bx, by, bw, 18, () -> {
 					StreamerFeature.command("tpa " + mc);
-					this.minecraft.setScreen(null);
+					this.minecraft.setScreenAndShow(null);
 				});
 				int half = (bw - 4) / 2;
 				StreamerUi.button(graphics, this.font, bx, by + 22, half, 16, "Zu mir holen", StreamerUi.Kind.NORMAL, true, mouseX, mouseY);
@@ -550,10 +550,10 @@ public class WheelScreen extends Screen implements StyledScreen {
 				String what = prize.isEmpty() ? "das Giveaway" : prize;
 				this.hit(bx + half + 4, by + 22, bw - half - 4, 16, () -> StreamerFeature.command("msg " + mc + " Glückwunsch, du hast " + what + " gewonnen!"));
 			} else {
-				graphics.drawString(this.font, "Kein MC-Name bekannt.", bx, by, StreamerUi.LAVENDER, false);
-				graphics.drawString(this.font, "Im Twitch-Chat schreiben:", bx, by + 11, Theme.MUTED, false);
-				graphics.drawString(this.font, "!join <MC-Name>", bx, by + 22, Theme.TEXT, false);
-				graphics.drawString(this.font, "Dann geht TPA hier.", bx, by + 33, Theme.MUTED, false);
+				graphics.text(this.font, "Kein MC-Name bekannt.", bx, by, StreamerUi.LAVENDER, false);
+				graphics.text(this.font, "Im Twitch-Chat schreiben:", bx, by + 11, Theme.MUTED, false);
+				graphics.text(this.font, "!join <MC-Name>", bx, by + 22, Theme.TEXT, false);
+				graphics.text(this.font, "Dann geht TPA hier.", bx, by + 33, Theme.MUTED, false);
 				// the name can still arrive later through the chat
 				Giveaway.Participant updated = this.findCurrent(winner);
 				if (updated != null && updated.mcName() != null) {
@@ -592,7 +592,7 @@ public class WheelScreen extends Screen implements StyledScreen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-		if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+		if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
 			for (int i = this.hits.size() - 1; i >= 0; i--) {
 				Hit hit = this.hits.get(i);
 				if (StreamerUi.inside(event.x(), event.y(), hit.x, hit.y, hit.w, hit.h)) {
@@ -607,7 +607,7 @@ public class WheelScreen extends Screen implements StyledScreen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
-		if (event.key() == GLFW.GLFW_KEY_SPACE && !this.spinning) {
+		if (event.key() == InputConstants.KEY_SPACE && !this.spinning) {
 			if (this.result == null && this.wheel.size() >= 2) {
 				this.spin();
 			}

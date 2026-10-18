@@ -1,12 +1,12 @@
 package com.hugosmpenhanced.client.feature.sell;
 
+import com.hugosmpenhanced.client.util.KeyCodes;
 import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
 import com.hugosmpenhanced.client.hud.HudManager;
 import com.mojang.blaze3d.platform.InputConstants;
-import org.lwjgl.glfw.GLFW;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.networking.v1.ClientPlayConnectionEvents;
 import net.minecraft.client.KeyMapping;
@@ -24,14 +24,14 @@ public final class SellFeature {
 	}
 
 	public static void register() {
-		sellKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.hugosmpenhanced.sell_now",
-			InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_G, TpaKeybinds.CATEGORY));
-		afkKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.hugosmpenhanced.sell_afk",
-			InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_UNKNOWN, TpaKeybinds.CATEGORY));
+		sellKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.hugosmpenhanced.sell_now",
+			InputConstants.Type.KEYBOARD, InputConstants.KEY_G, TpaKeybinds.CATEGORY));
+		afkKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.hugosmpenhanced.sell_afk",
+			InputConstants.Type.KEYBOARD, KeyCodes.UNKNOWN, TpaKeybinds.CATEGORY));
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (sellKey.consumeClick()) {
-				if (client.screen == null) {
+				if (client.gui.screen() == null) {
 					if (shiftDown() && afkKey.isUnbound()) {
 						SellEngine.toggleAfk();
 					} else {
@@ -40,7 +40,7 @@ public final class SellFeature {
 				}
 			}
 			while (afkKey.consumeClick()) {
-				if (client.screen == null) {
+				if (client.gui.screen() == null) {
 					SellEngine.toggleAfk();
 				}
 			}
@@ -57,6 +57,6 @@ public final class SellFeature {
 
 	private static boolean shiftDown() {
 		var window = Minecraft.getInstance().getWindow();
-		return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
+		return InputConstants.isKeyDown(InputConstants.KEY_LSHIFT) || InputConstants.isKeyDown(InputConstants.KEY_RSHIFT);
 	}
 }

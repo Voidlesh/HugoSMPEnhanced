@@ -13,7 +13,7 @@ import com.hugosmpenhanced.client.settings.SettingsScreen;
 import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.builder.LiteralArgumentBuilder;
 
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.command.v2.FabricClientCommandSource;
 import net.minecraft.client.Minecraft;
@@ -37,7 +37,7 @@ public final class ConfigCommand {
 	 */
 	public static int open(Function<Screen, Screen> screen) {
 		Minecraft client = Minecraft.getInstance();
-		client.execute(() -> client.setScreen(screen.apply(null)));
+		client.execute(() -> client.setScreenAndShow(screen.apply(null)));
 		return 1;
 	}
 
@@ -54,29 +54,29 @@ public final class ConfigCommand {
 	}
 
 	private static LiteralArgumentBuilder<FabricClientCommandSource> tree(String name) {
-		LiteralArgumentBuilder<FabricClientCommandSource> root = ClientCommandManager.literal(name)
-			.then(ClientCommandManager.literal("discord").executes(context -> {
+		LiteralArgumentBuilder<FabricClientCommandSource> root = ClientCommands.literal(name)
+			.then(ClientCommands.literal("discord").executes(context -> {
 				Minecraft client = Minecraft.getInstance();
 				return run(() -> DiscordPresence.printDiagnosis(client));
 			}))
-			.then(ClientCommandManager.literal("update").executes(context -> {
+			.then(ClientCommands.literal("update").executes(context -> {
 				Minecraft client = Minecraft.getInstance();
 				return run(() -> ModUpdates.openOrCheck(client));
 			}))
-			.then(ClientCommandManager.literal("hud").executes(context -> open(HudEditorScreen::new)))
-			.then(ClientCommandManager.literal("debug")
+			.then(ClientCommands.literal("hud").executes(context -> open(HudEditorScreen::new)))
+			.then(ClientCommands.literal("debug")
 				.executes(context -> run(DebugDump::all))
-				.then(ClientCommandManager.literal("chat")
+				.then(ClientCommands.literal("chat")
 					.executes(context -> run(() -> DebugDump.chat(20)))
-					.then(ClientCommandManager.argument("zeilen", IntegerArgumentType.integer(1, 200))
+					.then(ClientCommands.argument("zeilen", IntegerArgumentType.integer(1, 200))
 						.executes(context -> {
 							int lines = IntegerArgumentType.getInteger(context, "zeilen");
 							return run(() -> DebugDump.chat(lines));
 						})))
-				.then(ClientCommandManager.literal("item").executes(context -> run(DebugDump::item)))
-				.then(ClientCommandManager.literal("menu").executes(context -> run(DebugDump::menu)))
-				.then(ClientCommandManager.literal("scoreboard").executes(context -> run(DebugDump::sidebar))))
-			.executes(context -> open(parent -> new SettingsScreen(Minecraft.getInstance().screen)));
+				.then(ClientCommands.literal("item").executes(context -> run(DebugDump::item)))
+				.then(ClientCommands.literal("menu").executes(context -> run(DebugDump::menu)))
+				.then(ClientCommands.literal("scoreboard").executes(context -> run(DebugDump::sidebar))))
+			.executes(context -> open(parent -> new SettingsScreen(Minecraft.getInstance().gui.screen())));
 		for (Consumer<LiteralArgumentBuilder<FabricClientCommandSource>> extra : EXTRA) {
 			extra.accept(root);
 		}

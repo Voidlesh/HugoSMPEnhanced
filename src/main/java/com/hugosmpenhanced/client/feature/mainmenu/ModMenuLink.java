@@ -11,6 +11,6 @@ final class ModMenuLink {
 	}
 
 	static void open(Screen parent) {
-		Minecraft.getInstance().setScreen(new ModsScreen(parent));
+		Minecraft.getInstance().setScreenAndShow(new ModsScreen(parent));
 	}
 }

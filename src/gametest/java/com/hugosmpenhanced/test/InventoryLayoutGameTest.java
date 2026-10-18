@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.test;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.function.Consumer;
@@ -13,7 +14,6 @@ import com.hugosmpenhanced.client.feature.inventorylayout.InventoryLayout;
 import com.hugosmpenhanced.client.feature.inventorylayout.InventoryLayoutFeature;
 import com.hugosmpenhanced.client.mixin.AbstractContainerScreenAccessor;
 
-import org.lwjgl.glfw.GLFW;
 
 import com.hugosmpenhanced.client.settings.SettingsScreen;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
@@ -70,7 +70,7 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			setInventory(context, singleplayer, inv -> {
 				inv.clearContent();
 				inv.setItem(0, new ItemStack(Items.DIAMOND_SWORD));
@@ -135,9 +135,9 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 			context.waitTicks(2);
 			hoverRow(context, 2, true);
 			shot(context, "invlayout-6-delete-confirm");
-			context.getInput().pressKey(GLFW.GLFW_KEY_ESCAPE);
+			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 			context.waitTicks(2);
-			System.out.println("INVLAYOUT after escape: screen=" + context.computeOnClient(client -> client.screen.getClass().getSimpleName())
+			System.out.println("INVLAYOUT after escape: screen=" + context.computeOnClient(client -> client.gui.screen().getClass().getSimpleName())
 				+ " layouts=" + context.computeOnClient(client -> InventoryLayout.layouts().size()));
 
 			// Drag the eye onto the custom button's spot: the two swap.
@@ -145,14 +145,14 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 			double[] to = spotCenter(context, InventoryButtonPosition.RIGHT, 0);
 			context.getInput().setCursorPos(from[0], from[1]);
 			context.waitTicks(1);
-			context.getInput().holdMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			context.getInput().holdMouse(InputConstants.MOUSE_BUTTON_LEFT);
 			context.waitTicks(2);
 			context.getInput().setCursorPos((from[0] + to[0]) / 2, (from[1] + to[1]) / 2);
 			context.waitTicks(2);
 			context.getInput().setCursorPos(to[0], to[1]);
 			context.waitTicks(2);
 			shot(context, "invlayout-7-dragging");
-			context.getInput().releaseMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			context.getInput().releaseMouse(InputConstants.MOUSE_BUTTON_LEFT);
 			context.waitTicks(3);
 			context.getInput().setCursorPos(0, 0);
 			shot(context, "invlayout-8-moved");
@@ -182,7 +182,7 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 
 	/** Clears the advancement and recipe toasts so they do not cover the buttons. */
 	private static void shot(ClientGameTestContext context, String name) {
-		context.runOnClient(client -> client.getToastManager().clear());
+		context.runOnClient(client -> client.gui.toastManager().clear());
 		context.waitTicks(3);
 		context.takeScreenshot(name);
 	}
@@ -191,7 +191,7 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 		double[] pos = spotCenter(context, InventoryButtonPosition.TOP, topSlot);
 		context.getInput().setCursorPos(pos[0], pos[1]);
 		context.waitTicks(1);
-		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+		context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
 	}
 
 	private static void hoverRow(ClientGameTestContext context, int row, boolean delete) {
@@ -202,7 +202,7 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 
 	private static void clickRow(ClientGameTestContext context, int row, boolean delete) {
 		hoverRow(context, row, delete);
-		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+		context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
 	}
 
 	private static double[] rowCenter(ClientGameTestContext context, int row, boolean delete) {
@@ -218,7 +218,7 @@ public class InventoryLayoutGameTest implements FabricClientGameTest {
 
 	private static double[] spotCenter(ClientGameTestContext context, InventoryButtonPosition side, int slot) {
 		return context.computeOnClient(client -> {
-			AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.screen;
+			AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.gui.screen();
 			double scale = client.getWindow().getGuiScale();
 			int x = screen.hugosmpenhanced$getLeftPos() + InventoryButtonSpots.x(side, slot, screen.hugosmpenhanced$getImageWidth()) + 10;
 			int y = screen.hugosmpenhanced$getTopPos() + InventoryButtonSpots.y(side, slot) + 10;

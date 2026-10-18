@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.test;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
@@ -21,6 +22,8 @@ import com.hugosmpenhanced.client.settings.SettingsScreen;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.minecraft.world.level.block.entity.SignTextSlot;
+import net.minecraft.world.item.DyeColor;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.core.BlockPos;
@@ -72,7 +75,7 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			long now = System.currentTimeMillis();
 
 			// The cheapest (A) and the freshest (B) are not the best per hour; C is.
@@ -87,7 +90,7 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 			ItemStack nextPage = named(new ItemStack(Items.ARROW), "Nächste Seite", ChatFormatting.GREEN);
 			// Buttons from the server's resource pack have their own model too, but no price.
 			nextPage.set(DataComponents.CUSTOM_MODEL_DATA, new CustomModelData(List.of(7f), List.of(), List.of(), List.of()));
-			ItemStack filler = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
+			ItemStack filler = new ItemStack(Items.STAINED_GLASS_PANE.gray());
 			filler.set(DataComponents.CUSTOM_NAME, Component.literal(" "));
 
 			context.runOnClient(client -> {
@@ -105,7 +108,7 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 				own.set(DataComponents.LORE, new ItemLore(List.of(Component.literal("Limitiert").withStyle(ChatFormatting.LIGHT_PURPLE),
 					Component.literal("Erstellt: " + DATE.format(Instant.ofEpochMilli(now - 12 * HOUR))).withStyle(ChatFormatting.GRAY))));
 				inventory.setItem(0, own);
-				client.setScreen(new ContainerScreen(new ChestMenu(MenuType.GENERIC_9x6, 0, inventory, page, 6), inventory,
+				client.setScreenAndShow(new ContainerScreen(new ChestMenu(MenuType.GENERIC_9x6, 0, inventory, page, 6), inventory,
 					Component.literal("Auktionshaus")));
 			});
 			context.waitTicks(5);
@@ -135,13 +138,13 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 			// At GUI scale 2 the 854x480 test window has no room under a 6-row menu; scale 1 shows the summary line.
 			context.runOnClient(client -> {
 				client.options.guiScale().set(1);
-				client.resizeDisplay();
+				client.resizeGui();
 			});
 			context.waitTicks(3);
 			context.takeScreenshot("ah-limitiert-uebersicht");
 			context.runOnClient(client -> {
 				client.options.guiScale().set(2);
-				client.resizeDisplay();
+				client.resizeGui();
 			});
 			context.waitTicks(3);
 
@@ -162,7 +165,7 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 			context.waitTicks(5);
 			openSign(singleplayer, pos);
 			context.waitTicks(10);
-			check(context.computeOnClient(client -> client.screen instanceof AuctionSearchScreen), "search screen must open");
+			check(context.computeOnClient(client -> client.gui.screen() instanceof AuctionSearchScreen), "search screen must open");
 			context.getInput().typeChars("phön");
 			context.waitTicks(3);
 			context.takeScreenshot("ah-suche-custom-item");
@@ -192,11 +195,11 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 			// Hovering the suggestion shows the item's own tooltip.
 			double[] row = context.computeOnClient(client -> {
 				double scale = client.getWindow().getGuiScale();
-				int width = Math.min(client.screen.width - 20, 300);
-				int left = (client.screen.width - width) / 2;
+				int width = Math.min(client.gui.screen().width - 20, 300);
+				int left = (client.gui.screen().width - width) / 2;
 				// The first suggestion is the second row, below the "search for" row.
 				int field = 20;
-				int top = Math.max(18, (client.screen.height - (field + 6 + 9 * 23 + 46)) / 2 + 10);
+				int top = Math.max(18, (client.gui.screen().height - (field + 6 + 9 * 23 + 46)) / 2 + 10);
 				return new double[] {(left + 60) * scale, (top + field + 6 + 23 + 10) * scale};
 			});
 			context.getInput().setCursorPos(row[0], row[1]);
@@ -206,20 +209,20 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 			clear(context);
 			context.getInput().typeChars("event");
 			context.waitTicks(3);
-			context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_DOWN);
-			context.getInput().pressKey(org.lwjgl.glfw.GLFW.GLFW_KEY_ENTER);
+			context.getInput().pressKey(InputConstants.KEY_DOWN);
+			context.getInput().pressKey(InputConstants.KEY_RETURN);
 			context.waitTicks(10);
 			String line = singleplayer.getServer().computeOnServer(server ->
-				((SignBlockEntity) server.overworld().getBlockEntity(pos)).getText(true).getMessage(0, false).getString());
+				((SignBlockEntity) server.overworld().getBlockEntity(pos)).getText(SignTextSlot.FRONT).getMessages(false).get(0).getString());
 			System.out.println("CUSTOM sign line after enter: '" + line + "'");
 			check("Eventschwert".equals(line), "Enter must send the custom item's name, got '" + line + "'");
 
 			// The own inventory shows the time left too.
-			context.runOnClient(client -> client.setScreen(new net.minecraft.client.gui.screens.inventory.InventoryScreen(client.player)));
+			context.runOnClient(client -> client.setScreenAndShow(new net.minecraft.client.gui.screens.inventory.InventoryScreen(client.player)));
 			context.waitTicks(5);
 			double[] own = context.computeOnClient(client -> {
-				AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.screen;
-				Slot slot = ((net.minecraft.client.gui.screens.inventory.InventoryScreen) client.screen).getMenu().slots.get(36);
+				AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.gui.screen();
+				Slot slot = ((net.minecraft.client.gui.screens.inventory.InventoryScreen) client.gui.screen()).getMenu().slots.get(36);
 				double scale = client.getWindow().getGuiScale();
 				return new double[] {(screen.hugosmpenhanced$getLeftPos() + slot.x + 8) * scale,
 					(screen.hugosmpenhanced$getTopPos() + slot.y + 8) * scale};
@@ -246,10 +249,10 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 
 			context.setScreen(() -> new SettingsScreen(null).select("Inventar & Handel", "Auktionshaus"));
 			context.waitTicks(5);
-			context.runOnClient(client -> client.screen.mouseScrolled(client.screen.width / 2.0, client.screen.height / 2.0, 0, -20));
+			context.runOnClient(client -> client.gui.screen().mouseScrolled(client.gui.screen().width / 2.0, client.gui.screen().height / 2.0, 0, -20));
 			context.waitTicks(3);
 			context.takeScreenshot("ah-einstellungen-limitiert");
-			context.runOnClient(client -> client.screen.mouseScrolled(client.screen.width / 2.0, client.screen.height / 2.0, 0, 8));
+			context.runOnClient(client -> client.gui.screen().mouseScrolled(client.gui.screen().width / 2.0, client.gui.screen().height / 2.0, 0, 8));
 			context.waitTicks(3);
 			context.takeScreenshot("ah-einstellungen-markieren");
 			context.setScreen(() -> null);
@@ -327,7 +330,7 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 		context.waitTicks(5);
 		openSign(singleplayer, pos);
 		context.waitTicks(10);
-		check(context.computeOnClient(client -> client.screen instanceof AuctionSearchScreen), "search screen must open for marking");
+		check(context.computeOnClient(client -> client.gui.screen() instanceof AuctionSearchScreen), "search screen must open for marking");
 		context.getInput().typeChars("sand");
 		context.waitTicks(3);
 		String first = context.computeOnClient(client -> AuctionSearch.search("sand", 3).get(0).entry().priceKey());
@@ -335,21 +338,21 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 		check("minecraft:sand".equals(first), "Sand must be the first suggestion, got " + first);
 		double[] box = context.computeOnClient(client -> {
 			double scale = client.getWindow().getGuiScale();
-			int width = Math.min(client.screen.width - 20, 300);
-			int left = (client.screen.width - width) / 2;
+			int width = Math.min(client.gui.screen().width - 20, 300);
+			int left = (client.gui.screen().width - width) / 2;
 			int field = 20;
-			int top = Math.max(18, (client.screen.height - (field + 6 + 9 * 23 + 46)) / 2 + 10);
+			int top = Math.max(18, (client.gui.screen().height - (field + 6 + 9 * 23 + 46)) / 2 + 10);
 			int markX = left + width - 16 - 4 - 14;
 			return new double[] {(markX + 6) * scale, (top + field + 6 + 23 + 10) * scale};
 		});
 		context.getInput().setCursorPos(box[0], box[1]);
 		context.waitTicks(3);
 		context.takeScreenshot("ah-suche-markieren-hover");
-		context.getInput().pressMouse(org.lwjgl.glfw.GLFW.GLFW_MOUSE_BUTTON_LEFT);
+		context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
 		context.waitTicks(3);
 		check(MarkedItems.isMarked("minecraft:sand"), "clicking the box must mark sand");
 		check(!MarkedItems.isMarked("minecraft:suspicious_sand"), "suspicious sand stays unmarked");
-		check(context.computeOnClient(client -> client.screen instanceof AuctionSearchScreen), "marking must not send the search");
+		check(context.computeOnClient(client -> client.gui.screen() instanceof AuctionSearchScreen), "marking must not send the search");
 		context.getInput().setCursorPos(0, 0);
 		context.waitTicks(2);
 		context.takeScreenshot("ah-suche-markiert");
@@ -405,7 +408,7 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 	}
 
 	private static void openPage(ClientGameTestContext context, String title, List<ItemStack> offers, ItemStack previous, ItemStack next) {
-		ItemStack filler = new ItemStack(Items.GRAY_STAINED_GLASS_PANE);
+		ItemStack filler = new ItemStack(Items.STAINED_GLASS_PANE.gray());
 		filler.set(DataComponents.CUSTOM_NAME, Component.literal(" "));
 		context.runOnClient(client -> {
 			SimpleContainer page = new SimpleContainer(54);
@@ -418,7 +421,7 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 			page.setItem(45, previous);
 			page.setItem(53, next);
 			var inventory = client.player.getInventory();
-			client.setScreen(new ContainerScreen(new ChestMenu(MenuType.GENERIC_9x6, 0, inventory, page, 6), inventory,
+			client.setScreenAndShow(new ContainerScreen(new ChestMenu(MenuType.GENERIC_9x6, 0, inventory, page, 6), inventory,
 				Component.literal(title)));
 		});
 		context.waitTicks(5);
@@ -469,9 +472,9 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 
 	private static void hoverSlotOf(ClientGameTestContext context, ItemStack stack) {
 		double[] pos = context.computeOnClient(client -> {
-			AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.screen;
+			AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.gui.screen();
 			double scale = client.getWindow().getGuiScale();
-			for (Slot slot : ((ContainerScreen) client.screen).getMenu().slots) {
+			for (Slot slot : ((ContainerScreen) client.gui.screen()).getMenu().slots) {
 				if (slot.getItem() == stack) {
 					return new double[] {(screen.hugosmpenhanced$getLeftPos() + slot.x + 8) * scale,
 						(screen.hugosmpenhanced$getTopPos() + slot.y + 8) * scale};
@@ -503,7 +506,7 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 
 	private static void clear(ClientGameTestContext context) {
 		context.runOnClient(client -> {
-			for (var child : client.screen.children()) {
+			for (var child : client.gui.screen().children()) {
 				if (child instanceof net.minecraft.client.gui.components.EditBox box) {
 					box.setValue("");
 				}
@@ -517,7 +520,7 @@ public class AuctionCustomItemsGameTest implements FabricClientGameTest {
 			ServerPlayer player = server.getPlayerList().getPlayers().get(0);
 			SignBlockEntity sign = (SignBlockEntity) server.overworld().getBlockEntity(pos);
 			sign.setAllowedPlayerEditor(player.getUUID());
-			player.openTextEdit(sign, true);
+			player.openTextEdit(sign, SignTextSlot.FRONT);
 		});
 	}
 

@@ -10,7 +10,7 @@ import com.hugosmpenhanced.client.util.ServerCheck;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.util.Util;
-import net.minecraft.client.GuiMessageTag;
+import net.minecraft.client.multiplayer.chat.GuiMessageTag;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;
@@ -101,7 +101,7 @@ public final class MentionHighlightFeature {
 		if (!ModConfigManager.CONFIG.mentionStyle.line()) {
 			return;
 		}
-		Minecraft.getInstance().gui.getChat().addMessage(p.senderName() != null
+		Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(p.senderName() != null
 			? Component.literal("» ").withStyle(ChatFormatting.GOLD, ChatFormatting.BOLD)
 				.append(Component.literal(p.senderName()).withStyle(ChatFormatting.YELLOW))
 				.append(Component.literal(" hat dich erwähnt").withStyle(ChatFormatting.GOLD))

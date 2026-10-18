@@ -10,7 +10,7 @@ import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonSpots;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryIcons;
 import com.hugosmpenhanced.client.gui.StyledScreen;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
 import net.minecraft.client.gui.components.EditBox;
@@ -240,20 +240,20 @@ public class InventoryButtonsScreen extends Screen implements StyledScreen {
 	@Override
 	public void onClose() {
 		ModConfigManager.save();
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		super.render(graphics, mouseX, mouseY, partialTick);
-		graphics.drawCenteredString(this.font, "— INVENTAR-BUTTONS —", this.width / 2, this.headerY - 12, 0xFFAAAAAA);
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+		graphics.centeredText(this.font, "— INVENTAR-BUTTONS —", this.width / 2, this.headerY - 12, 0xFFAAAAAA);
 
 		int hintY = this.headerY + TOTAL_HEIGHT - 20 - 12;
 		if (this.selected == null) {
-			graphics.drawCenteredString(this.font, "Noch keine Buttons hier. Klick auf +, um einen anzulegen.",
+			graphics.centeredText(this.font, "Noch keine Buttons hier. Klick auf +, um einen anzulegen.",
 				this.width / 2, this.headerY + 60, 0xFF888888);
 		}
-		graphics.drawCenteredString(this.font, "/ am Anfang = Command · Im Inventar ziehen zum Verschieben",
+		graphics.centeredText(this.font, "/ am Anfang = Command · Im Inventar ziehen zum Verschieben",
 			this.width / 2, hintY, 0xFF888888);
 	}
 }

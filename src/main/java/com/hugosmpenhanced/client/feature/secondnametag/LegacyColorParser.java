@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.feature.secondnametag;
 
+import com.hugosmpenhanced.client.util.Formats;
 import net.minecraft.ChatFormatting;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
@@ -42,7 +43,7 @@ public final class LegacyColorParser {
 					flush(result, run, style);
 					if (formatting == ChatFormatting.RESET) {
 						style = Style.EMPTY;
-					} else if (formatting.isColor()) {
+					} else if (Formats.isColor(formatting)) {
 						style = Style.EMPTY.withColor(formatting);
 					} else {
 						style = style.applyFormat(formatting);

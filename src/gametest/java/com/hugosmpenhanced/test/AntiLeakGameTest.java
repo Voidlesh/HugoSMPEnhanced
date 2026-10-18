@@ -44,7 +44,7 @@ public class AntiLeakGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			BlockPos p = context.computeOnClient(client -> client.player.blockPosition());
 			int x = p.getX(), z = p.getZ();
 			TestServerContext server = singleplayer.getServer();
@@ -57,17 +57,17 @@ public class AntiLeakGameTest implements FabricClientGameTest {
 			// Pit with ores, F3 open, looking at the diamond ore in the back wall
 			server.runCommand("tp @p " + (x + 0.5) + " -54 " + (z + 1.5) + " 0 21");
 			context.runOnClient(client -> {
-				client.debugEntries.setStatus(DebugScreenEntries.LOOKING_AT_BLOCK, DebugScreenEntryStatus.IN_OVERLAY);
+				client.debugEntries.setStatus(DebugScreenEntries.LOOKING_AT_BLOCK_STATE, DebugScreenEntryStatus.IN_OVERLAY);
 				client.debugEntries.setOverlayVisible(true);
 			});
 			setAntiLeak(context, false, CoordinateMask.BLUR);
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			context.waitTicks(10);
 			context.takeScreenshot("antileak-1-aus");
 
 			setAntiLeak(context, true, CoordinateMask.BLUR);
 			context.waitTicks(5);
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			context.waitTicks(10);
 			context.takeScreenshot("antileak-2-an");
 			checkRendering(context, x, z);
@@ -85,7 +85,7 @@ public class AntiLeakGameTest implements FabricClientGameTest {
 			context.takeScreenshot("antileak-3b-grube-an");
 			setAntiLeak(context, false, CoordinateMask.BLUR);
 			context.waitTicks(5);
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			context.waitTicks(10);
 			context.takeScreenshot("antileak-3a-grube-aus");
 
@@ -96,13 +96,13 @@ public class AntiLeakGameTest implements FabricClientGameTest {
 			server.runCommand("tp @p " + (x - 2.5) + " -45 " + (z - 0.5) + " 180 72");
 			setAntiLeak(context, false, CoordinateMask.BLUR);
 			context.waitTicks(5);
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			context.waitTicks(10);
-			context.runOnClient(client -> client.gui.getChat().clearMessages(false));
+			context.runOnClient(client -> client.gui.hud.getChat().clearMessages(false));
 			context.takeScreenshot("antileak-4-rotation-aus");
 			setAntiLeak(context, true, CoordinateMask.BLUR);
 			context.waitTicks(5);
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			context.waitTicks(10);
 			context.takeScreenshot("antileak-5-rotation-an");
 

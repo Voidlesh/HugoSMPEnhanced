@@ -11,7 +11,7 @@ import com.hugosmpenhanced.client.feature.secondnametag.SecondNametag;
 
 import com.hugosmpenhanced.client.gui.StyledScreen;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -118,18 +118,18 @@ public class NametagStyleScreen extends Screen implements StyledScreen {
 	@Override
 	public void onClose() {
 		ModConfigManager.save();
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		graphics.drawCenteredString(this.font, "— NAMETAG STYLE —", this.width / 2, 6, 0xFFAAAAAA);
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		graphics.centeredText(this.font, "— NAMETAG STYLE —", this.width / 2, 6, 0xFFAAAAAA);
 		NametagPreview.render(graphics, this.font, this.previewLeft, PREVIEW_TOP, this.previewWidth, this.previewHeight,
 			SecondNametag.isActive());
 		for (GroupLabel label : this.labels) {
-			graphics.drawString(this.font, label.text(), label.x(), label.y(), 0xFF9A9A9A);
+			graphics.text(this.font, label.text(), label.x(), label.y(), 0xFF9A9A9A);
 		}
-		super.render(graphics, mouseX, mouseY, partialTick);
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 	}
 
 	private static void toggleEffect(NametagEffect effect) {
@@ -157,12 +157,12 @@ public class NametagStyleScreen extends Screen implements StyledScreen {
 		}
 
 		@Override
-		protected void renderContents(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-			this.renderDefaultSprite(graphics);
+		protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+			this.extractDefaultSprite(graphics);
 
 			boolean active = ModConfigManager.CONFIG.nametagEffects.contains(this.effect);
 			if (active) {
-				graphics.renderOutline(this.getX(), this.getY(), this.getWidth(), this.getHeight(), 0xFFFFFFFF);
+				graphics.outline(this.getX(), this.getY(), this.getWidth(), this.getHeight(), 0xFFFFFFFF);
 			}
 
 			String label = this.effect.displayName();

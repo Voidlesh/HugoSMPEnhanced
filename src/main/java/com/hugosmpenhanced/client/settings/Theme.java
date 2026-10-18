@@ -2,7 +2,7 @@ package com.hugosmpenhanced.client.settings;
 
 import com.hugosmpenhanced.client.HugoSmpEnhancedClient;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.resources.Identifier;
 
@@ -51,12 +51,12 @@ public final class Theme {
 		return Identifier.fromNamespaceAndPath(HugoSmpEnhancedClient.MOD_ID, "settings/" + name);
 	}
 
-	public static void icon(GuiGraphics graphics, String name, int x, int y, int size, int color) {
+	public static void icon(GuiGraphicsExtractor graphics, String name, int x, int y, int size, int color) {
 		graphics.blitSprite(RenderPipelines.GUI_TEXTURED, sprite(name), x, y, size, size, color);
 	}
 
 	/** A box with cut corners and a one pixel border. */
-	public static void panel(GuiGraphics graphics, int x, int y, int width, int height, int fill, int border) {
+	public static void panel(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int fill, int border) {
 		int right = x + width;
 		int bottom = y + height;
 		graphics.fill(x + 1, y + 1, right - 1, bottom - 1, fill);
@@ -68,7 +68,7 @@ public final class Theme {
 		}
 	}
 
-	public static void toggle(GuiGraphics graphics, int x, int y, boolean on, boolean hovered) {
+	public static void toggle(GuiGraphicsExtractor graphics, int x, int y, boolean on, boolean hovered) {
 		if (on) {
 			panel(graphics, x, y, 22, 11, GREEN, GREEN_EDGE);
 			graphics.fill(x + 13, y + 2, x + 20, y + 9, WHITE);
@@ -79,7 +79,7 @@ public final class Theme {
 	}
 
 	/** Small pixel glyphs drawn from patterns ('#' = pixel). */
-	public static void glyph(GuiGraphics graphics, String[] pattern, int x, int y, int color) {
+	public static void glyph(GuiGraphicsExtractor graphics, String[] pattern, int x, int y, int color) {
 		for (int row = 0; row < pattern.length; row++) {
 			String line = pattern[row];
 			for (int col = 0; col < line.length(); col++) {

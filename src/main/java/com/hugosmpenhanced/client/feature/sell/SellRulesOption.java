@@ -1,9 +1,9 @@
 package com.hugosmpenhanced.client.feature.sell;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.List;
 import java.util.Locale;
 
-import org.lwjgl.glfw.GLFW;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.settings.SettingsOption;
@@ -11,7 +11,7 @@ import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.core.registries.BuiltInRegistries;
@@ -58,7 +58,7 @@ public class SellRulesOption extends SettingsOption {
 	}
 
 	@Override
-	protected void renderControl(GuiGraphics graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
+	protected void renderControl(GuiGraphicsExtractor graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
 	}
 
 	@Override
@@ -85,28 +85,28 @@ public class SellRulesOption extends SettingsOption {
 	}
 
 	@Override
-	protected void renderBelow(GuiGraphics graphics, Font font, int left, int top, int width, int mouseX, int mouseY) {
+	protected void renderBelow(GuiGraphicsExtractor graphics, Font font, int left, int top, int width, int mouseX, int mouseY) {
 		this.origin = new int[] {left, top};
 		this.innerWidth = width;
 		int right = left + width;
 		List<SellRule> rules = rules();
 		int y = top;
 		if (rules.isEmpty()) {
-			graphics.drawString(font, "Noch keine Regeln. Alt + Klick auf ein Item im Inventar legt eine an.", left, y + 2, Theme.FAINT, false);
+			graphics.text(font, "Noch keine Regeln. Alt + Klick auf ein Item im Inventar legt eine an.", left, y + 2, Theme.FAINT, false);
 			y += 14;
 		} else {
-			graphics.drawString(font, "Item", left + 20, y, Theme.FAINT, false);
-			graphics.drawString(font, "Behalten", this.keepX(right), y, Theme.FAINT, false);
-			graphics.drawString(font, "Ab Menge", this.minX(right), y, Theme.FAINT, false);
+			graphics.text(font, "Item", left + 20, y, Theme.FAINT, false);
+			graphics.text(font, "Behalten", this.keepX(right), y, Theme.FAINT, false);
+			graphics.text(font, "Ab Menge", this.minX(right), y, Theme.FAINT, false);
 			y += HEADER;
 			for (int i = 0; i < rules.size(); i++) {
 				SellRule rule = rules.get(i);
 				graphics.fill(left, y - 1, right, y, Theme.DIVIDER);
 				ItemStack stack = stackOf(rule.item);
-				graphics.renderItem(stack, left, y + 2);
+				graphics.item(stack, left, y + 2);
 				int nameW = this.keepX(right) - left - 26;
-				String name = font.plainSubstrByWidth(stack.isEmpty() ? rule.item : stack.getItem().getName().getString(), nameW);
-				graphics.drawString(font, name, left + 20, y + 6, rule.enabled ? Theme.TEXT : Theme.MUTED, false);
+				String name = font.plainSubstrByWidth(stack.isEmpty() ? rule.item : stack.getHoverName().getString(), nameW);
+				graphics.text(font, name, left + 20, y + 6, rule.enabled ? Theme.TEXT : Theme.MUTED, false);
 				this.field(graphics, font, this.keepX(right), y + 3, i, 0, rule.keep, rule.enabled, mouseX, mouseY);
 				this.field(graphics, font, this.minX(right), y + 3, i, 1, rule.minAmount, rule.enabled, mouseX, mouseY);
 				boolean overToggle = this.inside(mouseX, mouseY, this.toggleX(right), y + 4, 22, 11);
@@ -122,14 +122,14 @@ public class SellRulesOption extends SettingsOption {
 		int handW = font.width(hand) + 10;
 		boolean overHand = this.inside(mouseX, mouseY, bx, y, handW, H);
 		Theme.panel(graphics, bx, y, handW, H, 0xFF1E1E1E, overHand ? Theme.GOLD : 0xFF7A7A7A);
-		graphics.drawString(font, hand, bx + 5, y + 3, Theme.WHITE, false);
+		graphics.text(font, hand, bx + 5, y + 3, Theme.WHITE, false);
 		bx += handW + 4;
 		if (this.search != null) {
 			int fieldW = Math.min(110, right - bx);
 			Theme.panel(graphics, bx, y, fieldW, H, Theme.FIELD, Theme.GOLD);
 			String text = this.search.toString();
 			String shown = font.plainSubstrByWidth(text, fieldW - 10, true);
-			graphics.drawString(font, shown.isEmpty() ? "Item suchen ..." : shown, bx + 4, y + 3, shown.isEmpty() ? Theme.FAINT : Theme.WHITE, false);
+			graphics.text(font, shown.isEmpty() ? "Item suchen ..." : shown, bx + 4, y + 3, shown.isEmpty() ? Theme.FAINT : Theme.WHITE, false);
 			if ((System.currentTimeMillis() / 500) % 2 == 0) {
 				int cx = bx + 4 + font.width(shown);
 				graphics.fill(cx, y + 2, cx + 1, y + H - 2, Theme.WHITE);
@@ -137,25 +137,25 @@ public class SellRulesOption extends SettingsOption {
 			Item match = bestMatch(text);
 			if (match != null) {
 				int mx = bx + fieldW + 6;
-				graphics.renderItem(new ItemStack(match), mx, y - 2);
-				graphics.drawString(font, font.plainSubstrByWidth(match.getName().getString() + "  (Enter)", right - mx - 20), mx + 19, y + 3, Theme.MUTED, false);
+				graphics.item(new ItemStack(match), mx, y - 2);
+				graphics.text(font, font.plainSubstrByWidth(new ItemStack(match).getHoverName().getString() + "  (Enter)", right - mx - 20), mx + 19, y + 3, Theme.MUTED, false);
 			}
 		} else {
 			String find = "+ Item suchen";
 			int findW = font.width(find) + 10;
 			boolean overFind = this.inside(mouseX, mouseY, bx, y, findW, H);
 			Theme.panel(graphics, bx, y, findW, H, 0xFF1E1E1E, overFind ? Theme.GOLD : 0xFF7A7A7A);
-			graphics.drawString(font, find, bx + 5, y + 3, Theme.WHITE, false);
+			graphics.text(font, find, bx + 5, y + 3, Theme.WHITE, false);
 		}
 	}
 
-	private void field(GuiGraphics graphics, Font font, int x, int y, int rule, int column, int value, boolean enabled,
+	private void field(GuiGraphicsExtractor graphics, Font font, int x, int y, int rule, int column, int value, boolean enabled,
 		int mouseX, int mouseY) {
 		boolean editing = this.editRule == rule && this.editColumn == column && this.editText != null;
 		boolean over = this.inside(mouseX, mouseY, x, y, FIELD_W, H);
 		Theme.panel(graphics, x, y, FIELD_W, H, Theme.FIELD, editing ? Theme.GOLD : over ? 0xFF8A8A8A : Theme.FIELD_BORDER);
 		String text = editing ? this.editText.toString() : String.valueOf(value);
-		graphics.drawString(font, text, x + 4, y + 3, enabled || editing ? Theme.WHITE : Theme.MUTED, false);
+		graphics.text(font, text, x + 4, y + 3, enabled || editing ? Theme.WHITE : Theme.MUTED, false);
 		if (editing && (System.currentTimeMillis() / 500) % 2 == 0) {
 			int cx = x + 4 + font.width(text);
 			graphics.fill(cx, y + 2, cx + 1, y + H - 2, Theme.WHITE);
@@ -182,7 +182,7 @@ public class SellRulesOption extends SettingsOption {
 			if (item == Items.AIR) {
 				continue;
 			}
-			String name = item.getName().getString().toLowerCase(Locale.ROOT);
+			String name = new ItemStack(item).getHoverName().getString().toLowerCase(Locale.ROOT);
 			String path = BuiltInRegistries.ITEM.getKey(item).getPath();
 			String spaced = path.replace('_', ' ');
 			int score;
@@ -308,12 +308,12 @@ public class SellRulesOption extends SettingsOption {
 	public boolean keyPressed(KeyEvent event) {
 		if (this.editText != null) {
 			switch (event.key()) {
-				case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER, GLFW.GLFW_KEY_TAB -> this.commitEdit();
-				case GLFW.GLFW_KEY_ESCAPE -> {
+				case InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER, InputConstants.KEY_TAB -> this.commitEdit();
+				case InputConstants.KEY_ESCAPE -> {
 					this.editText = null;
 					this.editRule = -1;
 				}
-				case GLFW.GLFW_KEY_BACKSPACE -> {
+				case InputConstants.KEY_BACKSPACE -> {
 					if (!this.editText.isEmpty()) {
 						this.editText.setLength(this.editText.length() - 1);
 					}
@@ -325,15 +325,15 @@ public class SellRulesOption extends SettingsOption {
 		}
 		if (this.search != null) {
 			switch (event.key()) {
-				case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> {
+				case InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER -> {
 					Item match = bestMatch(this.search.toString());
 					if (match != null) {
 						addRule(match);
 					}
 					this.search = null;
 				}
-				case GLFW.GLFW_KEY_ESCAPE -> this.search = null;
-				case GLFW.GLFW_KEY_BACKSPACE -> {
+				case InputConstants.KEY_ESCAPE -> this.search = null;
+				case InputConstants.KEY_BACKSPACE -> {
 					if (!this.search.isEmpty()) {
 						this.search.setLength(this.search.length() - 1);
 					}

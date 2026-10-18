@@ -1,9 +1,10 @@
 package com.hugosmpenhanced.client.feature.spawnerprices;
 
+import com.hugosmpenhanced.client.util.Desktop;
 import com.hugosmpenhanced.client.gui.HugoStyle;
 import com.hugosmpenhanced.client.gui.StyledScreen;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
@@ -47,10 +48,10 @@ public class SpawnerPricesScreen extends Screen implements StyledScreen {
 		this.discordButton = this.addRenderableWidget(Button.builder(Component.literal("Discord"), b -> {
 			SpawnerPrices.Server server = SpawnerPrices.voidMarket();
 			if (server != null && server.invite() != null) {
-				Util.getPlatform().openUri(server.invite());
+				Desktop.openUri(server.invite());
 			}
 		}).bounds(left + 8, y, width, 20).build());
-		this.addRenderableWidget(Button.builder(Component.literal("Webseite"), b -> Util.getPlatform().openUri(SpawnerPrices.SITE))
+		this.addRenderableWidget(Button.builder(Component.literal("Webseite"), b -> Desktop.openUri(SpawnerPrices.SITE))
 			.bounds(left + 8 + (width + 4), y, width, 20).build());
 		this.refreshButton = this.addRenderableWidget(Button.builder(Component.literal("Aktualisieren"), b -> SpawnerPrices.refresh())
 			.bounds(left + 8 + 2 * (width + 4), y, width, 20).build());
@@ -69,11 +70,11 @@ public class SpawnerPricesScreen extends Screen implements StyledScreen {
 
 	@Override
 	public void onClose() {
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		int height = this.panelHeight();
 		int left = (this.width - PANEL_WIDTH) / 2;
 		int top = (this.height - height) / 2;
@@ -81,7 +82,7 @@ public class SpawnerPricesScreen extends Screen implements StyledScreen {
 		// Darker than the plain box: the prices must stay readable over a bright world.
 		graphics.fill(left + 1, top + 3, left + PANEL_WIDTH - 1, top + height - 1, 0x70000000);
 		graphics.fill(left + 1, top + 1, left + PANEL_WIDTH - 1, top + 3, ACCENT);
-		super.render(graphics, mouseX, mouseY, partialTick);
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
 		SpawnerPrices.Snapshot snapshot = SpawnerPrices.snapshot();
 		SpawnerPrices.Server server = snapshot != null ? snapshot.server() : null;
@@ -89,16 +90,16 @@ public class SpawnerPricesScreen extends Screen implements StyledScreen {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(left + 10, top + 9);
 		graphics.pose().scale(1.5f, 1.5f);
-		graphics.drawString(this.font, "Spawner-Preise", 0, 0, 0xFFFFFFFF);
+		graphics.text(this.font, "Spawner-Preise", 0, 0, 0xFFFFFFFF);
 		graphics.pose().popMatrix();
-		graphics.drawString(this.font, SpawnerPrices.SERVER, left + 10, top + 25, ACCENT);
+		graphics.text(this.font, SpawnerPrices.SERVER, left + 10, top + 25, ACCENT);
 		String status = this.status(snapshot, server);
-		graphics.drawString(this.font, status, left + PANEL_WIDTH - 10 - this.font.width(status), top + 12,
+		graphics.text(this.font, status, left + PANEL_WIDTH - 10 - this.font.width(status), top + 12,
 			snapshot == null && SpawnerPrices.state() == SpawnerPrices.State.FAILED ? 0xFFFF6060 : LABEL);
 
 		int x = left + 10 + MOB_COLUMN;
-		graphics.drawString(this.font, "Ankauf", x, top + 25, LABEL);
-		graphics.drawString(this.font, "Verkauf", x + PRICE_COLUMN, top + 25, LABEL);
+		graphics.text(this.font, "Ankauf", x, top + 25, LABEL);
+		graphics.text(this.font, "Verkauf", x + PRICE_COLUMN, top + 25, LABEL);
 		graphics.fill(left + 6, top + HEADER_HEIGHT - 6, left + PANEL_WIDTH - 6, top + HEADER_HEIGHT - 5, 0xFF3A3A3A);
 
 		int y = top + HEADER_HEIGHT - 2;
@@ -108,16 +109,16 @@ public class SpawnerPricesScreen extends Screen implements StyledScreen {
 				graphics.fill(left + 4, y, left + PANEL_WIDTH - 4, y + ROW_HEIGHT, 0x30FFFFFF);
 			}
 			odd = !odd;
-			graphics.renderItem(new ItemStack(mob.icon), left + 10, y + 1);
+			graphics.item(new ItemStack(mob.icon), left + 10, y + 1);
 			int textY = y + (ROW_HEIGHT - 8) / 2;
-			graphics.drawString(this.font, mob.label, left + 30, textY, 0xFFE0E0E0);
+			graphics.text(this.font, mob.label, left + 30, textY, 0xFFE0E0E0);
 			if (snapshot != null) {
 				this.price(graphics, x, textY, server != null ? server.buy(mob) : null, BUY);
 				this.price(graphics, x + PRICE_COLUMN, textY, server != null ? server.sell(mob) : null, SELL);
 			}
 			y += ROW_HEIGHT;
 		}
-		graphics.drawString(this.font, "Ankauf = was VOID dir zahlt, Verkauf = was du zahlst", left + 10, y + 3, LABEL);
+		graphics.text(this.font, "Ankauf = was VOID dir zahlt, Verkauf = was du zahlst", left + 10, y + 3, LABEL);
 	}
 
 	private String status(SpawnerPrices.Snapshot snapshot, SpawnerPrices.Server server) {
@@ -131,7 +132,7 @@ public class SpawnerPricesScreen extends Screen implements StyledScreen {
 		return server == null ? "Gerade nicht gelistet" : age;
 	}
 
-	private void price(GuiGraphics graphics, int x, int y, Long price, int color) {
-		graphics.drawString(this.font, price == null ? "–" : SpawnerPrices.format(price), x, y, price == null ? MUTED : color);
+	private void price(GuiGraphicsExtractor graphics, int x, int y, Long price, int color) {
+		graphics.text(this.font, price == null ? "–" : SpawnerPrices.format(price), x, y, price == null ? MUTED : color);
 	}
 }

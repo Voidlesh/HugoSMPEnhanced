@@ -9,7 +9,7 @@ import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.util.Mth;
 
 /** A number between min and max, snapped to step; saved when the mouse is let go. */
@@ -76,7 +76,7 @@ public class SliderOption extends ValueOption<Double> {
 	}
 
 	@Override
-	protected void renderControl(GuiGraphics graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
+	protected void renderControl(GuiGraphicsExtractor graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
 		int left = right - VALUE - TRACK;
 		double max = this.max.getAsDouble();
 		double fraction = max <= this.min ? 0 : (this.shown() - this.min) / (max - this.min);
@@ -86,7 +86,7 @@ public class SliderOption extends ValueOption<Double> {
 		boolean active = this.dragging || this.inside(mouseX, mouseY, left - 2, centerY - 6, TRACK + 4, 13);
 		Theme.panel(graphics, knob, centerY - 4, 6, 9, Theme.WHITE, active ? Theme.GOLD : 0xFF282828);
 		String text = this.format.apply(this.shown());
-		graphics.drawString(font, text, right - font.width(text), centerY - 4, Theme.TEXT);
+		graphics.text(font, text, right - font.width(text), centerY - 4, Theme.TEXT);
 	}
 
 	@Override

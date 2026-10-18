@@ -1,12 +1,13 @@
 package com.hugosmpenhanced.client.feature.update;
 
+import com.hugosmpenhanced.client.util.Desktop;
 import java.util.List;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.gui.StyledScreen;
 import com.hugosmpenhanced.client.settings.Theme;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
@@ -67,7 +68,7 @@ public class UpdateScreen extends Screen implements StyledScreen {
 		if (!manual) {
 			int w = this.font.width("GitHub") + 16;
 			this.addRenderableWidget(new UpdateButton(right - w, y, w, 17, "GitHub", false,
-				b -> Util.getPlatform().openUri(this.releaseUrl())));
+				b -> Desktop.openUri(this.releaseUrl())));
 			right -= w + 4;
 		}
 		if (this.shownState != UpdateInstaller.State.READY) {
@@ -101,7 +102,7 @@ public class UpdateScreen extends Screen implements StyledScreen {
 
 	private void primaryAction(boolean manual) {
 		if (manual) {
-			Util.getPlatform().openUri(this.releaseUrl());
+			Desktop.openUri(this.releaseUrl());
 			return;
 		}
 		switch (UpdateInstaller.state(this.release)) {
@@ -131,7 +132,7 @@ public class UpdateScreen extends Screen implements StyledScreen {
 
 	@Override
 	public void onClose() {
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	private int boxWidth() {
@@ -157,41 +158,41 @@ public class UpdateScreen extends Screen implements StyledScreen {
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		Theme.panel(graphics, this.fx, this.fy, this.fw, this.fh, Theme.FRAME, Theme.FRAME_BORDER);
 		this.renderHeader(graphics);
 		this.renderChangelog(graphics);
 		this.renderStatus(graphics);
-		super.render(graphics, mouseX, mouseY, partialTick);
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 	}
 
-	private void renderHeader(GuiGraphics graphics) {
+	private void renderHeader(GuiGraphicsExtractor graphics) {
 		int x = this.fx + 10;
 		int y = this.fy + 9;
 		Theme.icon(graphics, "brand", x, y + 1, 20, Theme.WHITE);
 		x += 28;
-		graphics.drawString(this.font, Component.literal("Update verfügbar").withStyle(s -> s.withBold(true)), x, y, Theme.WHITE);
+		graphics.text(this.font, Component.literal("Update verfügbar").withStyle(s -> s.withBold(true)), x, y, Theme.WHITE);
 		if (this.release.prerelease()) {
 			int chipX = x + this.font.width(Component.literal("Update verfügbar").withStyle(s -> s.withBold(true))) + 6;
 			Theme.panel(graphics, chipX, y - 2, this.font.width("Vorabversion") + 8, 12, Theme.CHIP, Theme.CHIP_BORDER);
-			graphics.drawString(this.font, "Vorabversion", chipX + 4, y, Theme.TEXT_DIM, false);
+			graphics.text(this.font, "Vorabversion", chipX + 4, y, Theme.TEXT_DIM, false);
 		}
 		y += 13;
 		String current = ModUpdates.currentVersion();
-		graphics.drawString(this.font, current, x, y, Theme.MUTED, false);
+		graphics.text(this.font, current, x, y, Theme.MUTED, false);
 		x += this.font.width(current) + 5;
-		graphics.drawString(this.font, "→", x, y, Theme.GOLD, false);
+		graphics.text(this.font, "→", x, y, Theme.GOLD, false);
 		x += this.font.width("→") + 5;
-		graphics.drawString(this.font, Component.literal(this.release.version()).withStyle(s -> s.withBold(true)), x, y, Theme.WHITE, false);
+		graphics.text(this.font, Component.literal(this.release.version()).withStyle(s -> s.withBold(true)), x, y, Theme.WHITE, false);
 		String date = this.release.date();
 		if (!date.isEmpty()) {
 			String text = "veröffentlicht am " + date;
-			graphics.drawString(this.font, text, this.fx + this.fw - 10 - this.font.width(text), y, Theme.FAINT, false);
+			graphics.text(this.font, text, this.fx + this.fw - 10 - this.font.width(text), y, Theme.FAINT, false);
 		}
 		graphics.fill(this.fx + 8, this.fy + HEADER, this.fx + this.fw - 8, this.fy + HEADER + 1, Theme.FRAME_BORDER);
 	}
 
-	private void renderChangelog(GuiGraphics graphics) {
+	private void renderChangelog(GuiGraphicsExtractor graphics) {
 		int left = this.fx + 8;
 		int top = this.boxTop();
 		int width = this.boxWidth();
@@ -203,9 +204,9 @@ public class UpdateScreen extends Screen implements StyledScreen {
 			y += line.gap();
 			if (y > top - LINE && y < top + height) {
 				if (line.bullet() != null) {
-					graphics.drawString(this.font, line.bullet(), left + 8 + line.indent() - this.font.width(line.bullet()) - 4, y, Theme.GOLD, false);
+					graphics.text(this.font, line.bullet(), left + 8 + line.indent() - this.font.width(line.bullet()) - 4, y, Theme.GOLD, false);
 				}
-				graphics.drawString(this.font, line.text(), left + 8 + line.indent(), y, Theme.TEXT_DIM, false);
+				graphics.text(this.font, line.text(), left + 8 + line.indent(), y, Theme.TEXT_DIM, false);
 			}
 			y += LINE;
 		}
@@ -219,7 +220,7 @@ public class UpdateScreen extends Screen implements StyledScreen {
 		}
 	}
 
-	private void renderStatus(GuiGraphics graphics) {
+	private void renderStatus(GuiGraphicsExtractor graphics) {
 		int x = this.fx + 10;
 		int y = this.fy + this.fh - FOOTER + 7;
 		String blocker = UpdateInstaller.blocker(this.release);
@@ -253,6 +254,6 @@ public class UpdateScreen extends Screen implements StyledScreen {
 				default -> text = "Wird geladen, geprüft und beim Beenden des Spiels eingesetzt";
 			}
 		}
-		graphics.drawString(this.font, this.font.plainSubstrByWidth(text, this.fw - 20), x, y, color, false);
+		graphics.text(this.font, this.font.plainSubstrByWidth(text, this.fw - 20), x, y, color, false);
 	}
 }

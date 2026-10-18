@@ -1,8 +1,8 @@
 package com.hugosmpenhanced.test;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.function.Predicate;
 
-import org.lwjgl.glfw.GLFW;
 
 import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.config.ModConfigManager;
@@ -26,6 +26,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.ItemStackTemplate;
 import net.minecraft.world.item.Items;
 import net.minecraft.world.item.component.BundleContents;
 import net.minecraft.world.item.enchantment.Enchantments;
@@ -84,7 +85,7 @@ public class SellGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			singleplayer.getServer().runCommand("gamerule sendCommandFeedback false");
 			setInventory(context, singleplayer, (player, inv) -> {
 				inv.clearContent();
@@ -102,7 +103,7 @@ public class SellGameTest implements FabricClientGameTest {
 				sword.enchant(player.level().registryAccess().lookupOrThrow(Registries.ENCHANTMENT).getOrThrow(Enchantments.SHARPNESS), 5);
 				inv.setItem(32, sword);
 				ItemStack bundle = new ItemStack(Items.BUNDLE);
-				bundle.set(DataComponents.BUNDLE_CONTENTS, new BundleContents(java.util.List.of(new ItemStack(Items.DIAMOND, 16))));
+				bundle.set(DataComponents.BUNDLE_CONTENTS, new BundleContents(java.util.List.of(new ItemStackTemplate(Items.DIAMOND, 16))));
 				inv.setItem(33, bundle);
 				ItemStack named = new ItemStack(Items.SUGAR_CANE, 64);
 				named.set(DataComponents.CUSTOM_NAME, Component.literal("Glücks-Zuckerrohr"));
@@ -115,7 +116,7 @@ public class SellGameTest implements FabricClientGameTest {
 			context.waitTicks(3);
 			hoverInventorySlot(context, 9);
 			context.getInput().holdAlt();
-			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_RIGHT);
+			context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_RIGHT);
 			context.waitTicks(2);
 			context.getInput().setCursorPos(10, 10);
 			context.waitTicks(2);
@@ -126,7 +127,7 @@ public class SellGameTest implements FabricClientGameTest {
 			context.waitTicks(2);
 
 			// First sale: G opens /sell, the panel asks once.
-			context.getInput().pressKey(GLFW.GLFW_KEY_G);
+			context.getInput().pressKey(InputConstants.KEY_G);
 			waitUntil(context, "confirm", client -> SellEngine.state() == SellEngine.State.CONFIRM, 100);
 			context.getInput().setCursorPos(10, 10);
 			shot(context, "sell-2-vorschau");
@@ -152,7 +153,7 @@ public class SellGameTest implements FabricClientGameTest {
 					inv.setItem(i, new ItemStack(Items.MELON_SLICE, 64));
 				}
 			});
-			context.getInput().pressKey(GLFW.GLFW_KEY_G);
+			context.getInput().pressKey(InputConstants.KEY_G);
 			waitUntil(context, "second run done", client -> TestSellServer.sales >= 2 && !SellEngine.running(), 400);
 			context.waitTicks(30);
 			System.out.println("SELLTEST prices: " + context.computeOnClient(client -> ModConfigManager.CONFIG.sellPrices)
@@ -160,7 +161,7 @@ public class SellGameTest implements FabricClientGameTest {
 
 			// AFK farm with Shift + G: waits outside, collects in the menu until 50 %, sells.
 			context.getInput().holdShift();
-			context.getInput().pressKey(GLFW.GLFW_KEY_G);
+			context.getInput().pressKey(InputConstants.KEY_G);
 			context.getInput().releaseShift();
 			context.waitTicks(5);
 			System.out.println("SELLTEST afk on: " + context.computeOnClient(client -> SellEngine.afkRunning() + " " + SellEngine.state()
@@ -198,7 +199,7 @@ public class SellGameTest implements FabricClientGameTest {
 
 			// Off again with Shift + G; then the autostart after a join.
 			context.getInput().holdShift();
-			context.getInput().pressKey(GLFW.GLFW_KEY_G);
+			context.getInput().pressKey(InputConstants.KEY_G);
 			context.getInput().releaseShift();
 			context.waitTicks(3);
 			System.out.println("SELLTEST afk off: " + context.computeOnClient(client -> SellEngine.afkRunning() + " wasOn=" + ModConfigManager.CONFIG.sellAfkWasOn));
@@ -217,11 +218,11 @@ public class SellGameTest implements FabricClientGameTest {
 			});
 			waitUntil(context, "afk in menu", client -> SellEngine.boundScreen() != null && SellEngine.state() == SellEngine.State.WAITING, 200);
 			context.getInput().holdShift();
-			context.getInput().pressKey(GLFW.GLFW_KEY_G);
+			context.getInput().pressKey(InputConstants.KEY_G);
 			context.getInput().releaseShift();
 			context.waitTicks(5);
 			System.out.println("SELLTEST stop in menu: running=" + context.computeOnClient(client -> SellEngine.afkRunning()
-				+ " screen=" + (client.screen == null ? "none" : client.screen.getClass().getSimpleName())));
+				+ " screen=" + (client.gui.screen() == null ? "none" : client.gui.screen().getClass().getSimpleName())));
 			context.runOnClient(client -> SellEngine.stop("", true));
 			context.waitTicks(3);
 		}
@@ -281,7 +282,7 @@ public class SellGameTest implements FabricClientGameTest {
 	}
 
 	private static void shot(ClientGameTestContext context, String name) {
-		context.runOnClient(client -> client.getToastManager().clear());
+		context.runOnClient(client -> client.gui.toastManager().clear());
 		context.waitTicks(2);
 		context.takeScreenshot(name);
 	}
@@ -297,13 +298,13 @@ public class SellGameTest implements FabricClientGameTest {
 		});
 		context.getInput().setCursorPos(pos[0], pos[1]);
 		context.waitTicks(2);
-		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+		context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
 	}
 
 	private static void hoverInventorySlot(ClientGameTestContext context, int inventoryIndex) {
 		double[] pos = context.computeOnClient(client -> {
-			AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.screen;
-			for (Slot slot : ((InventoryScreen) client.screen).getMenu().slots) {
+			AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.gui.screen();
+			for (Slot slot : ((InventoryScreen) client.gui.screen()).getMenu().slots) {
 				if (slot.container instanceof Inventory && slot.getContainerSlot() == inventoryIndex) {
 					double scale = client.getWindow().getGuiScale();
 					return new double[] {(screen.hugosmpenhanced$getLeftPos() + slot.x + 8) * scale, (screen.hugosmpenhanced$getTopPos() + slot.y + 8) * scale};

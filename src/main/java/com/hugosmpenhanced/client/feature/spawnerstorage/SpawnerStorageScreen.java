@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.feature.spawnerstorage;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -10,12 +11,11 @@ import com.hugosmpenhanced.client.gui.PanelScreen;
 import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import org.lwjgl.glfw.GLFW;
 
 /** {@code /hse spawner}: every spawner you opened, fullest first, with when it will be full. */
 public class SpawnerStorageScreen extends PanelScreen {
@@ -73,9 +73,9 @@ public class SpawnerStorageScreen extends PanelScreen {
 		}
 
 		@Override
-		public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, boolean hovered) {
+		public void render(GuiGraphicsExtractor graphics, Font font, int x, int y, int width, int height, boolean hovered) {
 			long now = System.currentTimeMillis();
-			graphics.renderItem(new ItemStack(Items.SPAWNER), x + 3, y + 3);
+			graphics.item(new ItemStack(Items.SPAWNER), x + 3, y + 3);
 			clipped(graphics, font, this.spawner.label(), x + 24, y + 3, 120, Theme.TEXT);
 			String place = this.spawner.x + ", " + this.spawner.y + ", " + this.spawner.z + "  " + world(this.spawner.dimension);
 			clipped(graphics, font, place, x + 24, y + 12, 140, Theme.FAINT);
@@ -86,8 +86,8 @@ public class SpawnerStorageScreen extends PanelScreen {
 			graphics.fill(barX, y + 8, barX + barWidth, y + 13, 0xFF2D2D2D);
 			graphics.fill(barX, y + 8, barX + barWidth * percent / 100, y + 13, color);
 			String value = (this.spawner.estimated ? "~" : "") + percent + " %";
-			graphics.drawString(font, value, barX + barWidth + 6, y + 3, color, false);
-			graphics.drawString(font, SpawnerStorage.fullText(this.spawner, now), barX + barWidth + 6, y + 12, Theme.MUTED, false);
+			graphics.text(font, value, barX + barWidth + 6, y + 3, color, false);
+			graphics.text(font, SpawnerStorage.fullText(this.spawner, now), barX + barWidth + 6, y + 12, Theme.MUTED, false);
 		}
 
 		@Override
@@ -109,7 +109,7 @@ public class SpawnerStorageScreen extends PanelScreen {
 
 		@Override
 		public boolean click(int button) {
-			if (button == GLFW.GLFW_MOUSE_BUTTON_RIGHT) {
+			if (button == InputConstants.MOUSE_BUTTON_RIGHT) {
 				SpawnerStorage.forget(this.spawner);
 				return true;
 			}

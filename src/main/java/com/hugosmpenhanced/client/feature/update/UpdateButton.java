@@ -3,7 +3,7 @@ package com.hugosmpenhanced.client.feature.update;
 import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
@@ -17,7 +17,7 @@ class UpdateButton extends Button {
 	}
 
 	@Override
-	protected void renderContents(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		int x = this.getX();
 		int y = this.getY();
 		boolean over = this.active && this.isHoveredOrFocused();
@@ -30,6 +30,6 @@ class UpdateButton extends Button {
 		}
 		var font = Minecraft.getInstance().font;
 		int color = !this.active ? Theme.FAINT : this.primary || over ? Theme.WHITE : Theme.TEXT_DIM;
-		graphics.drawCenteredString(font, this.getMessage(), x + this.width / 2, y + (this.height - 8) / 2, color);
+		graphics.centeredText(font, this.getMessage(), x + this.width / 2, y + (this.height - 8) / 2, color);
 	}
 }

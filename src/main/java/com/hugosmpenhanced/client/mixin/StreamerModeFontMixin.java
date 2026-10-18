@@ -29,7 +29,7 @@ public abstract class StreamerModeFontMixin {
 		return NameMask.mask(text);
 	}
 
-	@ModifyVariable(method = "drawInBatch8xOutline", at = @At("HEAD"), argsOnly = true)
+	@ModifyVariable(method = "prepare8xTextOutline", at = @At("HEAD"), argsOnly = true)
 	private FormattedCharSequence hugosmpenhanced$maskOutline(FormattedCharSequence text) {
 		return NameMask.mask(text);
 	}

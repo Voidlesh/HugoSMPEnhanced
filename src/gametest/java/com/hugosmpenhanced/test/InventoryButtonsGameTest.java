@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.test;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.List;
 
 import com.hugosmpenhanced.client.config.InventoryButtonsScreen;
@@ -17,7 +18,6 @@ import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContex
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Opens the config screen and the inventory button editor, then the real inventory with buttons
@@ -62,7 +62,7 @@ public class InventoryButtonsGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			context.setScreen(() -> new InventoryScreen(Minecraft.getInstance().player));
 			context.waitTicks(3);
 			context.takeScreenshot("invbuttons-inventory");
@@ -72,7 +72,7 @@ public class InventoryButtonsGameTest implements FabricClientGameTest {
 			context.getInput().setCursorPos(first[0], first[1]);
 			context.waitTicks(2);
 			context.takeScreenshot("invbuttons-hover");
-			context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
 			context.waitTicks(5);
 
 			// Drag the second right button onto the third spot of the top row.
@@ -80,14 +80,14 @@ public class InventoryButtonsGameTest implements FabricClientGameTest {
 			double[] to = spotCenter(context, InventoryButtonPosition.TOP, 2);
 			context.getInput().setCursorPos(from[0], from[1]);
 			context.waitTicks(1);
-			context.getInput().holdMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			context.getInput().holdMouse(InputConstants.MOUSE_BUTTON_LEFT);
 			context.waitTicks(2);
 			context.getInput().setCursorPos((from[0] + to[0]) / 2, (from[1] + to[1]) / 2);
 			context.waitTicks(2);
 			context.getInput().setCursorPos(to[0], to[1]);
 			context.waitTicks(2);
 			context.takeScreenshot("invbuttons-dragging");
-			context.getInput().releaseMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+			context.getInput().releaseMouse(InputConstants.MOUSE_BUTTON_LEFT);
 			context.waitTicks(3);
 			context.takeScreenshot("invbuttons-dropped");
 			String placement = context.computeOnClient(client -> {
@@ -117,7 +117,7 @@ public class InventoryButtonsGameTest implements FabricClientGameTest {
 	}
 
 	private static double[] spot(Minecraft client, InventoryButtonPosition side, int slot) {
-		AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.screen;
+		AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.gui.screen();
 		double scale = client.getWindow().getGuiScale();
 		int x = screen.hugosmpenhanced$getLeftPos() + InventoryButtonSpots.x(side, slot, screen.hugosmpenhanced$getImageWidth()) + 10;
 		int y = screen.hugosmpenhanced$getTopPos() + InventoryButtonSpots.y(side, slot) + 10;

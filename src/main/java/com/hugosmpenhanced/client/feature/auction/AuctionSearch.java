@@ -17,6 +17,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
+import net.minecraft.world.level.block.entity.SignTextSlot;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -87,13 +88,13 @@ public final class AuctionSearch {
 		if (!isSearchSign(sign, front)) {
 			return false;
 		}
-		Minecraft.getInstance().setScreen(new AuctionSearchScreen(sign, front, AuctionMarket.recent()));
+		Minecraft.getInstance().setScreenAndShow(new AuctionSearchScreen(sign, front, AuctionMarket.recent()));
 		return true;
 	}
 
 	private static boolean isSearchSign(SignBlockEntity sign, boolean front) {
 		for (int i = 0; i < 4; i++) {
-			if (sign.getText(front).getMessage(i, false).getString().toLowerCase(Locale.ROOT).contains("suchbegriff")) {
+			if (sign.getText(front ? SignTextSlot.FRONT : SignTextSlot.BACK).getMessages(false).get(i).getString().toLowerCase(Locale.ROOT).contains("suchbegriff")) {
 				return true;
 			}
 		}
@@ -109,13 +110,13 @@ public final class AuctionSearch {
 		String[] lines = new String[4];
 		lines[0] = query;
 		for (int i = 1; i < 4; i++) {
-			lines[i] = sign.getText(front).getMessage(i, false).getString();
+			lines[i] = sign.getText(front ? SignTextSlot.FRONT : SignTextSlot.BACK).getMessages(false).get(i).getString();
 		}
 		// New results: the pages browsed so far belong to the old search.
 		if (!query.isBlank()) {
 			LimitedOffers.newBrowse();
 		}
-		client.getConnection().send(new ServerboundSignUpdatePacket(sign.getBlockPos(), front, lines[0], lines[1], lines[2], lines[3]));
+		client.getConnection().send(new ServerboundSignUpdatePacket(sign.getBlockPos(), List.of(lines[0], lines[1], lines[2], lines[3]), front ? SignTextSlot.FRONT : SignTextSlot.BACK));
 	}
 
 	public static void openVanilla(SignBlockEntity sign, boolean front) {
@@ -125,7 +126,7 @@ public final class AuctionSearch {
 		}
 		openingVanilla = true;
 		try {
-			client.player.openTextEdit(sign, front);
+			client.player.openTextEdit(sign, front ? SignTextSlot.FRONT : SignTextSlot.BACK);
 		} finally {
 			openingVanilla = false;
 		}

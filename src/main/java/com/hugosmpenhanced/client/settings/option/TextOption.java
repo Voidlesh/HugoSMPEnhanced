@@ -1,16 +1,16 @@
 package com.hugosmpenhanced.client.settings.option;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
 import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.settings.Theme;
 
-import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 
@@ -39,7 +39,7 @@ public class TextOption extends ValueOption<String> {
 	}
 
 	@Override
-	protected void renderControl(GuiGraphics graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
+	protected void renderControl(GuiGraphicsExtractor graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
 	}
 
 	@Override
@@ -48,7 +48,7 @@ public class TextOption extends ValueOption<String> {
 	}
 
 	@Override
-	protected void renderBelow(GuiGraphics graphics, Font font, int left, int top, int width, int mouseX, int mouseY) {
+	protected void renderBelow(GuiGraphicsExtractor graphics, Font font, int left, int top, int width, int mouseX, int mouseY) {
 		this.field = new int[] {left, top, width};
 		boolean editing = this.input != null;
 		boolean over = this.inside(mouseX, mouseY, left, top, width, H);
@@ -56,7 +56,7 @@ public class TextOption extends ValueOption<String> {
 		String text = editing ? this.input.toString() : this.get();
 		int room = width - 10;
 		if (text.isEmpty() && !editing) {
-			graphics.drawString(font, font.plainSubstrByWidth(this.hint == null ? "" : this.hint, room), left + 5, top + 4, Theme.FAINT, false);
+			graphics.text(font, font.plainSubstrByWidth(this.hint == null ? "" : this.hint, room), left + 5, top + 4, Theme.FAINT, false);
 			return;
 		}
 		// While typing the end stays visible, otherwise the start.
@@ -64,7 +64,7 @@ public class TextOption extends ValueOption<String> {
 		if (!editing && shown.length() < text.length()) {
 			shown = font.plainSubstrByWidth(text, room - font.width("...")) + "...";
 		}
-		graphics.drawString(font, shown, left + 5, top + 4, Theme.WHITE, false);
+		graphics.text(font, shown, left + 5, top + 4, Theme.WHITE, false);
 		if (editing && (System.currentTimeMillis() / 500) % 2 == 0) {
 			int cx = left + 5 + font.width(shown);
 			graphics.fill(cx, top + 3, cx + 1, top + H - 3, Theme.WHITE);
@@ -109,11 +109,11 @@ public class TextOption extends ValueOption<String> {
 		if (this.input == null) {
 			return false;
 		}
-		boolean control = (event.modifiers() & GLFW.GLFW_MOD_CONTROL) != 0;
+		boolean control = (event.modifiers() & InputConstants.MOD_CONTROL) != 0;
 		switch (event.key()) {
-			case GLFW.GLFW_KEY_ENTER, GLFW.GLFW_KEY_KP_ENTER -> this.commit();
-			case GLFW.GLFW_KEY_ESCAPE -> this.input = null;
-			case GLFW.GLFW_KEY_BACKSPACE -> {
+			case InputConstants.KEY_RETURN, InputConstants.KEY_NUMPADENTER -> this.commit();
+			case InputConstants.KEY_ESCAPE -> this.input = null;
+			case InputConstants.KEY_BACKSPACE -> {
 				if (control) {
 					// Whole word, like in chat.
 					int end = this.input.length();
@@ -130,7 +130,7 @@ public class TextOption extends ValueOption<String> {
 				}
 			}
 			default -> {
-				if (event.key() == GLFW.GLFW_KEY_V && control) {
+				if (event.key() == InputConstants.KEY_V && control) {
 					this.append(Minecraft.getInstance().keyboardHandler.getClipboard().replace("\n", " "));
 				}
 			}

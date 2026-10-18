@@ -26,7 +26,7 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.AbstractContainerMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.InventoryMenu;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.ItemStack;
@@ -161,7 +161,7 @@ public final class SellEngine {
 	/** The menu the assistant works in, if it is open right now. */
 	public static AbstractContainerScreen<?> boundScreen() {
 		Minecraft client = Minecraft.getInstance();
-		if (boundId != -1 && client.screen instanceof AbstractContainerScreen<?> screen
+		if (boundId != -1 && client.gui.screen() instanceof AbstractContainerScreen<?> screen
 			&& screen.getMenu().containerId == boundId) {
 			return screen;
 		}
@@ -528,7 +528,7 @@ public final class SellEngine {
 	}
 
 	private static AbstractContainerMenu tryBind(Minecraft client) {
-		if (!(client.screen instanceof AbstractContainerScreen<?> screen)) {
+		if (!(client.gui.screen() instanceof AbstractContainerScreen<?> screen)) {
 			return null;
 		}
 		AbstractContainerMenu menu = screen.getMenu();
@@ -640,7 +640,7 @@ public final class SellEngine {
 			}
 			int before = stack.getCount();
 			String id = SellPlan.itemId(stack);
-			click(client, player, menu, index, 0, ClickType.QUICK_MOVE);
+			click(client, player, menu, index, 0, ContainerInput.QUICK_MOVE);
 			clicks++;
 			ItemStack after = menu.getSlot(index).getItem();
 			if (!after.isEmpty() && after.getCount() == before && SellPlan.itemId(after).equals(id)) {
@@ -678,7 +678,7 @@ public final class SellEngine {
 		if (buttonGuard) {
 			// The "button" behaved like a normal item and is now on the cursor: put it back.
 			buttonGuard = false;
-			click(client, player, menu, buttonSlot, 0, ClickType.PICKUP);
+			click(client, player, menu, buttonSlot, 0, ContainerInput.PICKUP);
 			cooldown = 4;
 			if (++buttonProblems >= 3) {
 				stop("Slot " + buttonSlot + " ist kein Verkaufs-Button.", false);
@@ -688,7 +688,7 @@ public final class SellEngine {
 		for (int i = 0; i < size; i++) {
 			ItemStack stack = menu.getSlot(i).getItem();
 			if (i != buttonSlot && (stack.isEmpty() || (ItemStack.isSameItemSameComponents(stack, cursor) && stack.getCount() < stack.getMaxStackSize()))) {
-				click(client, player, menu, i, 0, ClickType.PICKUP);
+				click(client, player, menu, i, 0, ContainerInput.PICKUP);
 				cooldown = 2;
 				return true;
 			}
@@ -696,7 +696,7 @@ public final class SellEngine {
 		for (int i = size; i < menu.slots.size(); i++) {
 			ItemStack stack = menu.getSlot(i).getItem();
 			if (stack.isEmpty() || (ItemStack.isSameItemSameComponents(stack, cursor) && stack.getCount() < stack.getMaxStackSize())) {
-				click(client, player, menu, i, 0, ClickType.PICKUP);
+				click(client, player, menu, i, 0, ContainerInput.PICKUP);
 				cooldown = 2;
 				return true;
 			}
@@ -732,7 +732,7 @@ public final class SellEngine {
 			earlyIncome = -1;
 		}
 		pendingSaleDraft = new Sale(counts, examples, items);
-		click(client, player, menu, buttonSlot, 0, ClickType.PICKUP);
+		click(client, player, menu, buttonSlot, 0, ContainerInput.PICKUP);
 		buttonGuard = true;
 		state = State.SELLING;
 		sellWait = SELL_TIMEOUT;
@@ -857,10 +857,10 @@ public final class SellEngine {
 
 	/** Why the AFK farm should not open a menu right now, or null. */
 	private static String interruption(Minecraft client, LocalPlayer player, boolean checkMove) {
-		if (client.screen instanceof ChatScreen) {
+		if (client.gui.screen() instanceof ChatScreen) {
 			return "du schreibst";
 		}
-		if (client.screen != null) {
+		if (client.gui.screen() != null) {
 			return "ein Fenster ist offen";
 		}
 		if (player.hurtTime > 0 || player.getHealth() < lastHealth - 0.01f) {
@@ -929,9 +929,9 @@ public final class SellEngine {
 		return sb.toString();
 	}
 
-	private static void click(Minecraft client, LocalPlayer player, AbstractContainerMenu menu, int slot, int button, ClickType type) {
+	private static void click(Minecraft client, LocalPlayer player, AbstractContainerMenu menu, int slot, int button, ContainerInput type) {
 		if (client.gameMode != null) {
-			client.gameMode.handleInventoryMouseClick(menu.containerId, slot, button, type, player);
+			client.gameMode.handleContainerInput(menu.containerId, slot, button, type, player);
 		}
 	}
 
@@ -972,7 +972,7 @@ public final class SellEngine {
 	private static void info(Component message) {
 		LocalPlayer player = Minecraft.getInstance().player;
 		if (player != null) {
-			player.displayClientMessage(Component.literal("[Verkaufen] ").withStyle(ChatFormatting.GOLD).append(message), false);
+			player.sendSystemMessage(Component.literal("[Verkaufen] ").withStyle(ChatFormatting.GOLD).append(message));
 		}
 	}
 }
