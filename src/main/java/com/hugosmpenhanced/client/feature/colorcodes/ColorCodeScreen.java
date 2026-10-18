@@ -1,10 +1,11 @@
 package com.hugosmpenhanced.client.feature.colorcodes;
 
+import com.hugosmpenhanced.client.util.Formats;
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayDeque;
 import java.util.Deque;
 import java.util.List;
 
-import org.lwjgl.glfw.GLFW;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.gui.StyledScreen;
@@ -12,7 +13,7 @@ import com.hugosmpenhanced.client.mixin.EditBoxAccessor;
 import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -326,7 +327,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 
 	private void applyLegacy(ChatFormatting formatting) {
 		ColorText.Color color = ColorText.Color.legacy(formatting);
-		this.apply((text, from, to) -> text.setColor(from, to, color), "&" + formatting.getChar());
+		this.apply((text, from, to) -> text.setColor(from, to, color), "&" + Formats.code(formatting));
 	}
 
 	private void applyHex(int rgb) {
@@ -478,7 +479,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 			return;
 		}
 		ModConfigManager.save();
-		this.minecraft.setScreen(new ChatScreen(this.fullCommand(), false));
+		this.minecraft.setScreenAndShow(new ChatScreen(this.fullCommand(), false));
 	}
 
 	private void send() {
@@ -487,8 +488,8 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		}
 		String full = this.fullCommand();
 		ModConfigManager.save();
-		this.minecraft.gui.getChat().addRecentChat(full);
-		this.minecraft.setScreen(null);
+		this.minecraft.gui.hud.getChat().addRecentChat(full);
+		this.minecraft.setScreenAndShow(null);
 		this.minecraft.player.connection.sendCommand(full.substring(1));
 	}
 
@@ -496,9 +497,9 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 	public void onClose() {
 		ModConfigManager.save();
 		if (this.chatOrigin != null && this.minecraft.player != null) {
-			this.minecraft.setScreen(new ChatScreen(this.chatOrigin, false));
+			this.minecraft.setScreenAndShow(new ChatScreen(this.chatOrigin, false));
 		} else {
-			this.minecraft.setScreen(this.parent);
+			this.minecraft.setScreenAndShow(this.parent);
 		}
 	}
 
@@ -568,7 +569,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 	// ------------------------------------------------------------------ rendering
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		Theme.panel(graphics, this.fx, this.fy, this.fw, this.fh, Theme.FRAME, Theme.FRAME_BORDER);
 		this.renderHeader(graphics, mouseX, mouseY);
 		this.renderTemplates(graphics, mouseX, mouseY);
@@ -577,14 +578,14 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		this.renderPalette(graphics, mouseX, mouseY);
 		this.renderPicker(graphics, mouseX, mouseY);
 		this.renderButtons(graphics, mouseX, mouseY);
-		super.render(graphics, mouseX, mouseY, partialTick);
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 	}
 
-	private void renderHeader(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderHeader(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		graphics.fill(this.fx + 1, this.fy + 1, this.fx + this.listWidth, this.fy + this.fh - 1, Theme.SIDEBAR);
 		graphics.fill(this.fx + this.listWidth, this.fy + 1, this.fx + this.listWidth + 1, this.fy + this.fh - 1, Theme.FRAME_BORDER);
-		graphics.drawString(this.font, "Farb", this.fx + 8, this.fy + 9, 0xFFFF5F6D);
-		graphics.drawString(this.font, "codes", this.fx + 8 + this.font.width("Farb"), this.fy + 9, Theme.GOLD);
+		graphics.text(this.font, "Farb", this.fx + 8, this.fy + 9, 0xFFFF5F6D);
+		graphics.text(this.font, "codes", this.fx + 8 + this.font.width("Farb"), this.fy + 9, Theme.GOLD);
 
 		int tx = this.cx + 2;
 		for (String cmd : ColorCodes.commands().subList(0, Math.min(4, ColorCodes.commands().size()))) {
@@ -598,7 +599,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 			} else if (over) {
 				Theme.panel(graphics, tx - 5, this.fy + 6, w + 10, 16, 0xFF1E1E1E, 0);
 			}
-			graphics.drawString(this.font, label, tx, this.fy + 10, selected ? Theme.WHITE : over ? Theme.TEXT : Theme.MUTED, selected);
+			graphics.text(this.font, label, tx, this.fy + 10, selected ? Theme.WHITE : over ? Theme.TEXT : Theme.MUTED, selected);
 			tx += w + 16;
 		}
 
@@ -613,10 +614,10 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		return this.fx + this.fw - 23;
 	}
 
-	private void renderTemplates(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderTemplates(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		int left = this.fx + 4;
 		int width = this.listWidth - 8;
-		graphics.drawString(this.font, "VORLAGEN", left + 4, this.fy + 28, 0xFFA0A0A0, false);
+		graphics.text(this.font, "VORLAGEN", left + 4, this.fy + 28, 0xFFA0A0A0, false);
 		List<ColorTemplate> templates = this.templates();
 		int rows = this.listRows();
 		this.templateScroll = Mth.clamp(this.templateScroll, 0, Math.max(0, templates.size() - rows));
@@ -624,7 +625,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 			this.deleteArmed = -1;
 		}
 		if (templates.isEmpty()) {
-			graphics.drawWordWrap(this.font, Component.literal("Noch keine. Text eingeben und unten speichern."),
+			graphics.textWithWordWrap(this.font, Component.literal("Noch keine. Text eingeben und unten speichern."),
 				left + 4, this.listTop() + 2, width - 6, Theme.FAINT, false);
 		}
 		for (int r = 0; r < rows && this.templateScroll + r < templates.size(); r++) {
@@ -636,7 +637,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 				graphics.fill(left, y, left + width, y + ROW - 1, Theme.ROW_HOVER);
 			}
 			int textRoom = width - (over ? 30 : 8);
-			graphics.drawString(this.font, this.templateLabel(template, textRoom), left + 4, y + 4, Theme.TEXT);
+			graphics.text(this.font, this.templateLabel(template, textRoom), left + 4, y + 4, Theme.TEXT);
 			if (over) {
 				int brushX = left + width - 26;
 				int crossX = left + width - 12;
@@ -672,19 +673,19 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 			Theme.panel(graphics, left + 2, y, width - 22, 16, Theme.FIELD, 0xFFC8C8C8);
 			boolean overOk = inside(mouseX, mouseY, left + width - 18, y, 18, 16);
 			Theme.panel(graphics, left + width - 18, y, 18, 16, overOk ? 0x78FFC83D : Theme.GOLD_FILL, Theme.GOLD);
-			graphics.drawCenteredString(this.font, "OK", left + width - 9, y + 4, Theme.WHITE);
+			graphics.centeredText(this.font, "OK", left + width - 9, y + 4, Theme.WHITE);
 		} else {
 			boolean over = inside(mouseX, mouseY, left + 2, y, width - 4, 16);
 			Theme.panel(graphics, left + 2, y, width - 4, 16, over ? 0x78FFC83D : Theme.GOLD_FILL, Theme.GOLD);
 			Theme.glyph(graphics, Theme.PLUS, left + 8, y + 6, Theme.WHITE);
-			graphics.drawString(this.font, "Speichern", left + 17, y + 4, Theme.WHITE);
+			graphics.text(this.font, "Speichern", left + 17, y + 4, Theme.WHITE);
 			if (over) {
 				graphics.setTooltipForNextFrame(this.font, Component.literal("Aktuellen Text als Vorlage speichern"), mouseX, mouseY);
 			}
 		}
 	}
 
-	private void renderPreview(GuiGraphics graphics) {
+	private void renderPreview(GuiGraphicsExtractor graphics) {
 		int x = this.cx;
 		int y = this.previewY();
 		int w = this.cw;
@@ -703,7 +704,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		if (stack.isEmpty()) {
 			stack = new ItemStack(rename ? Items.NAME_TAG : Items.PAPER);
 		}
-		graphics.renderItem(stack, x + 7, y + (h - 16) / 2);
+		graphics.item(stack, x + 7, y + (h - 16) / 2);
 
 		ColorText text = ColorText.parse(this.raw);
 		Component result = text.glyphs.isEmpty()
@@ -715,16 +716,16 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 			this.drawFitted(graphics, result, textX, y + h / 2 - 4, room);
 		} else {
 			Component name = stack.getHoverName();
-			graphics.drawString(this.font, this.font.plainSubstrByWidth(name.getString(), room), textX, y + h / 2 - 9, 0xFFFFFFFF);
+			graphics.text(this.font, this.font.plainSubstrByWidth(name.getString(), room), textX, y + h / 2 - 9, 0xFFFFFFFF);
 			this.drawFitted(graphics, result, textX, y + h / 2 + 2, room);
 		}
 	}
 
 	/** Draws a line, shrunk to fit if it is wider than the room. */
-	private void drawFitted(GuiGraphics graphics, Component text, int x, int y, int room) {
+	private void drawFitted(GuiGraphicsExtractor graphics, Component text, int x, int y, int room) {
 		int width = this.font.width(text);
 		if (width <= room) {
-			graphics.drawString(this.font, text, x, y, 0xFFFFFFFF);
+			graphics.text(this.font, text, x, y, 0xFFFFFFFF);
 			return;
 		}
 		float scale = Math.max(0.5f, room / (float) width);
@@ -733,12 +734,12 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y + 4 * (1 - scale));
 		graphics.pose().scale(scale, scale);
-		graphics.drawString(this.font, text, 0, 0, 0xFFFFFFFF);
+		graphics.text(this.font, text, 0, 0, 0xFFFFFFFF);
 		graphics.pose().popMatrix();
 		graphics.disableScissor();
 	}
 
-	private void renderInput(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderInput(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		int y = this.inputY();
 		boolean focused = this.input.isFocused();
 		Theme.panel(graphics, this.cx, y, this.cw, 18, Theme.FIELD, focused ? 0xFFC8C8C8 : Theme.FIELD_BORDER);
@@ -749,7 +750,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		String count = this.raw.length() + " / " + limit;
 		int countColor = remaining < 0 ? Theme.RED_TEXT : remaining < Math.max(3, limit / 10) ? Theme.GOLD : Theme.MUTED;
 		int countX = this.cx + this.cw - this.font.width(count) - 2;
-		graphics.drawString(this.font, count, countX, infoY, countColor, false);
+		graphics.text(this.font, count, countX, infoY, countColor, false);
 		if (inside(mouseX, mouseY, countX, infoY - 1, this.font.width(count), 10)) {
 			graphics.setTooltipForNextFrame(this.font, this.font.split(Component.literal(
 				"Zeichen mit allen Codes. Jeder Code wie &6 zählt 2 Zeichen mit. Das Limit stellst du unter Chat > Farben ein."),
@@ -772,21 +773,21 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		} else {
 			hint = "Markieren färbt nur einen Teil  ·  Strg+Z";
 		}
-		graphics.drawString(this.font, this.font.plainSubstrByWidth(hint, countX - this.cx - 6), this.cx + 2, infoY, hintColor, false);
+		graphics.text(this.font, this.font.plainSubstrByWidth(hint, countX - this.cx - 6), this.cx + 2, infoY, hintColor, false);
 	}
 
-	private void renderPalette(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderPalette(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		int y = this.paletteY();
 		int size = this.swatch;
 		for (int i = 0; i < PALETTE.length; i++) {
 			int x = this.cx + i * size;
-			int color = 0xFF000000 | PALETTE[i].getColor();
+			int color = 0xFF000000 | Formats.color(PALETTE[i]);
 			boolean over = inside(mouseX, mouseY, x, y, size, size);
 			graphics.fill(x + 1, y + 1, x + size - 1, y + size - 1, color);
 			HugoOutline.draw(graphics, x, y, size, size, over ? Theme.WHITE : 0xFF3A3A3A);
 			if (over) {
 				graphics.setTooltipForNextFrame(this.font, List.of(
-					Component.literal(PALETTE_NAMES[i] + "  ").append(Component.literal("&" + PALETTE[i].getChar()).withStyle(ChatFormatting.GRAY)).getVisualOrderText(),
+					Component.literal(PALETTE_NAMES[i] + "  ").append(Component.literal("&" + Formats.code(PALETTE[i])).withStyle(ChatFormatting.GRAY)).getVisualOrderText(),
 					Component.literal(this.pickingEnd >= 0 ? "Klick: als Verlaufsfarbe setzen" : ColorCodes.legacy() ? "Rechtsklick: als Verlaufsanfang" : "Rechtsklick: in den Farbwähler").withStyle(ChatFormatting.DARK_GRAY).getVisualOrderText()),
 					mouseX, mouseY);
 			}
@@ -812,7 +813,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 				letter = Component.literal("R");
 				tip = Component.literal("Ohne Farbe und Format  ").append(Component.literal("&r").withStyle(ChatFormatting.GRAY));
 			}
-			graphics.drawCenteredString(this.font, letter, x + 6, y + (size - 8) / 2, Theme.WHITE);
+			graphics.centeredText(this.font, letter, x + 6, y + (size - 8) / 2, Theme.WHITE);
 			if (over) {
 				graphics.setTooltipForNextFrame(this.font, tip, mouseX, mouseY);
 			}
@@ -823,7 +824,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		return this.cx + this.cw - (FORMAT_BITS.length + 1) * 13 + 1;
 	}
 
-	private void renderPicker(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderPicker(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		if (ColorCodes.legacy()) {
 			this.renderLegacyGradient(graphics, mouseX, mouseY);
 			return;
@@ -864,8 +865,8 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		int rowB = py + 22;
 
 		this.slotSwatch(graphics, SLOT_COLOR, x2, rowA, mouseX, mouseY, "Farbe");
-		graphics.drawString(this.font, "Farbe", x2 + 22, rowA + 4, Theme.TEXT_DIM, false);
-		graphics.drawString(this.font, String.format("#%06X", SLOTS[SLOT_COLOR]), x2 + 26 + this.font.width("Farbe"), rowA + 4, Theme.FAINT, false);
+		graphics.text(this.font, "Farbe", x2 + 22, rowA + 4, Theme.TEXT_DIM, false);
+		graphics.text(this.font, String.format("#%06X", SLOTS[SLOT_COLOR]), x2 + 26 + this.font.width("Farbe"), rowA + 4, Theme.FAINT, false);
 		this.actionButton(graphics, buttonX, rowA, buttonW, "Färben", mouseX, mouseY,
 			"Färbt die Markierung oder den Text mit dieser Farbe");
 
@@ -892,7 +893,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		int rowC = py + 44;
 		List<Integer> recent = ColorCodes.recent();
 		if (!recent.isEmpty() && rowC + 10 <= this.hexY() + 16) {
-			graphics.drawString(this.font, "Zuletzt", x2, rowC + 1, Theme.FAINT, false);
+			graphics.text(this.font, "Zuletzt", x2, rowC + 1, Theme.FAINT, false);
 			int rx = x2 + this.font.width("Zuletzt") + 6;
 			for (int rgb : recent) {
 				if (rx + 10 > this.cx + this.cw) {
@@ -915,16 +916,16 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 	}
 
 	/** The gradient row with only chat colours: two ends picked from the palette, a preview, the button. */
-	private void renderLegacyGradient(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderLegacyGradient(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		int y = this.pickerY();
-		graphics.drawString(this.font, "Verlauf", this.cx, y + 4, Theme.TEXT_DIM, false);
+		graphics.text(this.font, "Verlauf", this.cx, y + 4, Theme.TEXT_DIM, false);
 		int fromX = this.legacyEndX(0);
 		int toX = this.legacyEndX(1);
 		for (int end = 0; end < 2; end++) {
 			int x = end == 0 ? fromX : toX;
 			boolean picking = this.pickingEnd == end;
 			boolean over = inside(mouseX, mouseY, x, y, 16, 16);
-			graphics.fill(x + 2, y + 2, x + 14, y + 14, 0xFF000000 | LEGACY_SLOTS[end].getColor());
+			graphics.fill(x + 2, y + 2, x + 14, y + 14, 0xFF000000 | Formats.color(LEGACY_SLOTS[end]));
 			HugoOutline.draw(graphics, x, y, 16, 16, picking ? Theme.GOLD : over ? Theme.WHITE : 0xFF4A4A4A);
 			if (picking) {
 				HugoOutline.draw(graphics, x + 1, y + 1, 14, 14, 0xFF000000);
@@ -933,7 +934,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 				int index = paletteIndex(LEGACY_SLOTS[end]);
 				graphics.setTooltipForNextFrame(this.font, List.of(
 					Component.literal((end == 0 ? "Von  " : "Bis  ") + PALETTE_NAMES[index] + "  ")
-						.append(Component.literal("&" + LEGACY_SLOTS[end].getChar()).withStyle(ChatFormatting.GRAY)).getVisualOrderText(),
+						.append(Component.literal("&" + Formats.code(LEGACY_SLOTS[end])).withStyle(ChatFormatting.GRAY)).getVisualOrderText(),
 					Component.literal("Klick, dann eine Farbe oben wählen. Mausrad wechselt.").withStyle(ChatFormatting.DARK_GRAY)
 						.getVisualOrderText()), mouseX, mouseY);
 			}
@@ -946,7 +947,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		for (int i = 0; i < path.size(); i++) {
 			int left = barLeft + span * i / path.size();
 			int right = barLeft + span * (i + 1) / path.size();
-			graphics.fill(left, y + 5, right, y + 11, 0xFF000000 | path.get(i).getColor());
+			graphics.fill(left, y + 5, right, y + 11, 0xFF000000 | Formats.color(path.get(i)));
 		}
 		int swapX = toX + 19;
 		boolean overSwap = inside(mouseX, mouseY, swapX - 1, y + 2, 10, 12);
@@ -959,7 +960,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 			"Färbt die Markierung oder den Text von der einen zur anderen Farbe, mit den Chat-Farben dazwischen");
 		String hint = this.pickingEnd >= 0 ? "Jetzt oben die Farbe für " + (this.pickingEnd == 0 ? "\"Von\"" : "\"Bis\"") + " anklicken"
 			: "Nur Chat-Farben (&0 bis &f), jeder Code kostet 2 Zeichen";
-		graphics.drawString(this.font, this.font.plainSubstrByWidth(hint, this.cw), this.cx, y + 24,
+		graphics.text(this.font, this.font.plainSubstrByWidth(hint, this.cw), this.cx, y + 24,
 			this.pickingEnd >= 0 ? Theme.GOLD : Theme.FAINT, false);
 	}
 
@@ -995,7 +996,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		return false;
 	}
 
-	private void slotSwatch(GuiGraphics graphics, int slot, int x, int y, int mouseX, int mouseY, String name) {
+	private void slotSwatch(GuiGraphicsExtractor graphics, int slot, int x, int y, int mouseX, int mouseY, String name) {
 		boolean selected = this.slot == slot;
 		boolean over = inside(mouseX, mouseY, x, y, 16, 16);
 		graphics.fill(x + 2, y + 2, x + 14, y + 14, 0xFF000000 | SLOTS[slot]);
@@ -1011,16 +1012,16 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		}
 	}
 
-	private void actionButton(GuiGraphics graphics, int x, int y, int w, String label, int mouseX, int mouseY, String tip) {
+	private void actionButton(GuiGraphicsExtractor graphics, int x, int y, int w, String label, int mouseX, int mouseY, String tip) {
 		boolean over = inside(mouseX, mouseY, x, y, w, 16);
 		Theme.panel(graphics, x, y, w, 16, over ? 0x78FFC83D : Theme.GOLD_FILL, Theme.GOLD);
-		graphics.drawCenteredString(this.font, label, x + w / 2, y + 4, Theme.WHITE);
+		graphics.centeredText(this.font, label, x + w / 2, y + 4, Theme.WHITE);
 		if (over) {
 			graphics.setTooltipForNextFrame(this.font, this.font.split(Component.literal(tip), 180), mouseX, mouseY);
 		}
 	}
 
-	private void renderButtons(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderButtons(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		int y = this.bottomY();
 		int[] send = this.sendBox();
 		int[] chat = this.chatBox();
@@ -1030,12 +1031,12 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 
 		boolean overCancel = inside(mouseX, mouseY, cancel[0], y, cancel[2], 16);
 		Theme.panel(graphics, cancel[0], y, cancel[2], 16, overCancel ? 0xFF3A3A3A : Theme.CONTROL, overCancel ? 0xFFB4B4B4 : Theme.CONTROL_BORDER);
-		graphics.drawCenteredString(this.font, "Abbrechen", cancel[0] + cancel[2] / 2, y + 4, Theme.TEXT);
+		graphics.centeredText(this.font, "Abbrechen", cancel[0] + cancel[2] / 2, y + 4, Theme.TEXT);
 
 		boolean overChat = ingame && inside(mouseX, mouseY, chat[0], y, chat[2], 16);
 		Theme.panel(graphics, chat[0], y, chat[2], 16, overChat ? 0xFF3A3A3A : Theme.CONTROL,
 			!ingame ? 0xFF333333 : overChat ? 0xFFB4B4B4 : Theme.CONTROL_BORDER);
-		graphics.drawCenteredString(this.font, "In den Chat", chat[0] + chat[2] / 2, y + 4, ingame ? Theme.TEXT : Theme.FAINT);
+		graphics.centeredText(this.font, "In den Chat", chat[0] + chat[2] / 2, y + 4, ingame ? Theme.TEXT : Theme.FAINT);
 		if (inside(mouseX, mouseY, chat[0], y, chat[2], 16)) {
 			graphics.setTooltipForNextFrame(this.font, this.font.split(Component.literal(ingame
 				? "Schreibt den Befehl in den Chat, ohne ihn abzuschicken (Enter)" : "Nur in einer Welt oder auf einem Server"), 180), mouseX, mouseY);
@@ -1048,7 +1049,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 			Theme.panel(graphics, send[0], y, send[2], 16, 0xFF1A1A1A, 0xFF333333);
 		}
 		String label = "/" + this.command + " senden";
-		graphics.drawCenteredString(this.font, this.font.plainSubstrByWidth(label, send[2] - 6), send[0] + send[2] / 2, y + 4,
+		graphics.centeredText(this.font, this.font.plainSubstrByWidth(label, send[2] - 6), send[0] + send[2] / 2, y + 4,
 			sendable ? Theme.WHITE : Theme.FAINT);
 		if (inside(mouseX, mouseY, send[0], y, send[2], 16)) {
 			String tip = !ingame ? "Nur in einer Welt oder auf einem Server"
@@ -1184,7 +1185,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 				} else if (button == 1 && ColorCodes.legacy()) {
 					LEGACY_SLOTS[0] = PALETTE[i];
 				} else if (button == 1) {
-					this.setPicked(PALETTE[i].getColor() & 0xFFFFFF);
+					this.setPicked(Formats.color(PALETTE[i]) & 0xFFFFFF);
 					this.loadSlot();
 				} else {
 					this.applyLegacy(PALETTE[i]);
@@ -1399,17 +1400,17 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 		boolean control = event.hasControlDownWithQuirk();
 		boolean shift = event.hasShiftDown();
 		if (this.naming && this.nameField.isFocused()) {
-			if (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER) {
+			if (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER) {
 				this.finishNaming(true);
 				return true;
 			}
-			if (key == GLFW.GLFW_KEY_ESCAPE) {
+			if (key == InputConstants.KEY_ESCAPE) {
 				this.finishNaming(false);
 				return true;
 			}
 			return super.keyPressed(event);
 		}
-		if (this.hexField.isFocused() && (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER)) {
+		if (this.hexField.isFocused() && (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER)) {
 			Integer rgb = ColorCodes.parseHex(this.hexField.getValue());
 			if (rgb != null) {
 				SLOTS[this.slot] = rgb;
@@ -1419,15 +1420,15 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 			this.focusInput();
 			return true;
 		}
-		if (control && key == GLFW.GLFW_KEY_Z) {
+		if (control && key == InputConstants.KEY_Z) {
 			this.undo(!shift);
 			return true;
 		}
-		if (control && key == GLFW.GLFW_KEY_Y) {
+		if (control && key == InputConstants.KEY_Y) {
 			this.undo(false);
 			return true;
 		}
-		if (this.input.isFocused() && (key == GLFW.GLFW_KEY_ENTER || key == GLFW.GLFW_KEY_KP_ENTER)) {
+		if (this.input.isFocused() && (key == InputConstants.KEY_RETURN || key == InputConstants.KEY_NUMPADENTER)) {
 			this.toChat();
 			return true;
 		}
@@ -1446,7 +1447,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 
 	/** Thin one-pixel outline without cut corners, for swatches and the picker. */
 	private static final class HugoOutline {
-		static void draw(GuiGraphics graphics, int x, int y, int w, int h, int color) {
+		static void draw(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int color) {
 			graphics.fill(x, y, x + w, y + 1, color);
 			graphics.fill(x, y + h - 1, x + w, y + h, color);
 			graphics.fill(x, y + 1, x + 1, y + h - 1, color);

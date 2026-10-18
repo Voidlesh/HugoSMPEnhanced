@@ -6,7 +6,7 @@ import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.gui.StyledScreen;
 import com.hugosmpenhanced.client.hud.HudEditorScreen;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.MultiLineEditBox;
@@ -102,7 +102,7 @@ public class NotesScreen extends Screen implements StyledScreen {
 			.bounds(editorLeft, buttonsY, quarter, ROW).build());
 		pin.setTooltip(Tooltip.create(Component.literal("Angeheftete Notizen bleiben beim Spielen sichtbar.")));
 		Button move = this.addRenderableWidget(Button.builder(Component.literal("Verschieben"),
-				b -> this.minecraft.setScreen(new HudEditorScreen(this)))
+				b -> this.minecraft.setScreenAndShow(new HudEditorScreen(this)))
 			.bounds(editorLeft + quarter + 4, buttonsY, quarter, ROW).build());
 		move.setTooltip(Tooltip.create(Component.literal("Legt fest, wo angeheftete Notizen auf dem Bildschirm stehen.")));
 		this.addRenderableWidget(Button.builder(Component.literal(this.deleteArmed ? "Wirklich?" : "Löschen"), b -> this.delete())
@@ -139,12 +139,12 @@ public class NotesScreen extends Screen implements StyledScreen {
 		// Drop notes that were never written in, so opening the notepad leaves nothing behind.
 		notes().removeIf(note -> note.title.isBlank() && note.text.isBlank() && !note.pinned);
 		ModConfigManager.save();
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		super.render(graphics, mouseX, mouseY, partialTick);
-		graphics.drawCenteredString(this.font, "— NOTIZBLOCK —", this.width / 2, 8, 0xFFAAAAAA);
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
+		graphics.centeredText(this.font, "— NOTIZBLOCK —", this.width / 2, 8, 0xFFAAAAAA);
 	}
 }

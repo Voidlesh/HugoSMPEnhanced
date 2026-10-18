@@ -7,7 +7,7 @@ import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryIcons;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.world.entity.player.Inventory;
 import net.minecraft.world.inventory.Slot;
 import net.minecraft.world.item.Item;
@@ -134,7 +134,7 @@ public final class InventoryLayout {
 	}
 
 	/** Called after vanilla drew a slot, in the screen's slot coordinates. */
-	public static void renderSlot(GuiGraphics graphics, Slot slot) {
+	public static void renderSlot(GuiGraphicsExtractor graphics, Slot slot) {
 		if (!ModConfigManager.CONFIG.inventoryLayoutEnabled || !(slot.container instanceof Inventory)) {
 			return;
 		}
@@ -151,7 +151,7 @@ public final class InventoryLayout {
 		int x = slot.x;
 		int y = slot.y;
 		if (actual.isEmpty()) {
-			graphics.renderFakeItem(new ItemStack(want), x, y);
+			graphics.fakeItem(new ItemStack(want), x, y);
 			graphics.fill(x, y, x + 16, y + 16, GHOST_FADE);
 		} else if (actual.getItem() != want) {
 			graphics.fill(x, y, x + 16, y + 16, WRONG_TINT);

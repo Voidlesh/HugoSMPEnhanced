@@ -128,6 +128,14 @@ final class GlyphFxVertexConsumer implements VertexConsumer {
 	}
 
 	@Override
+	public VertexConsumer setUv3(float u, float v) {
+		if (this.passthrough) {
+			this.out.setUv3(u, v);
+		}
+		return this;
+	}
+
+	@Override
 	public VertexConsumer setNormal(float x, float y, float z) {
 		if (this.passthrough) {
 			this.out.setNormal(x, y, z);

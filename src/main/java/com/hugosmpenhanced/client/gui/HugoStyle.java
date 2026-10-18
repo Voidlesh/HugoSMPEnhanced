@@ -1,7 +1,7 @@
 package com.hugosmpenhanced.client.gui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.resources.Identifier;
 
@@ -27,7 +27,7 @@ public final class HugoStyle {
 	private HugoStyle() {
 	}
 
-	public static void drawBox(GuiGraphics graphics, int x, int y, int width, int height, State state) {
+	public static void drawBox(GuiGraphicsExtractor graphics, int x, int y, int width, int height, State state) {
 		int right = x + width;
 		int bottom = y + height;
 		int fill = switch (state) {
@@ -44,7 +44,7 @@ public final class HugoStyle {
 		drawOutline(graphics, x, y, width, height, border);
 	}
 
-	public static void drawOutline(GuiGraphics graphics, int x, int y, int width, int height, int color) {
+	public static void drawOutline(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int color) {
 		int right = x + width;
 		int bottom = y + height;
 		graphics.fill(x, y, right, y + 1, color);
@@ -62,8 +62,8 @@ public final class HugoStyle {
 	 * Draws the replacement for a vanilla widget sprite and returns true, or returns false for
 	 * sprites this style does not cover.
 	 */
-	public static boolean replaceSprite(GuiGraphics graphics, Identifier sprite, int x, int y, int width, int height) {
-		if (!"minecraft".equals(sprite.getNamespace()) || !activeFor(Minecraft.getInstance().screen)) {
+	public static boolean replaceSprite(GuiGraphicsExtractor graphics, Identifier sprite, int x, int y, int width, int height) {
+		if (!"minecraft".equals(sprite.getNamespace()) || !activeFor(Minecraft.getInstance().gui.screen())) {
 			return false;
 		}
 		switch (sprite.getPath()) {

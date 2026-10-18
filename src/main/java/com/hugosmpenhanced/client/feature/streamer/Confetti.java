@@ -4,7 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /** Paper confetti in GUI pixels: bursts out, tumbles, falls and fades. */
 public final class Confetti {
@@ -76,7 +76,7 @@ public final class Confetti {
 		this.pieces.clear();
 	}
 
-	public void render(GuiGraphics graphics) {
+	public void render(GuiGraphicsExtractor graphics) {
 		long now = System.nanoTime();
 		float dt = this.lastUpdate == 0 ? 0 : Math.min(0.05f, (now - this.lastUpdate) / 1e9f);
 		this.lastUpdate = now;

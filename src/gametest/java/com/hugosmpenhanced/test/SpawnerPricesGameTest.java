@@ -18,6 +18,7 @@ import com.sun.net.httpserver.HttpServer;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+import net.minecraft.world.level.block.entity.BlockEntityTypes;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.core.component.DataComponents;
@@ -73,7 +74,7 @@ public class SpawnerPricesGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 
 			ItemStack skeletons = spawnerWithEntity("minecraft:skeleton", 4);
 			ItemStack creeper = named(new ItemStack(Items.SPAWNER), "Creeper Spawner", ChatFormatting.GREEN);
@@ -113,7 +114,7 @@ public class SpawnerPricesGameTest implements FabricClientGameTest {
 				page.setItem(14, zombie);
 				page.setItem(15, diamonds);
 				var inventory = client.player.getInventory();
-				client.setScreen(new ContainerScreen(new ChestMenu(MenuType.GENERIC_9x6, 0, inventory, page, 6), inventory,
+				client.setScreenAndShow(new ContainerScreen(new ChestMenu(MenuType.GENERIC_9x6, 0, inventory, page, 6), inventory,
 					Component.literal("Auktionshaus")));
 			});
 			context.waitTicks(5);
@@ -195,7 +196,7 @@ public class SpawnerPricesGameTest implements FabricClientGameTest {
 		spawnData.put("entity", entityTag);
 		CompoundTag tag = new CompoundTag();
 		tag.put("SpawnData", spawnData);
-		stack.set(DataComponents.BLOCK_ENTITY_DATA, TypedEntityData.of(BlockEntityType.MOB_SPAWNER, tag));
+		stack.set(DataComponents.BLOCK_ENTITY_DATA, TypedEntityData.of(BlockEntityTypes.MOB_SPAWNER, tag));
 		return stack;
 	}
 
@@ -206,9 +207,9 @@ public class SpawnerPricesGameTest implements FabricClientGameTest {
 
 	private static void hoverSlotOf(ClientGameTestContext context, ItemStack stack) {
 		double[] pos = context.computeOnClient(client -> {
-			AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.screen;
+			AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.gui.screen();
 			double scale = client.getWindow().getGuiScale();
-			for (Slot slot : ((ContainerScreen) client.screen).getMenu().slots) {
+			for (Slot slot : ((ContainerScreen) client.gui.screen()).getMenu().slots) {
 				if (slot.getItem() == stack) {
 					return new double[] {(screen.hugosmpenhanced$getLeftPos() + slot.x + 8) * scale,
 						(screen.hugosmpenhanced$getTopPos() + slot.y + 8) * scale};

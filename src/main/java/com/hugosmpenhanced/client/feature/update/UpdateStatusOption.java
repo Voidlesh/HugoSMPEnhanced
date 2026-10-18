@@ -5,7 +5,7 @@ import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /** The settings row with the running version, what the last check found and a button to act on it. */
 public class UpdateStatusOption extends SettingsOption {
@@ -57,7 +57,7 @@ public class UpdateStatusOption extends SettingsOption {
 	}
 
 	@Override
-	protected void renderControl(GuiGraphics graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
+	protected void renderControl(GuiGraphicsExtractor graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
 		int w = buttonWidth(font);
 		int left = right - w;
 		boolean active = buttonActive();
@@ -68,7 +68,7 @@ public class UpdateStatusOption extends SettingsOption {
 			Theme.panel(graphics, left, centerY - 7, w, 15, 0xFF161616, 0xFF2E2E2E);
 		}
 		String text = buttonText();
-		graphics.drawString(font, text, left + (w - font.width(text)) / 2, centerY - 3, active ? Theme.WHITE : Theme.FAINT, false);
+		graphics.text(font, text, left + (w - font.width(text)) / 2, centerY - 3, active ? Theme.WHITE : Theme.FAINT, false);
 		// status light left of the button: green current, gold update, red error
 		graphics.fill(left - GAP, centerY - 2, left - GAP + 4, centerY + 2, statusColor());
 	}
@@ -85,7 +85,7 @@ public class UpdateStatusOption extends SettingsOption {
 		ModUpdates.Release release = ModUpdates.available();
 		if (release != null) {
 			Minecraft client = Minecraft.getInstance();
-			client.setScreen(new UpdateScreen(client.screen, release));
+			client.setScreenAndShow(new UpdateScreen(client.gui.screen(), release));
 		} else {
 			ModUpdates.check();
 		}

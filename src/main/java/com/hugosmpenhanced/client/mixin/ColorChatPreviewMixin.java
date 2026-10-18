@@ -1,6 +1,6 @@
 package com.hugosmpenhanced.client.mixin;
 
-import org.lwjgl.glfw.GLFW;
+import com.mojang.blaze3d.platform.InputConstants;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
@@ -16,7 +16,7 @@ import com.hugosmpenhanced.client.feature.colorcodes.ColorText;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.input.KeyEvent;
@@ -47,8 +47,8 @@ public abstract class ColorChatPreviewMixin {
 	@Unique
 	private int hugosmpenhanced$boxW;
 
-	@Inject(method = "render", at = @At("TAIL"))
-	private void hugosmpenhanced$renderColorPreview(GuiGraphics graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+	@Inject(method = "extractRenderState", at = @At("TAIL"))
+	private void hugosmpenhanced$renderColorPreview(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
 		this.hugosmpenhanced$boxX = -1;
 		ColorCodes.Match match = this.hugosmpenhanced$match();
 		if (match == null) {
@@ -76,12 +76,12 @@ public abstract class ColorChatPreviewMixin {
 		int y = this.input.getY() - 2 - 14;
 		boolean over = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + 13;
 		graphics.fill(x, y, x + width, y + 13, BACKGROUND);
-		graphics.renderOutline(x, y, width, 13, over ? 0xFFFFC83D : BORDER);
-		graphics.drawString(font, shown, x + 4, y + 3, 0xFFFFFFFF);
+		graphics.outline(x, y, width, 13, over ? 0xFFFFC83D : BORDER);
+		graphics.text(font, shown, x + 4, y + 3, 0xFFFFFFFF);
 		int linkX = x + width - linkWidth - 5;
 		graphics.fill(linkX - 5, y + 2, linkX - 4, y + 11, BORDER);
-		graphics.drawString(font, count, linkX, y + 3, countColor);
-		graphics.drawString(font, LINK, linkX + font.width(count) + 8, y + 3, over ? 0xFFFFC83D : 0xFFAAAAAA);
+		graphics.text(font, count, linkX, y + 3, countColor);
+		graphics.text(font, LINK, linkX + font.width(count) + 8, y + 3, over ? 0xFFFFC83D : 0xFFAAAAAA);
 		this.hugosmpenhanced$boxX = x;
 		this.hugosmpenhanced$boxY = y;
 		this.hugosmpenhanced$boxW = width;
@@ -89,7 +89,7 @@ public abstract class ColorChatPreviewMixin {
 
 	@Inject(method = "mouseClicked", at = @At("HEAD"), cancellable = true)
 	private void hugosmpenhanced$clickColorPreview(MouseButtonEvent event, boolean doubleClick, CallbackInfoReturnable<Boolean> cir) {
-		if (this.hugosmpenhanced$boxX < 0 || event.button() != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+		if (this.hugosmpenhanced$boxX < 0 || event.button() != InputConstants.MOUSE_BUTTON_LEFT) {
 			return;
 		}
 		if (event.x() >= this.hugosmpenhanced$boxX && event.x() < this.hugosmpenhanced$boxX + this.hugosmpenhanced$boxW
@@ -100,7 +100,7 @@ public abstract class ColorChatPreviewMixin {
 
 	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
 	private void hugosmpenhanced$colorEditorKey(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
-		if (event.key() == GLFW.GLFW_KEY_E && event.hasControlDownWithQuirk() && this.hugosmpenhanced$openEditor()) {
+		if (event.key() == InputConstants.KEY_E && event.hasControlDownWithQuirk() && this.hugosmpenhanced$openEditor()) {
 			cir.setReturnValue(true);
 		}
 	}
@@ -120,7 +120,7 @@ public abstract class ColorChatPreviewMixin {
 			return false;
 		}
 		String value = this.input.getValue();
-		Minecraft.getInstance().setScreen(new ColorCodeScreen(null, match.command(), value.substring(match.textStart()), value));
+		Minecraft.getInstance().setScreenAndShow(new ColorCodeScreen(null, match.command(), value.substring(match.textStart()), value));
 		return true;
 	}
 }

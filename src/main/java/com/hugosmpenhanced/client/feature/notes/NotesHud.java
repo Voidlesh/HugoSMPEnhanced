@@ -7,7 +7,7 @@ import com.hugosmpenhanced.client.hud.HudElement;
 import com.hugosmpenhanced.client.hud.HudPos;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 
@@ -80,7 +80,7 @@ public final class NotesHud implements HudElement {
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, Font font, boolean preview) {
+	public void render(GuiGraphicsExtractor graphics, Font font, boolean preview) {
 		draw(graphics, font, shown(preview), 0, 0);
 	}
 
@@ -98,15 +98,15 @@ public final class NotesHud implements HudElement {
 		return PADDING + 10 + shown * 9 + PADDING;
 	}
 
-	public static void draw(GuiGraphics graphics, Font font, List<Note> notes, int x, int y) {
+	public static void draw(GuiGraphicsExtractor graphics, Font font, List<Note> notes, int x, int y) {
 		for (Note note : notes) {
 			List<FormattedCharSequence> lines = font.split(Component.literal(note.text), WIDTH - 2 * PADDING);
 			int shown = Math.min(lines.size(), MAX_LINES);
 			int height = PADDING + 10 + shown * 9 + PADDING;
 			graphics.fill(x, y, x + WIDTH, y + height, BACKGROUND);
-			graphics.drawString(font, font.plainSubstrByWidth(note.displayTitle(), WIDTH - 2 * PADDING), x + PADDING, y + PADDING, TITLE);
+			graphics.text(font, font.plainSubstrByWidth(note.displayTitle(), WIDTH - 2 * PADDING), x + PADDING, y + PADDING, TITLE);
 			for (int i = 0; i < shown; i++) {
-				graphics.drawString(font, lines.get(i), x + PADDING, y + PADDING + 10 + i * 9, TEXT);
+				graphics.text(font, lines.get(i), x + PADDING, y + PADDING + 10 + i * 9, TEXT);
 			}
 			y += height + 4;
 		}

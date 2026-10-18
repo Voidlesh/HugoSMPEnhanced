@@ -3,7 +3,7 @@ package com.hugosmpenhanced.client.feature.mainmenu;
 import com.hugosmpenhanced.client.gui.HugoStyle;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
@@ -25,7 +25,7 @@ public class MenuButton extends Button {
 	}
 
 	@Override
-	protected void renderContents(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		int x = this.getX();
 		int y = this.getY();
 		HugoStyle.State state = !this.active ? HugoStyle.State.DISABLED
@@ -42,9 +42,9 @@ public class MenuButton extends Button {
 		}
 		int textY = y + (this.height - 8) / 2;
 		if (this.leftAligned) {
-			graphics.drawString(font, this.getMessage(), x + (this.accent ? 10 : 8), textY, color);
+			graphics.text(font, this.getMessage(), x + (this.accent ? 10 : 8), textY, color);
 		} else {
-			graphics.drawCenteredString(font, this.getMessage(), x + this.width / 2, textY, color);
+			graphics.centeredText(font, this.getMessage(), x + this.width / 2, textY, color);
 		}
 	}
 }

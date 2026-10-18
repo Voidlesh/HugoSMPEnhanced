@@ -11,7 +11,7 @@ import com.hugosmpenhanced.client.feature.antileak.FakeCoordinates.Kind;
 
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.util.ARGB;
 
 /**
@@ -63,7 +63,7 @@ public final class DebugCoordinates {
 		Kind.REGION_LOCAL_X, Kind.REGION_LOCAL_Z, Kind.REGION_X, Kind.REGION_Z};
 
 	/** Same as the vanilla debug overlay's renderLines, with coordinates masked. */
-	public static void renderLines(GuiGraphics graphics, Font font, List<String> lines, boolean left) {
+	public static void renderLines(GuiGraphicsExtractor graphics, Font font, List<String> lines, boolean left) {
 		CoordinateMask style = AntiLeak.maskStyle();
 		boolean showY = AntiLeak.showY();
 		List<List<Part>> parsed = new ArrayList<>(lines.size());
@@ -97,7 +97,7 @@ public final class DebugCoordinates {
 				if (part.masked()) {
 					drawMasked(graphics, font, style, x, y, w, FAKE[(i + masked++) % FAKE.length]);
 				} else {
-					graphics.drawString(font, carry + part.text(), x, y, TEXT, false);
+					graphics.text(font, carry + part.text(), x, y, TEXT, false);
 					if (carry.isEmpty()) {
 						carry = leadingCodes(part.text());
 					}
@@ -188,7 +188,7 @@ public final class DebugCoordinates {
 		return font.width(part.text());
 	}
 
-	private static void drawMasked(GuiGraphics graphics, Font font, CoordinateMask style, int x, int y, int width, String fake) {
+	private static void drawMasked(GuiGraphicsExtractor graphics, Font font, CoordinateMask style, int x, int y, int width, String fake) {
 		if (style == CoordinateMask.BAR) {
 			graphics.fill(x, y - 1, x + width - 1, y + LINE_HEIGHT - 2, 0xFF000000);
 			return;
@@ -198,7 +198,7 @@ public final class DebugCoordinates {
 		String text = fake.length() >= 4 && width > font.width("00000") ? fake + "." + fake.substring(1) : fake;
 		int textX = x + (width - font.width(text)) / 2;
 		for (int[] tap : KERNEL) {
-			graphics.drawString(font, text, textX + tap[0], y + tap[1], ARGB.color(tap[2], TEXT), false);
+			graphics.text(font, text, textX + tap[0], y + tap[1], ARGB.color(tap[2], TEXT), false);
 		}
 	}
 }

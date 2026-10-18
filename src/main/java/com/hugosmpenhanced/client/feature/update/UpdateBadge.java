@@ -7,7 +7,7 @@ import com.hugosmpenhanced.client.settings.Theme;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
@@ -26,7 +26,7 @@ public class UpdateBadge extends Button {
 
 	private UpdateBadge(int x, int y, ModUpdates.Release release, Screen screen) {
 		super(x, y, width(release), HEIGHT, Component.literal(label(release)),
-			b -> Minecraft.getInstance().setScreen(new UpdateScreen(screen, release)), DEFAULT_NARRATION);
+			b -> Minecraft.getInstance().setScreenAndShow(new UpdateScreen(screen, release)), DEFAULT_NARRATION);
 		this.release = release;
 		this.setTooltip(Tooltip.create(Component.literal(UpdateInstaller.isReady(release)
 			? "HugoSMP Enhanced " + release.version() + " wird beim Beenden des Spiels installiert"
@@ -46,7 +46,7 @@ public class UpdateBadge extends Button {
 		ScreenEvents.AFTER_INIT.register((client, screen, width, height) -> {
 			if (screen.getClass() == TitleScreen.class) {
 				// top left, the only corner the vanilla title screen leaves free
-				add(screen, Screens.getButtons(screen), 4, 4);
+				add(screen, Screens.getWidgets(screen), 4, 4);
 			}
 		});
 	}
@@ -66,7 +66,7 @@ public class UpdateBadge extends Button {
 	}
 
 	@Override
-	protected void renderContents(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		int x = this.getX();
 		int y = this.getY();
 		boolean over = this.isHoveredOrFocused();
@@ -76,6 +76,6 @@ public class UpdateBadge extends Button {
 		int alpha = Mth.clamp(Math.round(pulse * 255), 0, 255);
 		Theme.glyph(graphics, ARROW, x + 6, y + 5, (alpha << 24) | (Theme.GOLD & 0xFFFFFF));
 		var font = Minecraft.getInstance().font;
-		graphics.drawString(font, label(this.release), x + 15, y + 4, over ? Theme.WHITE : 0xFFFFE6A0);
+		graphics.text(font, label(this.release), x + 15, y + 4, over ? Theme.WHITE : 0xFFFFE6A0);
 	}
 }

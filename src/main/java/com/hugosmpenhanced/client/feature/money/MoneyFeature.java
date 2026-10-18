@@ -3,7 +3,7 @@ package com.hugosmpenhanced.client.feature.money;
 import com.hugosmpenhanced.client.ConfigCommand;
 import com.hugosmpenhanced.client.hud.HudManager;
 
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 
 /** Money tracker, its HUD element and {@code /hse geld}. */
 public final class MoneyFeature {
@@ -13,7 +13,7 @@ public final class MoneyFeature {
 	public static void register() {
 		MoneyTracker.register();
 		HudManager.add(MoneyHud.INSTANCE);
-		ConfigCommand.addSubcommand(root -> root.then(ClientCommandManager.literal("geld")
+		ConfigCommand.addSubcommand(root -> root.then(ClientCommands.literal("geld")
 			.executes(context -> ConfigCommand.open(MoneyScreen::new))));
 	}
 }

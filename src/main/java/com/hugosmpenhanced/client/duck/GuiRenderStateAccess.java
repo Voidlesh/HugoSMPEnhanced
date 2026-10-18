@@ -1,11 +1,11 @@
 package com.hugosmpenhanced.client.duck;
 
-import net.minecraft.client.gui.render.state.GuiRenderState;
+import net.minecraft.client.renderer.state.gui.GuiRenderState;
 
 /**
- * Exposes {@code GuiGraphics.guiRenderState}, which is package-private in vanilla.
+ * Exposes {@code GuiGraphicsExtractor.guiRenderState}, which is package-private in vanilla.
  *
- * <p>Needed because {@code GuiGraphics.drawString} is the wrong tool for drawing one glyph many
+ * <p>Needed because {@code GuiGraphicsExtractor.drawString} is the wrong tool for drawing one glyph many
  * times over itself: every call submits a whole text element, and the render state puts any element
  * whose bounds intersect an existing one into a new layer above it. A styled nametag stacks halos,
  * split copies, a stroke and a fill on the same glyph, so going through {@code drawString} builds a

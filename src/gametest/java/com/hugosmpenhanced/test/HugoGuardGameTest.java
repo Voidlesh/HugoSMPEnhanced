@@ -39,16 +39,16 @@ public class HugoGuardGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			context.runOnClient(client -> {
 				var self = client.player;
 				Vec3 look = self.getLookAngle();
 				Vec3 at = self.position().add(look.x * 4, 0, look.z * 4);
 				spawn(client, scammer.uuid(), scammer.username(), at, self.getYRot() + 180);
 				spawn(client, UUID.randomUUID(), "Ehrlich", at.add(look.z * 2.5, 0, -look.x * 2.5), self.getYRot() + 180);
-				client.gui.getChat().addMessage(Component.literal("[Clan] [VIP] " + scammer.username() + ": verkaufe Elytra, zahl zuerst"));
-				client.gui.getChat().addMessage(Component.literal("Ehrlich: Vorsicht vor " + scammer.username()));
-				client.gui.getChat().addMessage(Component.literal("[Nachricht] " + scammer.username() + " -> Du: komm tp"));
+				client.gui.hud.getChat().addClientSystemMessage(Component.literal("[Clan] [VIP] " + scammer.username() + ": verkaufe Elytra, zahl zuerst"));
+				client.gui.hud.getChat().addClientSystemMessage(Component.literal("Ehrlich: Vorsicht vor " + scammer.username()));
+				client.gui.hud.getChat().addClientSystemMessage(Component.literal("[Nachricht] " + scammer.username() + " -> Du: komm tp"));
 			});
 			context.waitTicks(10);
 			context.takeScreenshot("hugoguard-overhead");

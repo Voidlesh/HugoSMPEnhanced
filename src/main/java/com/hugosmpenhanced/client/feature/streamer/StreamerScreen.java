@@ -1,10 +1,11 @@
 package com.hugosmpenhanced.client.feature.streamer;
 
+import com.hugosmpenhanced.client.util.Desktop;
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-import org.lwjgl.glfw.GLFW;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.gui.StyledScreen;
@@ -12,7 +13,7 @@ import com.hugosmpenhanced.client.settings.SettingsScreen;
 import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -157,11 +158,11 @@ public class StreamerScreen extends Screen implements StyledScreen {
 	@Override
 	public void onClose() {
 		ModConfigManager.save();
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	@Override
-	public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		// See-through: the world and the overlay stay visible behind the panel.
 		if (this.mode != Mode.LIVE) {
 			float fade = StreamerUi.easeOut(StreamerUi.progress(this.openedAt, 250));
@@ -172,11 +173,11 @@ public class StreamerScreen extends Screen implements StyledScreen {
 	// ------------------------------------------------------------------ rendering
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		this.hits.clear();
 		if (this.mode == Mode.LIVE) {
 			this.renderLiveBar(graphics, mouseX, mouseY);
-			super.render(graphics, mouseX, mouseY, partialTick);
+			super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 			if (this.confirmRefund) {
 				this.renderRefundConfirm(graphics, mouseX, mouseY);
 			}
@@ -193,16 +194,16 @@ public class StreamerScreen extends Screen implements StyledScreen {
 			this.renderGiveaway(graphics, mouseX, mouseY);
 		}
 		graphics.pose().popMatrix();
-		super.render(graphics, mouseX, mouseY, partialTick);
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 		if (this.picking) {
 			this.renderPicker(graphics, mouseX, mouseY);
 		}
 	}
 
-	private void renderHeader(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderHeader(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		boolean auction = this.mode == Mode.SETUP;
 		StreamerUi.text(graphics, this.font, auction ? "Spenden-Auktion" : "Giveaway", this.fx + 10, this.fy + 8, 1.25f, Theme.WHITE, true);
-		graphics.drawString(this.font, auction ? "Zuschauer bieten mit /pay, die höchste Summe gewinnt"
+		graphics.text(this.font, auction ? "Zuschauer bieten mit /pay, die höchste Summe gewinnt"
 			: "Teilnehmer sammeln, dann das Glücksrad drehen", this.fx + 10, this.fy + 21, Theme.MUTED, false);
 		// tabs on the right of the title
 		int tx = this.fx + this.fw - 30;
@@ -219,7 +220,7 @@ public class StreamerScreen extends Screen implements StyledScreen {
 			} else if (over) {
 				Theme.panel(graphics, tx, this.fy + 7, w, 16, 0x801E1E1E, 0);
 			}
-			graphics.drawString(this.font, names[i], tx + 6, this.fy + 11, selected ? Theme.WHITE : over ? Theme.TEXT : Theme.MUTED, selected);
+			graphics.text(this.font, names[i], tx + 6, this.fy + 11, selected ? Theme.WHITE : over ? Theme.TEXT : Theme.MUTED, selected);
 			Tab target = tabs[i];
 			this.hit(tx, this.fy + 7, w, 16, () -> this.switchTab(target));
 		}
@@ -241,28 +242,28 @@ public class StreamerScreen extends Screen implements StyledScreen {
 
 	// ------------------------------------------------------------------ auction setup
 
-	private void renderSetup(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderSetup(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		var config = ModConfigManager.CONFIG;
 		long now = System.currentTimeMillis();
 		int lx = this.fx + 10;
 		int y = this.fy + 40;
-		graphics.drawString(this.font, "ITEM", lx, y, 0xFFA0A0A0, false);
+		graphics.text(this.font, "ITEM", lx, y, 0xFFA0A0A0, false);
 		int box = this.compact() ? Mth.clamp(this.fh - 132, 56, 112) : 112;
 		int boxY = y + 12;
 		Theme.panel(graphics, lx, boxY, box, box, 0x70000000, 0xFF3A3A3A);
 		if (!auctionItem.isEmpty()) {
 			StreamerUi.glow(graphics, lx + box / 2, boxY + box / 2, box / 2, box / 2, 0x38FFC850);
 			float yaw = (now % 4000L) / 4000f * 360f;
-			graphics.guiRenderState.submitPicturesInPictureState(
+			graphics.guiRenderState.addPicturesInPictureState(
 				ItemSpinRenderState.of(auctionItem, yaw, 0, lx + box / 2, boxY + box / 2, box - 16, graphics.scissorStack.peek()));
 		} else {
-			graphics.drawCenteredString(this.font, "Kein Item", lx + box / 2, boxY + box / 2 - 9, Theme.MUTED);
-			graphics.drawCenteredString(this.font, "gewählt", lx + box / 2, boxY + box / 2 + 1, Theme.MUTED);
+			graphics.centeredText(this.font, "Kein Item", lx + box / 2, boxY + box / 2 - 9, Theme.MUTED);
+			graphics.centeredText(this.font, "gewählt", lx + box / 2, boxY + box / 2 + 1, Theme.MUTED);
 		}
 		int by = boxY + box + 4;
 		if (!auctionItem.isEmpty()) {
 			String itemName = this.font.plainSubstrByWidth(auctionItem.getHoverName().getString(), box);
-			graphics.drawString(this.font, itemName, lx, by, StreamerUi.AQUA, true);
+			graphics.text(this.font, itemName, lx, by, StreamerUi.AQUA, true);
 			by += 11;
 		}
 		boolean hasHand = this.minecraft.player != null && !this.minecraft.player.getMainHandItem().isEmpty();
@@ -282,15 +283,15 @@ public class StreamerScreen extends Screen implements StyledScreen {
 		// right column
 		int rx = this.rightX();
 		int rw = this.fx + this.fw - 10 - rx;
-		graphics.drawString(this.font, "Name im Overlay", rx, this.fy + 41, 0xFFA0A0A0, false);
+		graphics.text(this.font, "Name im Overlay", rx, this.fy + 41, 0xFFA0A0A0, false);
 		int third = (rw - 12) / 3;
-		graphics.drawString(this.font, "Dauer", rx, this.fy + 73, 0xFFA0A0A0, false);
-		graphics.drawString(this.font, "Startgebot $", rx + third + 6, this.fy + 73, 0xFFA0A0A0, false);
-		graphics.drawString(this.font, "Mindestschritt $", rx + 2 * (third + 6), this.fy + 73, 0xFFA0A0A0, false);
+		graphics.text(this.font, "Dauer", rx, this.fy + 73, 0xFFA0A0A0, false);
+		graphics.text(this.font, "Startgebot $", rx + third + 6, this.fy + 73, 0xFFA0A0A0, false);
+		graphics.text(this.font, "Mindestschritt $", rx + 2 * (third + 6), this.fy + 73, 0xFFA0A0A0, false);
 		// duration stepper
 		int sy = this.fy + 84;
 		Theme.panel(graphics, rx, sy, third, 16, Theme.FIELD, Theme.FIELD_BORDER);
-		graphics.drawCenteredString(this.font, StreamerOverlay.clock(config.streamerAuctionSeconds * 1000L) + " min", rx + third / 2, sy + 4, Theme.WHITE);
+		graphics.centeredText(this.font, StreamerOverlay.clock(config.streamerAuctionSeconds * 1000L) + " min", rx + third / 2, sy + 4, Theme.WHITE);
 		this.stepButton(graphics, rx + 1, sy + 1, "-", mouseX, mouseY, -1);
 		this.stepButton(graphics, rx + third - 15, sy + 1, "+", mouseX, mouseY, 1);
 
@@ -313,7 +314,7 @@ public class StreamerScreen extends Screen implements StyledScreen {
 		int buttonY = compact ? y2 + 4 : y2 + 15;
 		Theme.panel(graphics, rx, y2, rw, h, 0x60181818, Theme.SECTION_BORDER);
 		if (!compact) {
-			graphics.drawString(this.font, "ZAHLUNGEN ERKENNEN", rx + 7, y2 + 5, 0xFFA0A0A0, false);
+			graphics.text(this.font, "ZAHLUNGEN ERKENNEN", rx + 7, y2 + 5, 0xFFA0A0A0, false);
 		}
 		ChatPatterns.Learning learning = ChatPatterns.learning();
 		String status;
@@ -333,7 +334,7 @@ public class StreamerScreen extends Screen implements StyledScreen {
 		graphics.fill(rx + 7, y2 + line + 2, rx + 11, y2 + line + 6, dot);
 		int buttonsW = ChatPatterns.hasLearned(ChatPatterns.Learning.PAYMENT) ? 128 : 64;
 		String shown = this.font.plainSubstrByWidth(status, rw - 26 - buttonsW);
-		graphics.drawString(this.font, shown, rx + 15, y2 + line, Theme.TEXT, false);
+		graphics.text(this.font, shown, rx + 15, y2 + line, Theme.TEXT, false);
 		if (!shown.equals(status) && StreamerUi.inside(mouseX, mouseY, rx + 15, y2 + line - 2, rw - 26 - buttonsW, 12)) {
 			graphics.setTooltipForNextFrame(this.font, Component.literal(status), mouseX, mouseY);
 		}
@@ -377,20 +378,20 @@ public class StreamerScreen extends Screen implements StyledScreen {
 		String log = "Protokoll";
 		int logW = this.font.width(log) + 10;
 		StreamerUi.button(graphics, this.font, lx, bottom, logW, 18, log, StreamerUi.Kind.GHOST, true, mouseX, mouseY);
-		this.hit(lx, bottom, logW, 18, () -> Util.getPlatform().openPath(DonationAuction.logFile().getParent()));
+		this.hit(lx, bottom, logW, 18, () -> Desktop.openPath(DonationAuction.logFile().getParent()));
 		if (StreamerUi.inside(mouseX, mouseY, lx, bottom, logW, 18)) {
 			graphics.setTooltipForNextFrame(this.font, this.font.split(Component.literal(
 				"Jede erkannte Zahlung steht mit Uhrzeit in streamer-zahlungen.log, falls du etwas nachprüfen oder zurückzahlen musst."), 200), mouseX, mouseY);
 		}
 		if (this.fw >= 460) {
-			graphics.drawString(this.font, "Taste J öffnet dieses Fenster", lx + logW + 8, bottom + 5, Theme.FAINT, false);
+			graphics.text(this.font, "Taste J öffnet dieses Fenster", lx + logW + 8, bottom + 5, Theme.FAINT, false);
 		}
 	}
 
-	private void stepButton(GuiGraphics graphics, int x, int y, String label, int mouseX, int mouseY, int direction) {
+	private void stepButton(GuiGraphicsExtractor graphics, int x, int y, String label, int mouseX, int mouseY, int direction) {
 		boolean over = StreamerUi.inside(mouseX, mouseY, x, y, 14, 14);
 		Theme.panel(graphics, x, y, 14, 14, over ? 0xFF3A3A3A : 0xFF1E1E1E, over ? 0xFFB4B4B4 : 0xFF3A3A3A);
-		graphics.drawCenteredString(this.font, label, x + 7, y + 3, Theme.WHITE);
+		graphics.centeredText(this.font, label, x + 7, y + 3, Theme.WHITE);
 		this.hit(x, y, 14, 14, () -> this.stepDuration(direction));
 	}
 
@@ -405,13 +406,13 @@ public class StreamerScreen extends Screen implements StyledScreen {
 		config.streamerAuctionSeconds = DURATIONS[Mth.clamp(index + direction, 0, DURATIONS.length - 1)];
 	}
 
-	private int section(GuiGraphics graphics, int x, int y, int w, String title, String[][] rows, boolean[] values, Runnable[] toggles,
+	private int section(GuiGraphicsExtractor graphics, int x, int y, int w, String title, String[][] rows, boolean[] values, Runnable[] toggles,
 		int mouseX, int mouseY) {
 		boolean compact = this.compact();
 		int rowH = compact ? 14 : 22;
 		int h = 14 + rows.length * rowH + 2;
 		Theme.panel(graphics, x, y, w, h, 0x60181818, Theme.SECTION_BORDER);
-		graphics.drawString(this.font, title, x + 7, y + 5, 0xFFA0A0A0, false);
+		graphics.text(this.font, title, x + 7, y + 5, 0xFFA0A0A0, false);
 		int ry = y + 14;
 		for (int i = 0; i < rows.length; i++) {
 			boolean over = StreamerUi.inside(mouseX, mouseY, x + 1, ry, w - 2, rowH);
@@ -420,14 +421,14 @@ public class StreamerScreen extends Screen implements StyledScreen {
 			}
 			graphics.fill(x + 7, ry, x + w - 7, ry + 1, Theme.DIVIDER);
 			if (compact) {
-				graphics.drawString(this.font, rows[i][0], x + 7, ry + 3, Theme.TEXT, false);
+				graphics.text(this.font, rows[i][0], x + 7, ry + 3, Theme.TEXT, false);
 				Theme.toggle(graphics, x + w - 30, ry + 1, values[i], over);
 				if (over) {
 					graphics.setTooltipForNextFrame(this.font, this.font.split(Component.literal(rows[i][1]), 200), mouseX, mouseY);
 				}
 			} else {
-				graphics.drawString(this.font, rows[i][0], x + 7, ry + 3, Theme.TEXT, false);
-				graphics.drawString(this.font, this.font.plainSubstrByWidth(rows[i][1], w - 44), x + 7, ry + 12, Theme.MUTED, false);
+				graphics.text(this.font, rows[i][0], x + 7, ry + 3, Theme.TEXT, false);
+				graphics.text(this.font, this.font.plainSubstrByWidth(rows[i][1], w - 44), x + 7, ry + 12, Theme.MUTED, false);
 				Theme.toggle(graphics, x + w - 30, ry + 5, values[i], over);
 			}
 			Runnable toggle = toggles[i];
@@ -442,7 +443,7 @@ public class StreamerScreen extends Screen implements StyledScreen {
 
 	// ------------------------------------------------------------------ inventory picker
 
-	private void renderPicker(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderPicker(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		this.hits.clear();
 		graphics.fill(0, 0, this.width, this.height, 0x60000000);
 		int cols = 9;
@@ -457,7 +458,7 @@ public class StreamerScreen extends Screen implements StyledScreen {
 		this.hit(x, y, w, h, () -> {
 		});
 		Theme.panel(graphics, x, y, w, h, 0xE6141414, Theme.GOLD);
-		graphics.drawString(this.font, "Item wählen", x + 8, y + 7, Theme.WHITE, true);
+		graphics.text(this.font, "Item wählen", x + 8, y + 7, Theme.WHITE, true);
 		var inventory = this.minecraft.player.getInventory();
 		ItemStack hovered = ItemStack.EMPTY;
 		for (int slot = 0; slot < 41; slot++) {
@@ -480,8 +481,8 @@ public class StreamerScreen extends Screen implements StyledScreen {
 			boolean over = StreamerUi.inside(mouseX, mouseY, cx, cy, cell - 2, cell - 2);
 			Theme.panel(graphics, cx, cy, cell - 2, cell - 2, over && !stack.isEmpty() ? 0x60FFC83D : 0x50000000, over ? Theme.GOLD : 0xFF2A2A2A);
 			if (!stack.isEmpty()) {
-				graphics.renderItem(stack, cx + 1, cy + 1);
-				graphics.renderItemDecorations(this.font, stack, cx + 1, cy + 1);
+				graphics.item(stack, cx + 1, cy + 1);
+				graphics.itemDecorations(this.font, stack, cx + 1, cy + 1);
 				if (over) {
 					hovered = stack;
 				}
@@ -563,7 +564,7 @@ public class StreamerScreen extends Screen implements StyledScreen {
 	 * labels get shorter when the screen is narrow, and only then the buttons wrap onto a second row,
 	 * so nothing is ever drawn on top of something else or left out.
 	 */
-	private void renderLiveBar(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderLiveBar(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		boolean ended = DonationAuction.state() == DonationAuction.State.ENDED;
 		String winner = DonationAuction.winner();
 		List<LiveButton> buttons = this.liveButtons();
@@ -638,7 +639,7 @@ public class StreamerScreen extends Screen implements StyledScreen {
 
 		int toolsX = x + w - pad - headerTools;
 		String shownInfo = this.font.plainSubstrByWidth(info, toolsX - 8 - (x + pad));
-		graphics.drawString(this.font, shownInfo, x + pad + 2, y + 6, ended ? Theme.GOLD : Theme.WHITE, true);
+		graphics.text(this.font, shownInfo, x + pad + 2, y + 6, ended ? Theme.GOLD : Theme.WHITE, true);
 		StreamerUi.button(graphics, this.font, toolsX, y + 3, gw, 14, giveaway, StreamerUi.Kind.GHOST, true, mouseX, mouseY);
 		this.hit(toolsX, y + 3, gw, 14, () -> this.switchTab(Tab.GIVEAWAY));
 		int closeX = toolsX + gw + 2;
@@ -688,10 +689,10 @@ public class StreamerScreen extends Screen implements StyledScreen {
 	/** Opens the panel on the auction (live bar while one runs) or on the giveaway tab. */
 	public static void open(boolean giveawayTab) {
 		tab = giveawayTab ? Tab.GIVEAWAY : Tab.AUCTION;
-		net.minecraft.client.Minecraft.getInstance().setScreen(new StreamerScreen(null));
+		net.minecraft.client.Minecraft.getInstance().setScreenAndShow(new StreamerScreen(null));
 	}
 
-	private void renderRefundConfirm(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderRefundConfirm(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		this.hits.clear();
 		// Swallows clicks beside the dialog; added first so the dialog's own buttons win.
 		this.hit(0, 0, this.width, this.height, () -> {
@@ -704,20 +705,20 @@ public class StreamerScreen extends Screen implements StyledScreen {
 		int x = (this.width - w) / 2;
 		int y = (this.height - h) / 2;
 		Theme.panel(graphics, x, y, w, h, 0xF0141414, Theme.RED);
-		graphics.drawString(this.font, "Wirklich zurückzahlen?", x + 8, y + 7, Theme.WHITE, true);
+		graphics.text(this.font, "Wirklich zurückzahlen?", x + 8, y + 7, Theme.WHITE, true);
 		long sum = refunds.values().stream().mapToLong(Long::longValue).sum();
-		graphics.drawString(this.font, "Diese Befehle werden gesendet, zusammen " + Money.format(sum) + ":", x + 8, y + 19, Theme.MUTED, false);
+		graphics.text(this.font, "Diese Befehle werden gesendet, zusammen " + Money.format(sum) + ":", x + 8, y + 19, Theme.MUTED, false);
 		int ly = y + 31;
 		int i = 0;
 		for (var entry : refunds.entrySet()) {
 			if (i++ >= lines) {
 				break;
 			}
-			graphics.drawString(this.font, "/pay " + entry.getKey() + " " + entry.getValue(), x + 12, ly, Theme.TEXT, false);
+			graphics.text(this.font, "/pay " + entry.getKey() + " " + entry.getValue(), x + 12, ly, Theme.TEXT, false);
 			ly += 11;
 		}
 		if (refunds.size() > lines) {
-			graphics.drawString(this.font, "… und " + (refunds.size() - lines) + " weitere", x + 12, ly, Theme.MUTED, false);
+			graphics.text(this.font, "… und " + (refunds.size() - lines) + " weitere", x + 12, ly, Theme.MUTED, false);
 		}
 		int by = y + h - 22;
 		StreamerUi.button(graphics, this.font, x + 8, by, 80, 16, "Abbrechen", StreamerUi.Kind.NORMAL, true, mouseX, mouseY);
@@ -731,17 +732,17 @@ public class StreamerScreen extends Screen implements StyledScreen {
 
 	// ------------------------------------------------------------------ giveaway
 
-	private void renderGiveaway(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderGiveaway(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		var config = ModConfigManager.CONFIG;
 		long now = System.currentTimeMillis();
 		int x0 = this.fx + 10;
 		int x1 = this.fx + this.fw - 10;
 		// prize row
 		int py = this.fy + 40;
-		graphics.drawString(this.font, "PREIS", x0, py, 0xFFA0A0A0, false);
+		graphics.text(this.font, "PREIS", x0, py, 0xFFA0A0A0, false);
 		Theme.panel(graphics, x0, py + 9, 22, 22, 0x60000000, 0xFF3A3A3A);
 		if (!Giveaway.prize().isEmpty()) {
-			graphics.renderItem(Giveaway.prize(), x0 + 3, py + 12);
+			graphics.item(Giveaway.prize(), x0 + 3, py + 12);
 		}
 		int pbx = x0 + 26 + 156;
 		boolean hasHand = this.minecraft.player != null && !this.minecraft.player.getMainHandItem().isEmpty();
@@ -802,15 +803,15 @@ public class StreamerScreen extends Screen implements StyledScreen {
 			});
 		if (channel.isEmpty() && StreamerUi.inside(mouseX, mouseY, x0 + cw + 6, cy, cw, 36)) {
 			this.hits.removeIf(hit -> hit.x == x0 + cw + 6 && hit.y == cy);
-			this.hit(x0 + cw + 6, cy, cw, 36, () -> this.minecraft.setScreen(new SettingsScreen(this).select("Werkzeuge", "Streamer")));
+			this.hit(x0 + cw + 6, cy, cw, 36, () -> this.minecraft.setScreenAndShow(new SettingsScreen(this).select("Werkzeuge", "Streamer")));
 		}
 
 		// participants
 		int ly = cy + 42;
 		String head = "TEILNEHMER  " + Giveaway.count();
-		graphics.drawString(this.font, head, x0, ly, 0xFFA0A0A0, false);
+		graphics.text(this.font, head, x0, ly, 0xFFA0A0A0, false);
 		String note = Giveaway.open() ? "Jeder nur einmal  ·  Twitch: !join <MC-Name> für TPA" : "Teilnahme ist geschlossen";
-		graphics.drawString(this.font, note, x1 - this.font.width(note), ly, Giveaway.open() ? Theme.FAINT : 0xFFE6B450, false);
+		graphics.text(this.font, note, x1 - this.font.width(note), ly, Giveaway.open() ? Theme.FAINT : 0xFFE6B450, false);
 		int listY = ly + 10;
 		int listH = this.fy + this.fh - 30 - listY;
 		Theme.panel(graphics, x0, listY, x1 - x0, listH, 0x60000000, 0xFF333333);
@@ -822,7 +823,7 @@ public class StreamerScreen extends Screen implements StyledScreen {
 		int rows = (people.size() + cols - 1) / cols;
 		this.listScroll = Mth.clamp(this.listScroll, 0, Math.max(0, rows - visibleRows));
 		if (people.isEmpty()) {
-			graphics.drawCenteredString(this.font, Giveaway.open() ? "Noch niemand dabei. Sag im Stream, wie man mitmacht!" : "Öffne die Teilnahme, dann können alle mitmachen.",
+			graphics.centeredText(this.font, Giveaway.open() ? "Noch niemand dabei. Sag im Stream, wie man mitmacht!" : "Öffne die Teilnahme, dann können alle mitmachen.",
 				(x0 + x1) / 2, listY + listH / 2 - 4, Theme.MUTED);
 		}
 		graphics.enableScissor(x0 + 1, listY + 1, x1 - 1, listY + listH - 1);
@@ -847,7 +848,7 @@ public class StreamerScreen extends Screen implements StyledScreen {
 			}
 			int color = StreamerUi.mix(StreamerUi.GREEN, Theme.TEXT, pop);
 			String label = p.name() + (p.source() == Giveaway.Source.TWITCH && p.mcName() != null ? " (" + p.mcName() + ")" : "");
-			graphics.drawString(this.font, this.font.plainSubstrByWidth(label, colW - 28), px + 13, rowY + 2, color, false);
+			graphics.text(this.font, this.font.plainSubstrByWidth(label, colW - 28), px + 13, rowY + 2, color, false);
 			if (over) {
 				Theme.glyph(graphics, Theme.CROSS, px + colW - 13, rowY + 3, Theme.RED_TEXT);
 				this.hit(px + colW - 16, rowY, 11, rowH, () -> Giveaway.remove(p));
@@ -871,7 +872,7 @@ public class StreamerScreen extends Screen implements StyledScreen {
 		StreamerUi.button(graphics, this.font, x1 - spinW, bottom, spinW, 18, "Glücksrad drehen", StreamerUi.Kind.GOLD, canSpin, mouseX, mouseY);
 		this.hit(x1 - spinW, bottom, spinW, 18, () -> {
 			if (Giveaway.count() >= 2) {
-				this.minecraft.setScreen(new WheelScreen(this));
+				this.minecraft.setScreenAndShow(new WheelScreen(this));
 			}
 		});
 		String openLabel = Giveaway.open() ? "Teilnahme schließen" : "Teilnahme öffnen";
@@ -881,7 +882,7 @@ public class StreamerScreen extends Screen implements StyledScreen {
 		this.hit(x1 - spinW - 4 - ow, bottom, ow, 18, () -> Giveaway.setOpen(!Giveaway.open()));
 	}
 
-	private void sourceCard(GuiGraphics graphics, int x, int y, int w, String title, String how, int count, boolean on, String status,
+	private void sourceCard(GuiGraphicsExtractor graphics, int x, int y, int w, String title, String how, int count, boolean on, String status,
 		int statusColor, boolean twitch, int mouseX, int mouseY, Runnable toggle) {
 		Theme.panel(graphics, x, y, w, 36, on ? 0x70181818 : 0x50101010, Theme.SECTION_BORDER);
 		if (twitch) {
@@ -890,11 +891,11 @@ public class StreamerScreen extends Screen implements StyledScreen {
 			String self = this.minecraft.player != null ? this.minecraft.player.getGameProfile().name() : "Steve";
 			StreamerUi.face(graphics, self, x + 7, y + 7, 9);
 		}
-		graphics.drawString(this.font, title, x + 21, y + 7, on ? Theme.WHITE : Theme.MUTED, true);
+		graphics.text(this.font, title, x + 21, y + 7, on ? Theme.WHITE : Theme.MUTED, true);
 		int sx = x + 25 + this.font.width(title);
 		graphics.fill(sx, y + 9, sx + 4, y + 13, statusColor);
-		graphics.drawString(this.font, this.font.plainSubstrByWidth(status, w - (sx - x) - 60), sx + 7, y + 7, statusColor, false);
-		graphics.drawString(this.font, this.font.plainSubstrByWidth(how, w - 60), x + 8, y + 22, Theme.MUTED, false);
+		graphics.text(this.font, this.font.plainSubstrByWidth(status, w - (sx - x) - 60), sx + 7, y + 7, statusColor, false);
+		graphics.text(this.font, this.font.plainSubstrByWidth(how, w - 60), x + 8, y + 22, Theme.MUTED, false);
 		String number = String.valueOf(count);
 		StreamerUi.right(graphics, this.font, number, x + w - 34, y + 9, 2f, on ? Theme.WHITE : Theme.FAINT, true);
 		boolean over = StreamerUi.inside(mouseX, mouseY, x + w - 28, y + 12, 22, 11);
@@ -913,7 +914,7 @@ public class StreamerScreen extends Screen implements StyledScreen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-		if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+		if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
 			// Panels drawn last lie on top, so the newest hit wins. Text fields first.
 			if (!this.picking && !this.confirmRefund && super.mouseClicked(event, doubleClick)) {
 				return true;
@@ -951,11 +952,11 @@ public class StreamerScreen extends Screen implements StyledScreen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
-		if (this.picking && event.key() == GLFW.GLFW_KEY_ESCAPE) {
+		if (this.picking && event.key() == InputConstants.KEY_ESCAPE) {
 			this.picking = false;
 			return true;
 		}
-		if (this.confirmRefund && event.key() == GLFW.GLFW_KEY_ESCAPE) {
+		if (this.confirmRefund && event.key() == InputConstants.KEY_ESCAPE) {
 			this.confirmRefund = false;
 			return true;
 		}

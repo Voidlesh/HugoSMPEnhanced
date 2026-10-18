@@ -6,12 +6,12 @@ import com.hugosmpenhanced.client.HugoSmpEnhancedClient;
 import com.hugosmpenhanced.client.settings.Theme;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
-import com.mojang.blaze3d.textures.FilterMode;
+import com.mojang.renderpearl.api.textures.FilterMode;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.gui.components.PlayerFaceExtractor;
 import net.minecraft.client.multiplayer.PlayerInfo;
 import net.minecraft.client.renderer.RenderPipelines;
 import net.minecraft.client.renderer.texture.DynamicTexture;
@@ -47,16 +47,16 @@ public final class StreamerUi {
 
 	// ------------------------------------------------------------------ panels and buttons
 
-	public static void glass(GuiGraphics graphics, int x, int y, int w, int h) {
+	public static void glass(GuiGraphicsExtractor graphics, int x, int y, int w, int h) {
 		Theme.panel(graphics, x, y, w, h, GLASS, GLASS_EDGE);
 	}
 
-	public static void glass(GuiGraphics graphics, int x, int y, int w, int h, int border) {
+	public static void glass(GuiGraphicsExtractor graphics, int x, int y, int w, int h, int border) {
 		Theme.panel(graphics, x, y, w, h, GLASS, border);
 	}
 
 	/** Draws a button and returns whether the mouse is over it. */
-	public static boolean button(GuiGraphics graphics, Font font, int x, int y, int w, int h, String label, Kind kind,
+	public static boolean button(GuiGraphicsExtractor graphics, Font font, int x, int y, int w, int h, String label, Kind kind,
 		boolean enabled, int mouseX, int mouseY) {
 		boolean over = enabled && inside(mouseX, mouseY, x, y, w, h);
 		int fill;
@@ -93,7 +93,7 @@ public final class StreamerUi {
 		}
 		Theme.panel(graphics, x, y, w, h, fill, border);
 		String shown = font.plainSubstrByWidth(label, w - 6);
-		graphics.drawString(font, shown, x + (w - font.width(shown)) / 2, y + (h - 8) / 2 + 1, text, kind != Kind.GHOST && enabled);
+		graphics.text(font, shown, x + (w - font.width(shown)) / 2, y + (h - 8) / 2 + 1, text, kind != Kind.GHOST && enabled);
 		return over;
 	}
 
@@ -103,26 +103,26 @@ public final class StreamerUi {
 
 	// ------------------------------------------------------------------ text
 
-	public static void text(GuiGraphics graphics, Font font, String text, float x, float y, float scale, int color, boolean shadow) {
+	public static void text(GuiGraphicsExtractor graphics, Font font, String text, float x, float y, float scale, int color, boolean shadow) {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(scale, scale);
-		graphics.drawString(font, text, 0, 0, color, shadow);
+		graphics.text(font, text, 0, 0, color, shadow);
 		graphics.pose().popMatrix();
 	}
 
-	public static void centered(GuiGraphics graphics, Font font, String text, float centerX, float y, float scale, int color, boolean shadow) {
+	public static void centered(GuiGraphicsExtractor graphics, Font font, String text, float centerX, float y, float scale, int color, boolean shadow) {
 		text(graphics, font, text, centerX - font.width(text) * scale / 2f, y, scale, color, shadow);
 	}
 
-	public static void right(GuiGraphics graphics, Font font, String text, float rightX, float y, float scale, int color, boolean shadow) {
+	public static void right(GuiGraphicsExtractor graphics, Font font, String text, float rightX, float y, float scale, int color, boolean shadow) {
 		text(graphics, font, text, rightX - font.width(text) * scale, y, scale, color, shadow);
 	}
 
 	// ------------------------------------------------------------------ heads and icons
 
-	public static void face(GuiGraphics graphics, String name, int x, int y, int size) {
-		PlayerFaceRenderer.draw(graphics, skin(name), x, y, size);
+	public static void face(GuiGraphicsExtractor graphics, String name, int x, int y, int size) {
+		PlayerFaceExtractor.extractRenderState(graphics, skin(name), x, y, size);
 	}
 
 	public static PlayerSkin skin(String name) {
@@ -137,12 +137,12 @@ public final class StreamerUi {
 		return DefaultPlayerSkin.get(id);
 	}
 
-	public static void twitchIcon(GuiGraphics graphics, int x, int y, int color) {
+	public static void twitchIcon(GuiGraphicsExtractor graphics, int x, int y, int color) {
 		Theme.glyph(graphics, TWITCH_GLYPH, x, y, color);
 	}
 
 	/** A soft round glow (white, tint it with the colour's alpha and RGB). */
-	public static void glow(GuiGraphics graphics, int centerX, int centerY, int radiusX, int radiusY, int color) {
+	public static void glow(GuiGraphicsExtractor graphics, int centerX, int centerY, int radiusX, int radiusY, int color) {
 		graphics.blit(RenderPipelines.GUI_TEXTURED, glowTexture(), centerX - radiusX, centerY - radiusY, 0, 0,
 			radiusX * 2, radiusY * 2, 64, 64, 64, 64, color);
 	}

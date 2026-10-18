@@ -6,10 +6,9 @@ import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
 import com.mojang.blaze3d.platform.InputConstants;
 
-import org.lwjgl.glfw.GLFW;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.Screens;
 import net.minecraft.client.KeyMapping;
@@ -40,16 +39,16 @@ public final class SettingsFeature {
 	}
 
 	public static void register() {
-		openKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+		openKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.hugosmpenhanced.open_settings",
-			InputConstants.Type.KEYSYM,
-			GLFW.GLFW_KEY_O,
+			InputConstants.Type.KEYBOARD,
+			InputConstants.KEY_O,
 			TpaKeybinds.CATEGORY));
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (openKey.consumeClick()) {
-				if (client.screen == null) {
-					client.setScreen(new SettingsScreen(null));
+				if (client.gui.screen() == null) {
+					client.setScreenAndShow(new SettingsScreen(null));
 				}
 			}
 		});
@@ -67,18 +66,18 @@ public final class SettingsFeature {
 	 */
 	public static boolean onKeyPress(KeyEvent event) {
 		Minecraft client = Minecraft.getInstance();
-		if (openKey == null || openKey.isUnbound() || client.screen != null || client.player == null
-			|| client.getOverlay() != null || !openKey.matches(event) || client.options.keyDebugModifier.isDown()) {
+		if (openKey == null || openKey.isUnbound() || client.gui.screen() != null || client.player == null
+			|| client.gui.overlay() != null || !openKey.matches(event) || client.options.keyDebugModifier.isDown()) {
 			return false;
 		}
-		client.setScreen(new SettingsScreen(null));
+		client.setScreenAndShow(new SettingsScreen(null));
 		KeyMapping other = conflictingMapping();
 		if (other != null && !conflictShown) {
 			conflictShown = true;
-			client.getToastManager().addToast(SystemToast.multiline(client, SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
+			SystemToast.add(client.gui.toastManager(), SystemToast.SystemToastId.PERIODIC_NOTIFICATION,
 				Component.literal("Taste " + openKey.getTranslatedKeyMessage().getString() + " ist doppelt belegt"),
 				Component.literal("Auch \"").append(Component.translatable(other.getName()))
-					.append("\". HugoSMP Enhanced hat Vorrang, ändern unter Allgemein > Menü.")));
+					.append("\". HugoSMP Enhanced hat Vorrang, ändern unter Allgemein > Menü."));
 		}
 		return true;
 	}
@@ -98,7 +97,7 @@ public final class SettingsFeature {
 
 	/** Third icon right of "Back to Game", after the camera and the notepad. */
 	private static void addPauseButton(Screen screen, int scaledHeight) {
-		List<AbstractWidget> widgets = Screens.getButtons(screen);
+		List<AbstractWidget> widgets = Screens.getWidgets(screen);
 		int x = 54;
 		int y = scaledHeight - 26;
 		for (AbstractWidget widget : widgets) {
@@ -110,7 +109,7 @@ public final class SettingsFeature {
 			}
 		}
 		SpriteIconButton button = SpriteIconButton.builder(Component.literal("HugoSMP Enhanced"),
-				b -> Minecraft.getInstance().setScreen(new SettingsScreen(screen)), true)
+				b -> Minecraft.getInstance().setScreenAndShow(new SettingsScreen(screen)), true)
 			.sprite(Theme.sprite("brand"), 16, 16)
 			.size(20, 20)
 			.build();

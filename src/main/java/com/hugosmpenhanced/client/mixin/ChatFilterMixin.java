@@ -27,7 +27,7 @@ public abstract class ChatFilterMixin {
 			return;
 		}
 
-		Component unsigned = packet.unsignedContent();
+		Component unsigned = packet.unsignedContent().orElse(null);
 		String text = unsigned != null ? unsigned.getString() : packet.body().content();
 
 		if (ChatFilterService.shouldCancel(text)) {

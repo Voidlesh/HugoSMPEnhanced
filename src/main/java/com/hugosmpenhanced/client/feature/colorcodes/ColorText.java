@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.feature.colorcodes;
 
+import com.hugosmpenhanced.client.util.Formats;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
@@ -31,7 +32,7 @@ public final class ColorText {
 	/** A colour: one of the 16 chat colours (with its code) or any RGB value (code 0). */
 	public record Color(int rgb, char code) {
 		public static Color legacy(ChatFormatting formatting) {
-			return new Color(formatting.getColor() & 0xFFFFFF, formatting.getChar());
+			return new Color(Formats.color(formatting) & 0xFFFFFF, Formats.code(formatting));
 		}
 
 		public static Color hex(int rgb) {
@@ -107,7 +108,7 @@ public final class ColorText {
 					formats = 0;
 				} else {
 					ChatFormatting formatting = ChatFormatting.getByCode(c);
-					if (formatting.isColor()) {
+					if (Formats.isColor(formatting)) {
 						color = Color.legacy(formatting);
 						formats = 0;
 					} else {
@@ -276,10 +277,10 @@ public final class ColorText {
 		Color best = null;
 		double bestDistance = Double.MAX_VALUE;
 		for (ChatFormatting formatting : ChatFormatting.values()) {
-			if (!formatting.isColor()) {
+			if (!Formats.isColor(formatting)) {
 				continue;
 			}
-			double distance = ColorMath.distance(rgb, formatting.getColor());
+			double distance = ColorMath.distance(rgb, Formats.color(formatting));
 			if (distance < bestDistance) {
 				bestDistance = distance;
 				best = Color.legacy(formatting);
@@ -358,17 +359,17 @@ public final class ColorText {
 	public static List<ChatFormatting> legacyPath(ChatFormatting from, ChatFormatting to) {
 		List<ChatFormatting> path = new ArrayList<>();
 		path.add(from);
-		int a = from.getColor();
-		int b = to.getColor();
+		int a = Formats.color(from);
+		int b = Formats.color(to);
 		for (int k = 1; k < 64; k++) {
 			int mixed = ColorMath.mix(a, b, k / 64f);
 			ChatFormatting best = null;
 			double bestDistance = Double.MAX_VALUE;
 			for (ChatFormatting formatting : ChatFormatting.values()) {
-				if (!formatting.isColor() || (isNeutral(formatting) && formatting != from && formatting != to)) {
+				if (!Formats.isColor(formatting) || (isNeutral(formatting) && formatting != from && formatting != to)) {
 					continue;
 				}
-				double distance = ColorMath.distance(mixed, formatting.getColor());
+				double distance = ColorMath.distance(mixed, Formats.color(formatting));
 				if (distance < bestDistance) {
 					bestDistance = distance;
 					best = formatting;
@@ -504,7 +505,7 @@ public final class ColorText {
 				int rgb = style.getColor().getValue() & 0xFFFFFF;
 				color = Color.hex(rgb);
 				for (ChatFormatting formatting : ChatFormatting.values()) {
-					if (formatting.isColor() && (formatting.getColor() & 0xFFFFFF) == rgb) {
+					if (Formats.isColor(formatting) && (Formats.color(formatting) & 0xFFFFFF) == rgb) {
 						color = Color.legacy(formatting);
 						break;
 					}

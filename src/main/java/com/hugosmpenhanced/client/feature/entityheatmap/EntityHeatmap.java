@@ -12,18 +12,17 @@ import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
-import org.lwjgl.glfw.GLFW;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderContext;
-import net.fabricmc.fabric.api.client.rendering.v1.world.WorldRenderEvents;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderContext;
+import net.fabricmc.fabric.api.client.rendering.v1.level.LevelRenderEvents;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.client.renderer.rendertype.RenderTypes;
-import net.minecraft.client.renderer.state.CameraRenderState;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.core.BlockPos;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -59,10 +58,10 @@ public final class EntityHeatmap {
 	}
 
 	public static void register() {
-		toggleKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+		toggleKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.hugosmpenhanced.entity_heatmap",
-			InputConstants.Type.KEYSYM,
-			GLFW.GLFW_KEY_H,
+			InputConstants.Type.KEYBOARD,
+			InputConstants.KEY_H,
 			TpaKeybinds.CATEGORY));
 
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
@@ -72,14 +71,14 @@ public final class EntityHeatmap {
 				}
 				shown = !shown;
 				if (client.player != null) {
-					client.player.displayClientMessage(Component.literal(
-						shown ? "§aEntity-Heatmap an" : "§7Entity-Heatmap aus"), true);
+					client.player.sendOverlayMessage(Component.literal(
+						shown ? "§aEntity-Heatmap an" : "§7Entity-Heatmap aus"));
 				}
 			}
 			cells = shown && ModConfigManager.CONFIG.entityHeatmapEnabled ? collect(client) : List.of();
 		});
 
-		WorldRenderEvents.BEFORE_ENTITIES.register(EntityHeatmap::render);
+		LevelRenderEvents.AFTER_TRANSLUCENT_TERRAIN.register(EntityHeatmap::render);
 	}
 
 	/** One block position and what stands in it. */
@@ -189,17 +188,17 @@ public final class EntityHeatmap {
 		return 0xFFFFFFFF;
 	}
 
-	private static void render(WorldRenderContext context) {
+	private static void render(LevelRenderContext context) {
 		List<Cell> current = cells;
 		if (current.isEmpty()) {
 			return;
 		}
 		Minecraft minecraft = Minecraft.getInstance();
 		Font font = minecraft.font;
-		CameraRenderState camera = context.worldState().cameraRenderState;
+		CameraRenderState camera = context.levelState().cameraRenderState;
 		Vec3 cam = camera.pos;
-		PoseStack poseStack = context.matrices();
-		var collector = context.commandQueue();
+		PoseStack poseStack = context.poseStack();
+		var collector = context.submitNodeCollector();
 
 		for (Cell cell : current) {
 			double x = cell.pos().getX() - cam.x;
@@ -239,12 +238,12 @@ public final class EntityHeatmap {
 			// Above the tallest entity, so the mobs in the block do not cover their own count.
 			double labelY = cell.topY() + 0.15 - cam.y;
 			poseStack.translate(x + 0.5, labelY + detailHeight + numberHeight, z + 0.5);
-			poseStack.mulPose(camera.orientation);
+			poseStack.rotate(camera.orientation);
 			poseStack.pushPose();
 			poseStack.scale(PIXEL * NUMBER_SCALE, -PIXEL * NUMBER_SCALE, PIXEL * NUMBER_SCALE);
 			FormattedCharSequence number = Component.literal(String.valueOf(cell.total())).getVisualOrderText();
 			collector.submitText(poseStack, -font.width(number) / 2.0F, 0, number, false, Font.DisplayMode.NORMAL,
-				LightTexture.FULL_BRIGHT, textColor(cell), 0x60000000, 0);
+				LightCoordsUtil.FULL_BRIGHT, textColor(cell), 0x60000000, 0);
 			poseStack.popPose();
 			if (!details.isEmpty()) {
 				poseStack.translate(0, -numberHeight, 0);
@@ -255,7 +254,7 @@ public final class EntityHeatmap {
 				}
 				for (int i = 0; i < details.size(); i++) {
 					collector.submitText(poseStack, -widest / 2.0F, i * 10, details.get(i), false, Font.DisplayMode.NORMAL,
-						LightTexture.FULL_BRIGHT, 0xFFE0E0E0, 0x60000000, 0);
+						LightCoordsUtil.FULL_BRIGHT, 0xFFE0E0E0, 0x60000000, 0);
 				}
 			}
 			poseStack.popPose();

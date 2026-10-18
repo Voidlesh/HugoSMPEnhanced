@@ -1,7 +1,7 @@
 package com.hugosmpenhanced.test;
 
-import org.lwjgl.glfw.GLFW;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.colorcodes.ColorCodeScreen;
 import com.hugosmpenhanced.client.feature.colorcodes.ColorCodes;
@@ -50,7 +50,7 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			singleplayer.getServer().runCommand("gamerule sendCommandFeedback false");
 			singleplayer.getServer().runOnServer(server -> {
 				ServerPlayer player = server.getPlayerList().getPlayers().get(0);
@@ -68,8 +68,8 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			context.takeScreenshot("farbcodes-1-chat-vorschau");
 
 			// Ctrl+E opens the editor with that text.
-			combo(context, GLFW.GLFW_KEY_E, GLFW.GLFW_MOD_CONTROL);
-			String opened = context.computeOnClient(client -> client.screen instanceof ColorCodeScreen screen ? screen.text() : null);
+			combo(context, InputConstants.KEY_E, InputConstants.MOD_CONTROL);
+			String opened = context.computeOnClient(client -> client.gui.screen() instanceof ColorCodeScreen screen ? screen.text() : null);
 			expect("&6&lHugo&eSMP".equals(opened), "Ctrl+E did not open the editor with the chat text: " + opened);
 			context.takeScreenshot("farbcodes-2-editor-aus-chat");
 
@@ -86,8 +86,8 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			context.takeScreenshot("farbcodes-3-verlauf");
 
 			// Select "Enhanced" with the keyboard, make it gold and bold.
-			context.getInput().pressKey(GLFW.GLFW_KEY_END);
-			combo(context, GLFW.GLFW_KEY_LEFT, GLFW.GLFW_MOD_CONTROL | GLFW.GLFW_MOD_SHIFT);
+			context.getInput().pressKey(InputConstants.KEY_END);
+			combo(context, InputConstants.KEY_LEFT, InputConstants.MOD_CONTROL | InputConstants.MOD_SHIFT);
 			click(context, "swatch:6");
 			click(context, "format:0");
 			String styled = text(context);
@@ -100,9 +100,9 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			context.takeScreenshot("farbcodes-4-markierung-gold-fett");
 
 			// Undo takes the bold back, redo brings it again.
-			combo(context, GLFW.GLFW_KEY_Z, GLFW.GLFW_MOD_CONTROL);
+			combo(context, InputConstants.KEY_Z, InputConstants.MOD_CONTROL);
 			expect((ColorText.parse(text(context)).glyphs.get(8).formats & ColorText.BOLD) == 0, "Ctrl+Z did not undo bold: " + text(context));
-			combo(context, GLFW.GLFW_KEY_Y, GLFW.GLFW_MOD_CONTROL);
+			combo(context, InputConstants.KEY_Y, InputConstants.MOD_CONTROL);
 			expect(text(context).equals(styled), "Ctrl+Y did not redo: " + text(context));
 
 			// Save it as a template.
@@ -110,7 +110,7 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			click(context, "save");
 			selectAll(context);
 			context.getInput().typeChars("Mein Schwert");
-			context.getInput().pressKey(GLFW.GLFW_KEY_ENTER);
+			context.getInput().pressKey(InputConstants.KEY_RETURN);
 			context.waitTicks(2);
 			ColorTemplate saved = ModConfigManager.CONFIG.colorTemplates.get(0);
 			expect(ModConfigManager.CONFIG.colorTemplates.size() == before + 1 && saved.name.equals("Mein Schwert")
@@ -148,7 +148,7 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			});
 			expect("HugoSMP Enhanced".equals(renamed), "Server did not rename the sword: " + renamed + " (sent " + TestRenameServer.lastRename + ")");
 			expect(styled.equals(TestRenameServer.lastRename), "Sent text differs: " + TestRenameServer.lastRename);
-			expect(context.computeOnClient(client -> client.screen == null), "Editor did not close after sending");
+			expect(context.computeOnClient(client -> client.gui.screen() == null), "Editor did not close after sending");
 			// Switch slots so the hotbar shows the new name.
 			context.runOnClient(client -> client.player.getInventory().setSelectedSlot(1));
 			context.waitTicks(2);
@@ -164,14 +164,14 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			// Larger GUI area: GUI scale 1.
 			context.runOnClient(client -> {
 				client.options.guiScale().set(1);
-				client.resizeDisplay();
+				client.resizeGui();
 			});
 			context.setScreen(() -> ColorCodeScreen.forHeldItem(null));
 			context.waitTicks(3);
 			context.takeScreenshot("farbcodes-10-editor-gui1");
 			context.runOnClient(client -> {
 				client.options.guiScale().set(2);
-				client.resizeDisplay();
+				client.resizeGui();
 			});
 
 			// Over 35 characters: send is refused, the counter turns red.
@@ -180,7 +180,7 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			context.getInput().typeChars("Ein sehr langer Name mit &cFarben &6und &lmehr");
 			context.waitTicks(1);
 			click(context, "send");
-			expect(context.computeOnClient(client -> client.screen instanceof ColorCodeScreen), "A too long text was sent");
+			expect(context.computeOnClient(client -> client.gui.screen() instanceof ColorCodeScreen), "A too long text was sent");
 			context.takeScreenshot("farbcodes-11-zu-lang");
 
 			// Hex mode for other servers still works: picker shown, gradient with a colour per letter.
@@ -247,22 +247,22 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 	}
 
 	private static String text(ClientGameTestContext context) {
-		return context.computeOnClient(client -> ((ColorCodeScreen) client.screen).text());
+		return context.computeOnClient(client -> ((ColorCodeScreen) client.gui.screen()).text());
 	}
 
 	private static void selectAll(ClientGameTestContext context) {
-		combo(context, GLFW.GLFW_KEY_A, GLFW.GLFW_MOD_CONTROL);
+		combo(context, InputConstants.KEY_A, InputConstants.MOD_CONTROL);
 	}
 
 	/** Key with modifiers; the test input always sends modifiers 0, so this goes to the screen directly. */
 	private static void combo(ClientGameTestContext context, int key, int modifiers) {
-		context.runOnClient(client -> client.screen.keyPressed(new KeyEvent(key, 0, modifiers)));
+		context.runOnClient(client -> client.gui.screen().keyPressed(new KeyEvent(key, 0, modifiers)));
 		context.waitTicks(2);
 	}
 
 	private static void hover(ClientGameTestContext context, String control) {
 		double[] pos = context.computeOnClient(client -> {
-			int[] b = ((ColorCodeScreen) client.screen).bounds(control);
+			int[] b = ((ColorCodeScreen) client.gui.screen()).bounds(control);
 			double scale = client.getWindow().getGuiScale();
 			return new double[] {(b[0] + b[2] / 2.0) * scale, (b[1] + b[3] / 2.0) * scale};
 		});
@@ -272,7 +272,7 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 
 	private static void click(ClientGameTestContext context, String control) {
 		hover(context, control);
-		context.getInput().pressMouse(GLFW.GLFW_MOUSE_BUTTON_LEFT);
+		context.getInput().pressMouse(InputConstants.MOUSE_BUTTON_LEFT);
 		context.waitTicks(2);
 	}
 

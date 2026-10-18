@@ -6,13 +6,12 @@ import com.hugosmpenhanced.client.settings.SettingsOption;
 import com.hugosmpenhanced.client.settings.Theme;
 import com.mojang.blaze3d.platform.InputConstants;
 
-import org.lwjgl.glfw.GLFW;
 
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Options;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.network.chat.Component;
 
@@ -61,7 +60,7 @@ public class KeyBindOption extends SettingsOption {
 	}
 
 	@Override
-	protected void renderControl(GuiGraphics graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
+	protected void renderControl(GuiGraphicsExtractor graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
 		int w = this.controlWidth(font);
 		int left = right - w;
 		boolean over = this.inside(mouseX, mouseY, left, centerY - 7, w, 15);
@@ -70,7 +69,7 @@ public class KeyBindOption extends SettingsOption {
 		graphics.fill(left + 1, centerY + 6, left + w - 1, centerY + 7, 0xFF141414);
 		KeyMapping conflict = this.listening ? null : this.conflict();
 		int color = this.listening ? Theme.GOLD : conflict != null ? Theme.RED_TEXT : Theme.WHITE;
-		graphics.drawString(font, this.keyText(), left + 5, centerY - 3, color, false);
+		graphics.text(font, this.keyText(), left + 5, centerY - 3, color, false);
 		if (conflict != null && over) {
 			graphics.setTooltipForNextFrame(font, Component.literal("Auch belegt: ").append(Component.translatable(conflict.getName()))
 				.append(" (" + conflict.getCategory().label().getString() + ")"),
@@ -103,17 +102,17 @@ public class KeyBindOption extends SettingsOption {
 			return false;
 		}
 		this.listening = false;
-		if (event.key() == GLFW.GLFW_KEY_ESCAPE) {
+		if (event.key() == InputConstants.KEY_ESCAPE) {
 			return true;
 		}
-		boolean clear = event.key() == GLFW.GLFW_KEY_BACKSPACE || event.key() == GLFW.GLFW_KEY_DELETE;
+		boolean clear = event.key() == InputConstants.KEY_BACKSPACE || event.key() == InputConstants.KEY_DELETE;
 		this.apply(clear ? InputConstants.UNKNOWN : InputConstants.getKey(event));
 		return true;
 	}
 
 	@Override
 	public boolean captureMouse(int button) {
-		if (!this.listening || button == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+		if (!this.listening || button == InputConstants.MOUSE_BUTTON_LEFT) {
 			return false;
 		}
 		this.listening = false;

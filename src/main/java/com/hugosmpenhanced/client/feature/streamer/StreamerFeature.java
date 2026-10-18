@@ -3,18 +3,17 @@ package com.hugosmpenhanced.client.feature.streamer;
 import java.util.ArrayDeque;
 import java.util.Deque;
 
-import org.lwjgl.glfw.GLFW;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
 import com.mojang.blaze3d.platform.InputConstants;
 
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.command.v2.ClientCommandRegistrationCallback;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.fabricmc.fabric.api.client.rendering.v1.SpecialGuiElementRegistry;
+import net.fabricmc.fabric.api.client.rendering.v1.PictureInPictureRendererRegistry;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
@@ -56,21 +55,21 @@ public final class StreamerFeature {
 	}
 
 	public static void register() {
-		panelKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+		panelKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 			"key.hugosmpenhanced.streamer_panel",
-			InputConstants.Type.KEYSYM,
-			GLFW.GLFW_KEY_J,
+			InputConstants.Type.KEYBOARD,
+			InputConstants.KEY_J,
 			TpaKeybinds.CATEGORY));
 
-		SpecialGuiElementRegistry.register(context -> new ItemSpinRenderer(context.vertexConsumers()));
+		PictureInPictureRendererRegistry.register(context -> new ItemSpinRenderer());
 		StreamerOverlay.register();
 		StreamerChatButtons.register();
 
 		ClientCommandRegistrationCallback.EVENT.register((dispatcher, registryAccess) ->
-			dispatcher.register(ClientCommandManager.literal("streamer").executes(context -> {
+			dispatcher.register(ClientCommands.literal("streamer").executes(context -> {
 				Minecraft client = Minecraft.getInstance();
 				// Deferred: the chat screen closes itself right after running the command.
-				client.execute(() -> client.setScreen(new StreamerScreen(null)));
+				client.execute(() -> client.setScreenAndShow(new StreamerScreen(null)));
 				return 1;
 			})));
 
@@ -125,8 +124,8 @@ public final class StreamerFeature {
 
 	private static void tick(Minecraft client) {
 		while (panelKey.consumeClick()) {
-			if (client.screen == null) {
-				client.setScreen(new StreamerScreen(null));
+			if (client.gui.screen() == null) {
+				client.setScreenAndShow(new StreamerScreen(null));
 			}
 		}
 		runDemo();
@@ -280,7 +279,7 @@ public final class StreamerFeature {
 	static void info(Component message) {
 		Minecraft client = Minecraft.getInstance();
 		if (client.player != null) {
-			client.player.displayClientMessage(Component.literal("[Streamer] ").withStyle(ChatFormatting.GOLD).append(message), false);
+			client.player.sendSystemMessage(Component.literal("[Streamer] ").withStyle(ChatFormatting.GOLD).append(message));
 		}
 	}
 

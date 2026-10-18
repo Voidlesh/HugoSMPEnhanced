@@ -33,6 +33,7 @@
 		"PlayerTabOverlayAccessor",
 		"AntiLeakDebugOverlayMixin",
 		"AntiLeakLookingAtBlockMixin",
+		"AntiLeakLookingAtTagsMixin",
 		"AntiLeakSectionRegionMixin",
 		"AntiLeakSodiumLevelSliceMixin",
 		"AntiLeakBetterF3LineMixin",

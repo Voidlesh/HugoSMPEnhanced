@@ -6,11 +6,11 @@ import org.spongepowered.asm.mixin.Shadow;
 
 import com.hugosmpenhanced.client.duck.GuiRenderStateAccess;
 
-import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.render.state.GuiRenderState;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
+import net.minecraft.client.renderer.state.gui.GuiRenderState;
 
 /** Hands the nametag renderer the GUI render state so it can submit glyph quads itself. */
-@Mixin(GuiGraphics.class)
+@Mixin(GuiGraphicsExtractor.class)
 public abstract class GuiGraphicsRenderStateMixin implements GuiRenderStateAccess {
 	@Shadow
 	@Final

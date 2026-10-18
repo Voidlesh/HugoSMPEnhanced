@@ -1,9 +1,9 @@
 package com.hugosmpenhanced.client.feature.nametag;
 
-import org.joml.Matrix4f;
+import org.joml.Matrix4fc;
 
-import com.mojang.blaze3d.pipeline.RenderPipeline;
-import com.mojang.blaze3d.textures.GpuTextureView;
+import com.mojang.renderpearl.api.pipeline.RenderPipeline;
+import com.mojang.renderpearl.api.textures.GpuTextureView;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
 import net.minecraft.client.gui.Font;
@@ -17,7 +17,7 @@ import net.minecraft.client.renderer.rendertype.RenderType;
  */
 record FxTextRenderable(TextRenderable inner, GlyphFx fx) implements TextRenderable {
 	@Override
-	public void render(Matrix4f pose, VertexConsumer consumer, int light, boolean flat) {
+	public void render(Matrix4fc pose, VertexConsumer consumer, int light, boolean flat) {
 		this.inner.render(pose, new GlyphFxVertexConsumer(consumer, this.fx), light, flat);
 	}
 

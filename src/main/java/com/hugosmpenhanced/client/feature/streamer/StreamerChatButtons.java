@@ -1,9 +1,9 @@
 package com.hugosmpenhanced.client.feature.streamer;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.lwjgl.glfw.GLFW;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.calculator.ChatCalculator;
@@ -13,7 +13,7 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenEvents;
 import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.gui.screens.Screen;
@@ -41,7 +41,7 @@ public final class StreamerChatButtons {
 				return;
 			}
 			long openedAt = System.currentTimeMillis();
-			ScreenEvents.afterRender(screen).register((s, graphics, mouseX, mouseY, delta) -> render(s, graphics, mouseX, mouseY, openedAt));
+			ScreenEvents.afterExtract(screen).register((s, graphics, mouseX, mouseY, delta) -> render(s, graphics, mouseX, mouseY, openedAt));
 			ScreenMouseEvents.allowMouseClick(screen).register((s, event) -> !click(s, event));
 		});
 	}
@@ -77,7 +77,7 @@ public final class StreamerChatButtons {
 		return chips;
 	}
 
-	private static void render(Screen screen, GuiGraphics graphics, int mouseX, int mouseY, long openedAt) {
+	private static void render(Screen screen, GuiGraphicsExtractor graphics, int mouseX, int mouseY, long openedAt) {
 		List<Chip> chips = chips(screen);
 		if (chips.isEmpty()) {
 			return;
@@ -90,7 +90,7 @@ public final class StreamerChatButtons {
 			boolean over = StreamerUi.inside(mouseX, mouseY, chip.x, chip.y, chip.w, H);
 			Theme.panel(graphics, chip.x, chip.y, chip.w, H, over ? 0xF0303030 : 0xE0101010, over ? Theme.GOLD : 0xFF555555);
 			graphics.fill(chip.x + 6, chip.y + 5, chip.x + 10, chip.y + 9, chip.dot);
-			graphics.drawString(font, chip.label, chip.x + 14, chip.y + 3, over ? Theme.WHITE : Theme.TEXT, false);
+			graphics.text(font, chip.label, chip.x + 14, chip.y + 3, over ? Theme.WHITE : Theme.TEXT, false);
 			if (over) {
 				graphics.setTooltipForNextFrame(font, Component.literal(chip.tooltip), mouseX, mouseY);
 			}
@@ -100,7 +100,7 @@ public final class StreamerChatButtons {
 
 	/** True when a chip took the click. */
 	private static boolean click(Screen screen, MouseButtonEvent event) {
-		if (event.button() != GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+		if (event.button() != InputConstants.MOUSE_BUTTON_LEFT) {
 			return false;
 		}
 		for (Chip chip : chips(screen)) {

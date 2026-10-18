@@ -8,6 +8,7 @@ import org.joml.Matrix3x2f;
 import org.joml.Matrix3x2fStack;
 import org.joml.Matrix4f;
 
+import com.mojang.blaze3d.vertex.PoseStack;
 import com.mojang.blaze3d.vertex.VertexConsumer;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
@@ -22,17 +23,22 @@ import com.hugosmpenhanced.client.feature.streamermode.StreamerMode;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.font.TextRenderable;
 import net.minecraft.client.gui.navigation.ScreenRectangle;
-import net.minecraft.client.gui.render.state.GlyphRenderState;
-import net.minecraft.client.gui.render.state.GuiRenderState;
-import net.minecraft.client.renderer.MultiBufferSource;
+import net.minecraft.client.renderer.OrderedSubmitNodeCollector;
+import net.minecraft.client.renderer.rendertype.RenderType;
+import net.minecraft.client.renderer.state.gui.GlyphRenderState;
+import net.minecraft.client.renderer.state.gui.GuiRenderState;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.MutableComponent;
 import net.minecraft.network.chat.Style;
 import net.minecraft.network.chat.TextColor;
+import net.minecraft.util.ARGB;
 import net.minecraft.util.FormattedCharSequence;
+import net.minecraft.util.LightCoordsUtil;
+import net.minecraft.world.phys.Vec3;
 
 /**
  * Renders a name with the user's configured {@link NametagEffect}s applied, following the effect
@@ -269,7 +275,7 @@ public final class NametagStyleRenderer {
 	// ---- Plain-string rendering: used for the style picker screen's own labels/preview, where ----
 	// ---- the whole string is meant to be styled and there's no surrounding text to preserve.  ----
 
-	public static void renderName2D(GuiGraphics graphics, Font font, String text, float x, float y, int fallbackColor, boolean dropShadow, Set<NametagEffect> effects) {
+	public static void renderName2D(GuiGraphicsExtractor graphics, Font font, String text, float x, float y, int fallbackColor, boolean dropShadow, Set<NametagEffect> effects) {
 		List<Glyph> glyphs = new ArrayList<>(text.length());
 		for (int i = 0; i < text.length(); i++) {
 			glyphs.add(glyph(font, String.valueOf(text.charAt(i)), Style.EMPTY, fallbackColor));
@@ -279,7 +285,7 @@ public final class NametagStyleRenderer {
 
 	// ---- Component rendering: used by the tab list/scoreboard/nametag mixins. ----
 
-	public static void renderComponent2D(GuiGraphics graphics, Font font, Component component, float x, float y, int fallbackColor, boolean dropShadow) {
+	public static void renderComponent2D(GuiGraphicsExtractor graphics, Font font, Component component, float x, float y, int fallbackColor, boolean dropShadow) {
 		// Streamer mode: style the stand-in, never draw the hidden name glyph by glyph.
 		component = NameMask.mask(component);
 		String name = localPlayerName();
@@ -287,14 +293,14 @@ public final class NametagStyleRenderer {
 		String full = concatRuns(runs);
 		int matchStart = name != null ? full.indexOf(name) : -1;
 		if (matchStart < 0) {
-			graphics.drawString(font, component, Math.round(x), Math.round(y), fallbackColor, dropShadow);
+			graphics.text(font, component, Math.round(x), Math.round(y), fallbackColor, dropShadow);
 			return;
 		}
 
 		SplitName split = split(font, runs, matchStart, matchStart + name.length(), fallbackColor);
 		float cursor = x;
 		if (split.before() != null) {
-			graphics.drawString(font, split.before(), Math.round(cursor), Math.round(y), fallbackColor, dropShadow);
+			graphics.text(font, split.before(), Math.round(cursor), Math.round(y), fallbackColor, dropShadow);
 			cursor += font.width(split.before());
 		}
 		if (!split.glyphs().isEmpty()) {
@@ -302,7 +308,7 @@ public final class NametagStyleRenderer {
 			cursor += split.nameWidth();
 		}
 		if (split.after() != null) {
-			graphics.drawString(font, split.after(), Math.round(cursor), Math.round(y), fallbackColor, dropShadow);
+			graphics.text(font, split.after(), Math.round(cursor), Math.round(y), fallbackColor, dropShadow);
 		}
 	}
 
@@ -319,7 +325,7 @@ public final class NametagStyleRenderer {
 	 * top of the line vanilla already rendered underneath (so link/hover interactions on the rest
 	 * of the line, computed against the untouched vanilla text, keep working normally).
 	 */
-	public static void overlayChatLine(GuiGraphics graphics, Font font, FormattedCharSequence sequence, float y, float opacity, boolean dropShadow) {
+	public static void overlayChatLine(GuiGraphicsExtractor graphics, Font font, FormattedCharSequence sequence, float y, float opacity, boolean dropShadow) {
 		sequence = NameMask.mask(sequence);
 		String name = localPlayerName();
 		if (name == null) {
@@ -372,7 +378,7 @@ public final class NametagStyleRenderer {
 
 	/**
 	 * Draws a styled span in the GUI by submitting glyph quads straight into the current render
-	 * layer, instead of going through {@code GuiGraphics.drawString} once per copy.
+	 * layer, instead of going through {@code GuiGraphicsExtractor.drawString} once per copy.
 	 *
 	 * <p>This is what keeps the effects stable. {@code drawString} submits a text element, and the
 	 * render state pushes any element whose bounds intersect an existing one onto a new layer; a
@@ -388,7 +394,7 @@ public final class NametagStyleRenderer {
 	 * the whole span shares a single pose snapshot instead of pushing and popping per copy.
 	 */
 	private static void drawSpan2D(
-		GuiGraphics graphics, Font font, List<Glyph> glyphs, float startX, float y,
+		GuiGraphicsExtractor graphics, Font font, List<Glyph> glyphs, float startX, float y,
 		Set<NametagEffect> effects, double now, float spanAlpha, boolean dropShadow, SpanOptions options
 	) {
 		float unit = em(font);
@@ -413,12 +419,12 @@ public final class NametagStyleRenderer {
 		Font.GlyphVisitor visitor = new Font.GlyphVisitor() {
 			@Override
 			public void acceptGlyph(TextRenderable.Styled glyph) {
-				renderState.submitGlyphToCurrentLayer(new GlyphRenderState(spanPose, glyph, scissor));
+				renderState.addGlyphToCurrentLayer(new GlyphRenderState(spanPose, glyph, scissor));
 			}
 
 			@Override
 			public void acceptEffect(TextRenderable effect) {
-				renderState.submitGlyphToCurrentLayer(new GlyphRenderState(spanPose, effect, scissor));
+				renderState.addGlyphToCurrentLayer(new GlyphRenderState(spanPose, effect, scissor));
 			}
 		};
 
@@ -429,12 +435,12 @@ public final class NametagStyleRenderer {
 			Font.GlyphVisitor target = fx == null ? visitor : new Font.GlyphVisitor() {
 				@Override
 				public void acceptGlyph(TextRenderable.Styled styled) {
-					renderState.submitGlyphToCurrentLayer(new GlyphRenderState(spanPose, new FxTextRenderable(styled, fx), scissor));
+					renderState.addGlyphToCurrentLayer(new GlyphRenderState(spanPose, new FxTextRenderable(styled, fx), scissor));
 				}
 
 				@Override
 				public void acceptEffect(TextRenderable effect) {
-					renderState.submitGlyphToCurrentLayer(new GlyphRenderState(spanPose, new FxTextRenderable(effect, fx), scissor));
+					renderState.addGlyphToCurrentLayer(new GlyphRenderState(spanPose, new FxTextRenderable(effect, fx), scissor));
 				}
 			};
 			font.prepareText(glyph.sequence(), gx, gy, argb, shadow, false, 0).visit(target);
@@ -462,9 +468,44 @@ public final class NametagStyleRenderer {
 
 	// ---------------------------------------------------------------- 3D span ----
 
+	/**
+	 * Replaces vanilla's submission of a nametag for the local player when a name effect is on.
+	 * Vanilla's pose, background and colours are reproduced here, and the name is drawn by
+	 * {@link #renderComponent3D} instead of as plain text. Returns false, leaving vanilla to draw
+	 * the nametag, when nothing styled applies.
+	 */
+	public static boolean submitStyledNameTag(
+		OrderedSubmitNodeCollector collector, PoseStack poseStack, Vec3 attachment, int offset, Component name,
+		boolean seeThrough, int lightCoords, CameraRenderState camera
+	) {
+		if (attachment == null || !hasAnyEffect() || !matchesLocalName(name.getString())) {
+			return false;
+		}
+		Minecraft minecraft = Minecraft.getInstance();
+		poseStack.pushPose();
+		poseStack.translate(attachment.x, attachment.y + 0.5, attachment.z);
+		poseStack.rotate(camera.orientation);
+		poseStack.scale(0.025F, -0.025F, 0.025F);
+		Matrix4f pose = new Matrix4f(poseStack.last().pose());
+		float x = -minecraft.font.width(name) / 2.0F;
+		float backgroundAlpha = minecraft.gameRenderer.gameRenderState().optionsRenderState.getBackgroundOpacity(0.25F);
+		int backgroundColor = ARGB.color(backgroundAlpha, -16777216);
+		float textAlpha = Math.max((backgroundAlpha + 0.75F) * 0.5F, 0.5F);
+		int textColor = ARGB.color(textAlpha, -1);
+		// The same two passes vanilla makes: a white, emissive one, then the see-through one.
+		renderComponent3D(minecraft.font, name, x, offset, false, pose, collector, Font.DisplayMode.NORMAL, 0, LightCoordsUtil.lightCoordsWithEmission(lightCoords, 2), -1);
+		if (seeThrough) {
+			renderComponent3D(minecraft.font, name, x, offset, false, pose, collector, Font.DisplayMode.SEE_THROUGH, backgroundColor, lightCoords, textColor);
+		} else {
+			renderComponent3D(minecraft.font, name, x, offset, false, pose, collector, Font.DisplayMode.NORMAL, backgroundColor, lightCoords, textColor);
+		}
+		poseStack.popPose();
+		return true;
+	}
+
 	/** The in-world nametag, cut the same three ways as {@link #renderComponent2D}. */
-	public static void renderComponent3D(
-		Font font, Component component, float x, float y, boolean dropShadow, Matrix4f pose, MultiBufferSource buffer,
+	private static void renderComponent3D(
+		Font font, Component component, float x, float y, boolean dropShadow, Matrix4f pose, OrderedSubmitNodeCollector collector,
 		Font.DisplayMode mode, int backgroundColor, int lightCoords, int fallbackColor
 	) {
 		component = NameMask.mask(component);
@@ -473,7 +514,7 @@ public final class NametagStyleRenderer {
 		String full = concatRuns(runs);
 		int matchStart = name != null ? full.indexOf(name) : -1;
 		if (matchStart < 0) {
-			font.drawInBatch(component, x, y, fallbackColor, dropShadow, pose, buffer, mode, backgroundColor, lightCoords);
+			drawText3D(font, component.getVisualOrderText(), x, y, fallbackColor, dropShadow, backgroundColor, mode, pose, collector, lightCoords);
 			return;
 		}
 
@@ -481,7 +522,7 @@ public final class NametagStyleRenderer {
 		SplitName split = split(font, runs, matchStart, matchStart + name.length(), fallbackColor | 0xFF000000);
 		float cursor = x;
 		if (split.before() != null) {
-			font.drawInBatch(split.before(), cursor, y, fallbackColor, dropShadow, pose, buffer, mode, backgroundColor, lightCoords);
+			drawText3D(font, split.before().getVisualOrderText(), cursor, y, fallbackColor, dropShadow, backgroundColor, mode, pose, collector, lightCoords);
 			cursor += font.width(split.before());
 		}
 		if (!split.glyphs().isEmpty()) {
@@ -489,17 +530,45 @@ public final class NametagStyleRenderer {
 			// normal one. The pass is told apart only by the alpha of the colour it is drawn with, so
 			// the styled glyphs inherit that alpha instead of drawing at full strength in both.
 			float passAlpha = (fallbackColor >>> 24) / 255f;
-			drawSpan3D(font, split.glyphs(), cursor, y, dropShadow, pose, buffer, mode, backgroundColor, lightCoords, passAlpha);
+			drawSpan3D(font, split.glyphs(), cursor, y, dropShadow, pose, collector, mode, backgroundColor, lightCoords, passAlpha);
 			cursor += split.nameWidth();
 		}
 		if (split.after() != null) {
-			font.drawInBatch(split.after(), cursor, y, fallbackColor, dropShadow, pose, buffer, mode, backgroundColor, lightCoords);
+			drawText3D(font, split.after().getVisualOrderText(), cursor, y, fallbackColor, dropShadow, backgroundColor, mode, pose, collector, lightCoords);
 		}
+	}
+
+	private static void drawText3D(
+		Font font, FormattedCharSequence text, float x, float y, int color, boolean dropShadow, int backgroundColor,
+		Font.DisplayMode mode, Matrix4f pose, OrderedSubmitNodeCollector collector, int lightCoords
+	) {
+		font.prepareText(text, x, y, color, dropShadow, false, backgroundColor).visit(new Font.GlyphVisitor() {
+			@Override
+			public void acceptGlyph(TextRenderable.Styled glyph) {
+				submitGlyph3D(collector, glyph, mode, pose, lightCoords);
+			}
+
+			@Override
+			public void acceptEffect(TextRenderable effect) {
+				submitGlyph3D(collector, effect, mode, pose, lightCoords);
+			}
+		});
+	}
+
+	/**
+	 * Submits one glyph as custom geometry. The pose is already the whole transform, so the
+	 * submission itself carries an identity pose and the glyph is written with {@code pose}.
+	 */
+	private static void submitGlyph3D(
+		OrderedSubmitNodeCollector collector, TextRenderable renderable, Font.DisplayMode mode, Matrix4f pose, int lightCoords
+	) {
+		RenderType type = renderable.renderType(mode);
+		collector.submitCustomGeometry(new PoseStack(), type, (ignored, consumer) -> renderable.render(pose, consumer, lightCoords, false));
 	}
 
 	private static void drawSpan3D(
 		Font font, List<Glyph> glyphs, float startX, float y, boolean dropShadow,
-		Matrix4f pose, MultiBufferSource buffer, Font.DisplayMode mode, int backgroundColor, int lightCoords, float passAlpha
+		Matrix4f pose, OrderedSubmitNodeCollector collector, Font.DisplayMode mode, int backgroundColor, int lightCoords, float passAlpha
 	) {
 		Set<NametagEffect> effects = activeEffects();
 		double now = NametagEffectEngine.nowSeconds();
@@ -511,10 +580,10 @@ public final class NametagStyleRenderer {
 
 		// The nametag background is drawn once for the whole name, on the untransformed pose, so it
 		// stays put as a steady plate while the name moves on it. Letting every glyph copy carry its
-		// own background, as a plain drawInBatch per copy does, stacks dozens of translucent plates
+		// own background, as a plain drawText per copy does, stacks dozens of translucent plates
 		// under a glowing or outlined name and smears them around with every offset.
 		if ((backgroundColor >>> 24) != 0) {
-			drawBackground3D(font, glyphs, startX, y, pose, buffer, mode, backgroundColor, lightCoords);
+			drawBackground3D(font, glyphs, startX, y, pose, collector, mode, backgroundColor, lightCoords);
 		}
 
 		GlyphSink sink = (glyph, gx, gy, argb, shadow, fx) -> {
@@ -533,9 +602,7 @@ public final class NametagStyleRenderer {
 				}
 
 				private void render(TextRenderable renderable) {
-					VertexConsumer consumer = buffer.getBuffer(renderable.renderType(mode));
-					TextRenderable target = fx == null ? renderable : new FxTextRenderable(renderable, fx);
-					target.render(wordPose, consumer, lightCoords, false);
+					submitGlyph3D(collector, fx == null ? renderable : new FxTextRenderable(renderable, fx), mode, wordPose, lightCoords);
 				}
 			});
 		};
@@ -543,7 +610,7 @@ public final class NametagStyleRenderer {
 	}
 
 	private static void drawBackground3D(
-		Font font, List<Glyph> glyphs, float startX, float y, Matrix4f pose, MultiBufferSource buffer,
+		Font font, List<Glyph> glyphs, float startX, float y, Matrix4f pose, OrderedSubmitNodeCollector collector,
 		Font.DisplayMode mode, int backgroundColor, int lightCoords
 	) {
 		List<FormattedCharSequence> sequences = new ArrayList<>(glyphs.size());
@@ -554,7 +621,7 @@ public final class NametagStyleRenderer {
 			.visit(new Font.GlyphVisitor() {
 				@Override
 				public void acceptEffect(TextRenderable effect) {
-					effect.render(pose, buffer.getBuffer(effect.renderType(mode)), lightCoords, false);
+					submitGlyph3D(collector, effect, mode, pose, lightCoords);
 				}
 			});
 	}

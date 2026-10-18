@@ -347,7 +347,7 @@ public final class DiscordPresence {
 		lines.add(Component.literal(" Tab oben: " + (r.tabHeader().isEmpty() ? "-" : r.tabHeader().replace("\n", " | "))).withStyle(ChatFormatting.GRAY));
 		lines.add(Component.literal(" Tab unten: " + (r.tabFooter().isEmpty() ? "-" : r.tabFooter().replace("\n", " | "))).withStyle(ChatFormatting.GRAY));
 		for (Component line : lines) {
-			client.player.displayClientMessage(line, false);
+			client.player.sendSystemMessage(line);
 		}
 	}
 

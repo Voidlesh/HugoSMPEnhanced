@@ -155,7 +155,7 @@ public class UpdateGameTest implements FabricClientGameTest {
 		context.setScreen(TitleScreen::new);
 		context.waitTicks(10);
 		context.takeScreenshot("update-hauptmenue-vanilla");
-		boolean badge = context.computeOnClient(client -> client.screen.children().stream()
+		boolean badge = context.computeOnClient(client -> client.gui.screen().children().stream()
 			.anyMatch(w -> w.getClass().getSimpleName().equals("UpdateBadge")));
 		assertTrue(badge, "vanilla title screen has the badge");
 		context.runOnClient(client -> ModConfigManager.CONFIG.mainMenuCustom = true);
@@ -181,15 +181,15 @@ public class UpdateGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			context.waitTicks(110);
-			context.runOnClient(client -> client.setScreen(new net.minecraft.client.gui.screens.ChatScreen("", false)));
+			context.runOnClient(client -> client.setScreenAndShow(new net.minecraft.client.gui.screens.ChatScreen("", false)));
 			context.waitTicks(3);
 			context.takeScreenshot("update-chat");
 			// what clicking [Ansehen] does
 			context.runOnClient(client -> client.player.connection.sendUnattendedCommand("hugosmpenhanced update", null));
 			context.waitTicks(3);
-			boolean opened = context.computeOnClient(client -> client.screen instanceof UpdateScreen);
+			boolean opened = context.computeOnClient(client -> client.gui.screen() instanceof UpdateScreen);
 			assertTrue(opened, "/hugosmpenhanced update opens the update screen");
 			context.setScreen(() -> null);
 		}

@@ -45,13 +45,13 @@ public enum AuctionMarket {
 
 	/** The market of the menu open now, for prices in tooltips. */
 	public static AuctionMarket current() {
-		Screen screen = Minecraft.getInstance().screen;
+		Screen screen = Minecraft.getInstance().gui.screen();
 		return screen instanceof AbstractContainerScreen<?> container ? of(container.getTitle().getString()) : AUCTION;
 	}
 
 	/** The market of the menu that was open last, for the search sign. */
 	public static AuctionMarket recent() {
-		Screen screen = Minecraft.getInstance().screen;
+		Screen screen = Minecraft.getInstance().gui.screen();
 		if (screen instanceof AbstractContainerScreen<?>) {
 			return current();
 		}

@@ -1,17 +1,17 @@
 package com.hugosmpenhanced.client.mixin;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
-import org.lwjgl.glfw.GLFW;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.calculator.ChatCalculator;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.client.input.KeyEvent;
@@ -28,8 +28,8 @@ public abstract class ChatCalculatorMixin {
 	@Shadow
 	protected EditBox input;
 
-	@Inject(method = "render", at = @At("TAIL"))
-	private void hugosmpenhanced$renderResult(GuiGraphics graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
+	@Inject(method = "extractRenderState", at = @At("TAIL"))
+	private void hugosmpenhanced$renderResult(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick, CallbackInfo ci) {
 		if (!ModConfigManager.CONFIG.chatCalculatorEnabled) {
 			return;
 		}
@@ -45,13 +45,13 @@ public abstract class ChatCalculatorMixin {
 		x = Math.max(2, Math.min(x, graphics.guiWidth() - width - 2));
 		int y = this.input.getY() - 2 - 14;
 		graphics.fill(x, y, x + width, y + 13, BACKGROUND);
-		graphics.renderOutline(x, y, width, 13, BORDER);
-		graphics.drawString(font, text, x + 4, y + 3, 0xFF7CFC7C);
+		graphics.outline(x, y, width, 13, BORDER);
+		graphics.text(font, text, x + 4, y + 3, 0xFF7CFC7C);
 	}
 
 	@Inject(method = "keyPressed", at = @At("HEAD"), cancellable = true)
 	private void hugosmpenhanced$applyResult(KeyEvent event, CallbackInfoReturnable<Boolean> cir) {
-		if (event.key() != GLFW.GLFW_KEY_TAB || !ModConfigManager.CONFIG.chatCalculatorEnabled) {
+		if (event.key() != InputConstants.KEY_TAB || !ModConfigManager.CONFIG.chatCalculatorEnabled) {
 			return;
 		}
 		String value = this.input.getValue();

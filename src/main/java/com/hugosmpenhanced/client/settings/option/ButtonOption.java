@@ -4,7 +4,7 @@ import com.hugosmpenhanced.client.settings.SettingsOption;
 import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
  * A gold button that opens a sub page or runs an action. Dangerous actions are red and need a
@@ -60,7 +60,7 @@ public class ButtonOption extends SettingsOption {
 	}
 
 	@Override
-	protected void renderControl(GuiGraphics graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
+	protected void renderControl(GuiGraphicsExtractor graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
 		int w = this.controlWidth(font);
 		int left = right - w;
 		boolean over = this.inside(mouseX, mouseY, left, centerY - 7, w, 15);
@@ -69,7 +69,7 @@ public class ButtonOption extends SettingsOption {
 		} else {
 			Theme.panel(graphics, left, centerY - 7, w, 15, over ? 0x78FFC83D : Theme.GOLD_FILL, Theme.GOLD);
 		}
-		graphics.drawString(font, this.shownText(), left + 7, centerY - 3, Theme.WHITE);
+		graphics.text(font, this.shownText(), left + 7, centerY - 3, Theme.WHITE);
 		if (this.subPage) {
 			Theme.glyph(graphics, Theme.CHEVRON, right - 10, centerY - 2, Theme.WHITE);
 		}

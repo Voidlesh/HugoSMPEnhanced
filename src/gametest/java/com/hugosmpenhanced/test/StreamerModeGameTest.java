@@ -13,7 +13,7 @@ import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestServerContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
-import net.minecraft.client.GuiMessage;
+import net.minecraft.client.multiplayer.chat.GuiMessage;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.chat.Style;
@@ -37,7 +37,7 @@ public class StreamerModeGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			TestServerContext server = singleplayer.getServer();
 			server.runCommand("gamerule doDaylightCycle false");
 			server.runCommand("gamerule doMobSpawning false");
@@ -60,7 +60,7 @@ public class StreamerModeGameTest implements FabricClientGameTest {
 				+ "\"color\":\"gray\"}]");
 			server.runCommand("tellraw @a {\"text\":\"§c[Admin] §fjeb_§7: Notch123 ist kein Name, notch schon\"}");
 			context.waitTicks(10);
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 
 			setMode(context, false);
 			context.waitTicks(3);
@@ -192,7 +192,7 @@ public class StreamerModeGameTest implements FabricClientGameTest {
 		try {
 			var field = net.minecraft.client.gui.components.ChatComponent.class.getDeclaredField("trimmedMessages");
 			field.setAccessible(true);
-			return (List<GuiMessage.Line>) field.get(client.gui.getChat());
+			return (List<GuiMessage.Line>) field.get(client.gui.hud.getChat());
 		} catch (ReflectiveOperationException e) {
 			throw new AssertionError(e);
 		}

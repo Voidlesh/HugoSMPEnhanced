@@ -13,11 +13,11 @@ import com.mojang.blaze3d.vertex.PoseStack;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.renderer.LightTexture;
+import net.minecraft.util.LightCoordsUtil;
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.entity.player.AvatarRenderer;
 import net.minecraft.client.renderer.entity.state.AvatarRenderState;
-import net.minecraft.client.renderer.state.CameraRenderState;
+import net.minecraft.client.renderer.state.level.CameraRenderState;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.world.phys.Vec3;
 
@@ -38,7 +38,7 @@ public abstract class SecondNametagRenderMixin {
 	private static final float BG_BOTTOM = 9.0F * PIXEL;
 
 	@Inject(
-		method = "submitNameTag(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/CameraRenderState;)V",
+		method = "submitNameDisplay(Lnet/minecraft/client/renderer/entity/state/AvatarRenderState;Lcom/mojang/blaze3d/vertex/PoseStack;Lnet/minecraft/client/renderer/SubmitNodeCollector;Lnet/minecraft/client/renderer/state/level/CameraRenderState;)V",
 		at = @At("TAIL")
 	)
 	private void hugosmpenhanced$submitSecondNametag(
@@ -71,7 +71,7 @@ public abstract class SecondNametagRenderMixin {
 
 		poseStack.pushPose();
 		poseStack.translate(attachment.x, attachment.y + 0.5 + pivotY, attachment.z);
-		poseStack.mulPose(camera.orientation);
+		poseStack.rotate(camera.orientation);
 		poseStack.scale(PIXEL * scale, -PIXEL * scale, PIXEL * scale);
 
 		float x = -font.width(text) / 2.0F;
@@ -81,7 +81,7 @@ public abstract class SecondNametagRenderMixin {
 		int light = state.lightCoords;
 		if (!state.isDiscrete) {
 			collector.submitText(poseStack, x, 0, text, false, Font.DisplayMode.NORMAL,
-				LightTexture.lightCoordsWithEmission(light, 2), -1, 0, 0);
+				LightCoordsUtil.lightCoordsWithEmission(light, 2), -1, 0, 0);
 			collector.submitText(poseStack, x, 0, text, false, Font.DisplayMode.SEE_THROUGH,
 				light, 0x80FFFFFF, background, 0);
 		} else {

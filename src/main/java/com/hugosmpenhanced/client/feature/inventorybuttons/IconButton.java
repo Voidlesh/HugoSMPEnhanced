@@ -5,7 +5,7 @@ import java.util.function.Consumer;
 import com.hugosmpenhanced.client.gui.HugoStyle;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -76,7 +76,7 @@ public class IconButton extends Button {
 	}
 
 	@Override
-	protected void renderContents(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	protected void extractContents(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		int x = this.getX();
 		int y = this.getY();
 		HugoStyle.State state = !this.active ? HugoStyle.State.DISABLED
@@ -87,10 +87,10 @@ public class IconButton extends Button {
 		}
 
 		if (!this.icon.isEmpty()) {
-			graphics.renderItem(this.icon, x + (this.width - 16) / 2, y + (this.height - 16) / 2);
+			graphics.item(this.icon, x + (this.width - 16) / 2, y + (this.height - 16) / 2);
 		} else if (!this.symbol.isEmpty()) {
 			var font = Minecraft.getInstance().font;
-			graphics.drawCenteredString(font, this.symbol, x + this.width / 2, y + (this.height - 8) / 2, TEXT);
+			graphics.centeredText(font, this.symbol, x + this.width / 2, y + (this.height - 8) / 2, TEXT);
 		}
 	}
 }

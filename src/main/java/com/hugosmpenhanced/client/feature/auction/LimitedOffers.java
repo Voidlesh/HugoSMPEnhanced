@@ -23,7 +23,7 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.inventory.AbstractContainerScreen;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -119,8 +119,8 @@ public final class LimitedOffers {
 			if (!(opened instanceof AbstractContainerScreen<?> container)) {
 				return;
 			}
-			ScreenEvents.beforeRender(container).register((s, graphics, mouseX, mouseY, delta) -> update(container));
-			ScreenEvents.afterRender(container).register((s, graphics, mouseX, mouseY, delta) -> renderSummary(container, graphics));
+			ScreenEvents.beforeExtract(container).register((s, graphics, mouseX, mouseY, delta) -> update(container));
+			ScreenEvents.afterExtract(container).register((s, graphics, mouseX, mouseY, delta) -> renderSummary(container, graphics));
 			ScreenMouseEvents.allowMouseClick(container).register((s, event) -> {
 				rememberArrowClick(container, event.x(), event.y());
 				return true;
@@ -462,7 +462,7 @@ public final class LimitedOffers {
 	 * Frames drawn behind items, called for every slot before its item: gold for the best limited
 	 * offer and for the arrow towards a better one on another page, light blue for marked items.
 	 */
-	public static void renderSlotBackground(GuiGraphics graphics, Slot slot) {
+	public static void renderSlotBackground(GuiGraphicsExtractor graphics, Slot slot) {
 		if (!active() || slot.container instanceof Inventory) {
 			return;
 		}
@@ -472,7 +472,7 @@ public final class LimitedOffers {
 		}
 		if (ModConfigManager.CONFIG.auctionMarkHighlight && MarkedItems.isMarked(stack)) {
 			graphics.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, MarkedItems.FILL);
-			graphics.renderOutline(slot.x - 1, slot.y - 1, 18, 18, MarkedItems.COLOR);
+			graphics.outline(slot.x - 1, slot.y - 1, 18, 18, MarkedItems.COLOR);
 		}
 		if (!ModConfigManager.CONFIG.limitedItemsHighlightBest) {
 			return;
@@ -480,13 +480,13 @@ public final class LimitedOffers {
 		Offer offer = OFFERS.get(stack);
 		if (offer != null && offer.best()) {
 			graphics.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, GOLD_FILL);
-			graphics.renderOutline(slot.x - 1, slot.y - 1, 18, 18, GOLD);
+			graphics.outline(slot.x - 1, slot.y - 1, 18, 18, GOLD);
 		} else if (arrowHint(stack) != 0) {
 			// Pulses gently, so the arrow catches the eye without looking like an offer.
 			double wave = (Math.sin(System.currentTimeMillis() / 250.0) + 1) / 2;
 			int alpha = 0x40 + (int) (wave * 0x50);
 			graphics.fill(slot.x, slot.y, slot.x + 16, slot.y + 16, alpha << 24 | 0xFFC83A);
-			graphics.renderOutline(slot.x - 1, slot.y - 1, 18, 18, GOLD);
+			graphics.outline(slot.x - 1, slot.y - 1, 18, 18, GOLD);
 		}
 	}
 
@@ -500,7 +500,7 @@ public final class LimitedOffers {
 		return summary != null && screen == container && ModConfigManager.CONFIG.limitedItemsPerHour;
 	}
 
-	private static void renderSummary(AbstractContainerScreen<?> container, GuiGraphics graphics) {
+	private static void renderSummary(AbstractContainerScreen<?> container, GuiGraphicsExtractor graphics) {
 		if (summary == null || screen != container || !ModConfigManager.CONFIG.limitedItemsPerHour) {
 			return;
 		}
@@ -518,8 +518,8 @@ public final class LimitedOffers {
 			}
 		}
 		graphics.fill(x, y, x + width, y + 12, 0xE0101010);
-		graphics.renderOutline(x, y, width, 12, 0xFF7A6020);
-		graphics.drawString(font, text, x + 4, y + 2, 0xFFFFD866);
+		graphics.outline(x, y, width, 12, 0xFF7A6020);
+		graphics.text(font, text, x + 4, y + 2, 0xFFFFD866);
 	}
 
 	private static String summaryText(Font font, int maxWidth) {
@@ -568,7 +568,7 @@ public final class LimitedOffers {
 		}
 		Offer offer = OFFERS.get(stack);
 		// A remembered item in the search is one example of its kind; its time left says nothing about the offers.
-		if (offer == null && Minecraft.getInstance().screen instanceof AuctionSearchScreen) {
+		if (offer == null && Minecraft.getInstance().gui.screen() instanceof AuctionSearchScreen) {
 			return;
 		}
 		long now = System.currentTimeMillis();

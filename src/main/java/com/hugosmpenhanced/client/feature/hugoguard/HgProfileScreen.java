@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.feature.hugoguard;
 
+import com.hugosmpenhanced.client.util.Desktop;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.format.DateTimeFormatter;
@@ -15,9 +16,9 @@ import com.hugosmpenhanced.client.HugoSmpEnhancedClient;
 import com.hugosmpenhanced.client.gui.HugoStyle;
 import com.hugosmpenhanced.client.gui.StyledScreen;
 import com.mojang.authlib.GameProfile;
-import com.mojang.authlib.yggdrasil.ProfileResult;
+import com.mojang.authlib.services.ProfileResult;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.PlayerSkinWidget;
 import net.minecraft.client.gui.screens.Screen;
@@ -107,7 +108,7 @@ public class HgProfileScreen extends Screen implements StyledScreen {
 		this.profileButton = this.addRenderableWidget(Button.builder(Component.literal("Profil auf hugoguard.net"), b -> {
 			JsonObject player = this.player();
 			if (player != null && string(player, "uuid") != null) {
-				Util.getPlatform().openUri("https://hugoguard.net/players/" + string(player, "uuid").replace("-", ""));
+				Desktop.openUri("https://hugoguard.net/players/" + string(player, "uuid").replace("-", ""));
 			}
 		}).bounds(left + SKIN_WIDTH + 4, top + PANEL_HEIGHT - 26, 150, 20).build());
 		this.addRenderableWidget(Button.builder(Component.literal("Schließen"), b -> this.onClose())
@@ -121,11 +122,11 @@ public class HgProfileScreen extends Screen implements StyledScreen {
 
 	@Override
 	public void onClose() {
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		int left = (this.width - PANEL_WIDTH) / 2;
 		int top = (this.height - PANEL_HEIGHT) / 2;
 		JsonObject player = this.player();
@@ -135,7 +136,7 @@ public class HgProfileScreen extends Screen implements StyledScreen {
 		HugoStyle.drawBox(graphics, left, top, PANEL_WIDTH, PANEL_HEIGHT, HugoStyle.State.NORMAL);
 		graphics.fill(left + 1, top + 1, left + PANEL_WIDTH - 1, top + 3, accent);
 		graphics.fill(left + 4, top + 6, left + SKIN_WIDTH, top + PANEL_HEIGHT - 4, 0x60000000);
-		super.render(graphics, mouseX, mouseY, partialTick);
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 
 		int x = left + SKIN_WIDTH + 8;
 		int y = top + 10;
@@ -143,21 +144,21 @@ public class HgProfileScreen extends Screen implements StyledScreen {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(x, y);
 		graphics.pose().scale(1.6f, 1.6f);
-		graphics.drawString(this.font, name, 0, 0, 0xFFFFFFFF);
+		graphics.text(this.font, name, 0, 0, 0xFFFFFFFF);
 		graphics.pose().popMatrix();
 		y += 20;
 
 		switch (this.state) {
 			case LOADING -> {
-				graphics.drawString(this.font, "Lade HugoGuard-Daten…", x, y, 0xFFAAAAAA);
+				graphics.text(this.font, "Lade HugoGuard-Daten…", x, y, 0xFFAAAAAA);
 				return;
 			}
 			case NOT_FOUND -> {
-				graphics.drawString(this.font, "HugoGuard kennt diesen Spieler nicht.", x, y, 0xFFAAAAAA);
+				graphics.text(this.font, "HugoGuard kennt diesen Spieler nicht.", x, y, 0xFFAAAAAA);
 				return;
 			}
 			case FAILED -> {
-				graphics.drawString(this.font, "HugoGuard ist gerade nicht erreichbar.", x, y, 0xFFFF6060);
+				graphics.text(this.font, "HugoGuard ist gerade nicht erreichbar.", x, y, 0xFFFF6060);
 				return;
 			}
 			default -> {
@@ -173,10 +174,10 @@ public class HgProfileScreen extends Screen implements StyledScreen {
 		int badgeWidth = this.font.width(badge) + 10;
 		graphics.fill(x, y - 2, x + badgeWidth, y + 11, (accent & 0x00FFFFFF) | 0x50000000);
 		HugoStyle.drawOutline(graphics, x, y - 2, badgeWidth, 13, accent);
-		graphics.drawString(this.font, badge, x + 5, y + 1, accent);
+		graphics.text(this.font, badge, x + 5, y + 1, accent);
 		String label = string(player, "adminLabel");
 		if (label != null && !label.isBlank()) {
-			graphics.drawString(this.font, label, x + badgeWidth + 6, y + 1, 0xFFDDDDDD);
+			graphics.text(this.font, label, x + badgeWidth + 6, y + 1, 0xFFDDDDDD);
 		}
 		y += 20;
 
@@ -185,8 +186,8 @@ public class HgProfileScreen extends Screen implements StyledScreen {
 		int repScore = integer(player, "repScore");
 		int scoreColor = repScore > 0 ? 0xFF55FF55 : repScore < 0 ? 0xFFFF5555 : 0xFFDDDDDD;
 		y = this.row(graphics, x, y, "Reputation", (repScore > 0 ? "+" : "") + repScore, scoreColor);
-		graphics.drawString(this.font, "▲ " + repUp, x + 150, y - 12, 0xFF55FF55);
-		graphics.drawString(this.font, "▼ " + repDown, x + 185, y - 12, 0xFFFF5555);
+		graphics.text(this.font, "▲ " + repUp, x + 150, y - 12, 0xFF55FF55);
+		graphics.text(this.font, "▼ " + repDown, x + 185, y - 12, 0xFFFF5555);
 		int reports = integer(player, "approvedReportCount");
 		y = this.row(graphics, x, y, "Reports", String.valueOf(reports), reports > 0 ? 0xFFFF5555 : 0xFFDDDDDD);
 		String last = date(string(player, "lastReportedAt"));
@@ -201,15 +202,15 @@ public class HgProfileScreen extends Screen implements StyledScreen {
 			int maxLines = Math.max(0, (top + PANEL_HEIGHT - 32 - y) / 10);
 			List<FormattedCharSequence> lines = this.font.split(Component.literal("„" + newest + "“"), PANEL_WIDTH - SKIN_WIDTH - 20);
 			for (int i = 0; i < Math.min(maxLines, lines.size()); i++) {
-				graphics.drawString(this.font, lines.get(i), x, y, 0xFFBBBBBB);
+				graphics.text(this.font, lines.get(i), x, y, 0xFFBBBBBB);
 				y += 10;
 			}
 		}
 	}
 
-	private int row(GuiGraphics graphics, int x, int y, String label, String value, int color) {
-		graphics.drawString(this.font, label, x, y, 0xFF888888);
-		graphics.drawString(this.font, value, x + 90, y, color);
+	private int row(GuiGraphicsExtractor graphics, int x, int y, String label, String value, int color) {
+		graphics.text(this.font, label, x, y, 0xFF888888);
+		graphics.text(this.font, value, x + 90, y, color);
 		return y + 12;
 	}
 

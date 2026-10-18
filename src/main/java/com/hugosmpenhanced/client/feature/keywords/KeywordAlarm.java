@@ -12,7 +12,7 @@ import com.hugosmpenhanced.client.formats.HugoFormats;
 import com.hugosmpenhanced.client.util.ServerCheck;
 
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
-import net.minecraft.client.GuiMessageTag;
+import net.minecraft.client.multiplayer.chat.GuiMessageTag;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.resources.sounds.SimpleSoundInstance;
 import net.minecraft.network.chat.Component;

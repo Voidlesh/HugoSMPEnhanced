@@ -4,7 +4,7 @@ import com.hugosmpenhanced.client.feature.secondnametag.SecondNametagPosition;
 
 import com.hugosmpenhanced.client.gui.StyledScreen;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractSliderButton;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.CycleButton;
@@ -71,26 +71,26 @@ public class SecondNametagScreen extends Screen implements StyledScreen {
 	@Override
 	public void onClose() {
 		ModConfigManager.save();
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		graphics.drawCenteredString(this.font, "— ZWEITER NAMETAG —", this.width / 2, 16, 0xFFAAAAAA);
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		graphics.centeredText(this.font, "— ZWEITER NAMETAG —", this.width / 2, 16, 0xFFAAAAAA);
 		renderPreview(graphics);
 
 		int legendY = PREVIEW_TOP + PREVIEW_HEIGHT + 8 + 23;
-		graphics.drawCenteredString(this.font, "&0-&f Farbe · &#RRGGBB Hex · &l &o &n &m &k Format · &r Reset",
+		graphics.centeredText(this.font, "&0-&f Farbe · &#RRGGBB Hex · &l &o &n &m &k Format · &r Reset",
 			this.width / 2, legendY, 0xFF888888);
 
-		super.render(graphics, mouseX, mouseY, partialTick);
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 	}
 
-	private void renderPreview(GuiGraphics graphics) {
+	private void renderPreview(GuiGraphicsExtractor graphics) {
 		int left = this.width / 2 - CONTROL_WIDTH / 2;
 		NametagPreview.render(graphics, this.font, left, PREVIEW_TOP, CONTROL_WIDTH, PREVIEW_HEIGHT, true);
 		if (ModConfigManager.CONFIG.secondNametagText.isBlank()) {
-			graphics.drawCenteredString(this.font, "Gib unten einen Text ein", this.width / 2,
+			graphics.centeredText(this.font, "Gib unten einen Text ein", this.width / 2,
 				PREVIEW_TOP + PREVIEW_HEIGHT - 14, 0xFF30406A);
 		}
 	}

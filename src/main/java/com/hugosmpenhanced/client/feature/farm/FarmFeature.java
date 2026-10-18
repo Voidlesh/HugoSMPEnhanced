@@ -4,7 +4,7 @@ import com.hugosmpenhanced.client.ConfigCommand;
 import com.hugosmpenhanced.client.feature.streamer.Money;
 import com.hugosmpenhanced.client.hud.HudManager;
 
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
@@ -15,23 +15,23 @@ public final class FarmFeature {
 	}
 
 	private static void printSummary() {
-		var chat = Minecraft.getInstance().gui.getChat();
+		var chat = Minecraft.getInstance().gui.hud.getChat();
 		Component prefix = Component.literal("[HugoSMP Enhanced] ").withStyle(ChatFormatting.GOLD);
 		if (!FarmTracker.hasData()) {
-			chat.addMessage(prefix.copy().append(Component.literal("Noch nichts aufgehoben.").withStyle(ChatFormatting.GRAY)));
+			chat.addClientSystemMessage(prefix.copy().append(Component.literal("Noch nichts aufgehoben.").withStyle(ChatFormatting.GRAY)));
 			return;
 		}
-		chat.addMessage(prefix.copy().append(Component.literal("Farm seit " + FarmTracker.duration(FarmTracker.activeMillis())
+		chat.addClientSystemMessage(prefix.copy().append(Component.literal("Farm seit " + FarmTracker.duration(FarmTracker.activeMillis())
 			+ ": " + Money.plain(FarmTracker.totalItems()) + " Items").withStyle(ChatFormatting.GRAY)));
 		for (FarmTracker.Drop drop : FarmTracker.drops()) {
 			double perHour = FarmTracker.perHour(drop.count);
-			chat.addMessage(Component.literal("  " + drop.example.getHoverName().getString() + " ").withStyle(ChatFormatting.WHITE)
+			chat.addClientSystemMessage(Component.literal("  " + drop.example.getHoverName().getString() + " ").withStyle(ChatFormatting.WHITE)
 				.append(Component.literal(Money.plain(drop.count) + (perHour < 0 ? "" : " (" + Money.plain(Math.round(perHour)) + "/h)"))
 					.withStyle(ChatFormatting.GRAY)));
 		}
 		double value = FarmTracker.value();
 		if (value > 0) {
-			chat.addMessage(Component.literal("  Wert ").withStyle(ChatFormatting.GRAY)
+			chat.addClientSystemMessage(Component.literal("  Wert ").withStyle(ChatFormatting.GRAY)
 				.append(Component.literal(Money.format(Math.round(value))).withStyle(ChatFormatting.GOLD)));
 		}
 	}
@@ -39,11 +39,11 @@ public final class FarmFeature {
 	public static void register() {
 		FarmTracker.register();
 		HudManager.add(FarmHud.INSTANCE);
-		ConfigCommand.addSubcommand(root -> root.then(ClientCommandManager.literal("farm")
+		ConfigCommand.addSubcommand(root -> root.then(ClientCommands.literal("farm")
 			.executes(context -> ConfigCommand.run(FarmFeature::printSummary))
-			.then(ClientCommandManager.literal("reset").executes(context -> ConfigCommand.run(() -> {
+			.then(ClientCommands.literal("reset").executes(context -> ConfigCommand.run(() -> {
 				FarmTracker.reset();
-				Minecraft.getInstance().gui.getChat().addMessage(Component.literal("[HugoSMP Enhanced] ").withStyle(ChatFormatting.GOLD)
+				Minecraft.getInstance().gui.hud.getChat().addClientSystemMessage(Component.literal("[HugoSMP Enhanced] ").withStyle(ChatFormatting.GOLD)
 					.append(Component.literal("Farm-Tracker zurückgesetzt.").withStyle(ChatFormatting.GRAY)));
 			})))));
 	}

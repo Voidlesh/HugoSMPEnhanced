@@ -26,7 +26,7 @@ public class EntityHeatmapGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			BlockPos p = context.computeOnClient(client -> client.player.blockPosition());
 			int x = p.getX(), y = p.getY(), z = p.getZ();
 			TestServerContext server = singleplayer.getServer();

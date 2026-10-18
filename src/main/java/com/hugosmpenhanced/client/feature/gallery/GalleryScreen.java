@@ -1,5 +1,7 @@
 package com.hugosmpenhanced.client.feature.gallery;
 
+import com.hugosmpenhanced.client.util.Desktop;
+import com.mojang.blaze3d.platform.InputConstants;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
@@ -21,7 +23,7 @@ import com.hugosmpenhanced.client.gui.StyledScreen;
 import com.mojang.blaze3d.platform.NativeImage;
 
 import net.minecraft.client.Screenshot;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
@@ -31,7 +33,6 @@ import net.minecraft.client.renderer.texture.DynamicTexture;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.Identifier;
 import net.minecraft.util.Util;
-import org.lwjgl.glfw.GLFW;
 
 /**
  * Browses the screenshots folder, newest first: a paged grid of thumbnails, and a single view with
@@ -302,7 +303,7 @@ public class GalleryScreen extends Screen implements StyledScreen {
 			} catch (IOException ignored) {
 			}
 		}
-		Util.getPlatform().openPath(this.folder);
+		Desktop.openPath(this.folder);
 	}
 
 	private void showStatus(String text) {
@@ -354,7 +355,7 @@ public class GalleryScreen extends Screen implements StyledScreen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
-		int direction = event.key() == GLFW.GLFW_KEY_LEFT ? -1 : event.key() == GLFW.GLFW_KEY_RIGHT ? 1 : 0;
+		int direction = event.key() == InputConstants.KEY_LEFT ? -1 : event.key() == InputConstants.KEY_RIGHT ? 1 : 0;
 		if (direction != 0) {
 			if (this.viewing < 0) {
 				this.turnPage(direction);
@@ -375,7 +376,7 @@ public class GalleryScreen extends Screen implements StyledScreen {
 			this.rebuildWidgets();
 			return;
 		}
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	@Override
@@ -387,23 +388,23 @@ public class GalleryScreen extends Screen implements StyledScreen {
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		super.render(graphics, mouseX, mouseY, partialTick);
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 		if (this.viewing < 0) {
 			this.renderGrid(graphics, mouseX, mouseY);
 		} else {
 			this.renderViewer(graphics);
 		}
 		if (this.status != null && Util.getMillis() < this.statusUntil) {
-			graphics.drawCenteredString(this.font, this.status, this.width / 2, this.height - 38, 0xFFFFFFFF);
+			graphics.centeredText(this.font, this.status, this.width / 2, this.height - 38, 0xFFFFFFFF);
 		}
 	}
 
-	private void renderGrid(GuiGraphics graphics, int mouseX, int mouseY) {
-		graphics.drawCenteredString(this.font, "— SCREENSHOTS (" + this.files.size() + ") —", this.width / 2, 6, 0xFFAAAAAA);
-		graphics.drawCenteredString(this.font, "Seite " + (this.page + 1) + "/" + this.pages(), this.width / 2 - 95, this.height - 20, 0xFFE0E0E0);
+	private void renderGrid(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+		graphics.centeredText(this.font, "— SCREENSHOTS (" + this.files.size() + ") —", this.width / 2, 6, 0xFFAAAAAA);
+		graphics.centeredText(this.font, "Seite " + (this.page + 1) + "/" + this.pages(), this.width / 2 - 95, this.height - 20, 0xFFE0E0E0);
 		if (this.files.isEmpty()) {
-			graphics.drawCenteredString(this.font, "Noch keine Screenshots. Mit F2 machst du einen.", this.width / 2, this.height / 2 - 4, TEXT_DIM);
+			graphics.centeredText(this.font, "Noch keine Screenshots. Mit F2 machst du einen.", this.width / 2, this.height / 2 - 4, TEXT_DIM);
 			return;
 		}
 		int hovered = this.fileAt(mouseX, mouseY);
@@ -423,19 +424,19 @@ public class GalleryScreen extends Screen implements StyledScreen {
 		}
 	}
 
-	private void renderViewer(GuiGraphics graphics) {
+	private void renderViewer(GuiGraphicsExtractor graphics) {
 		Path path = this.files.get(this.viewing);
 		String title = path.getFileName() + "  ·  " + DATE.format(new Date(modified(path))) + "  ·  " + (this.viewing + 1) + "/" + this.files.size();
-		graphics.drawCenteredString(this.font, title, this.width / 2, 6, 0xFFAAAAAA);
+		graphics.centeredText(this.font, title, this.width / 2, 6, 0xFFAAAAAA);
 		this.drawFitted(graphics, this.full, MARGIN, TOP, this.width - 2 * MARGIN, this.height - TOP - BAR - 14);
 	}
 
 	/** Draws the picture as large as fits in the box, centred, or a placeholder while it loads. */
-	private void drawFitted(GuiGraphics graphics, Picture picture, int x, int y, int width, int height) {
+	private void drawFitted(GuiGraphicsExtractor graphics, Picture picture, int x, int y, int width, int height) {
 		if (picture == null || picture.id == null) {
 			graphics.fill(x, y, x + width, y + height, 0x80101010);
 			String text = picture != null && picture.failed ? "Fehler beim Laden" : "Lädt …";
-			graphics.drawCenteredString(this.font, text, x + width / 2, y + height / 2 - 4, TEXT_DIM);
+			graphics.centeredText(this.font, text, x + width / 2, y + height / 2 - 4, TEXT_DIM);
 			return;
 		}
 		float scale = Math.min(width / (float) picture.width, height / (float) picture.height);

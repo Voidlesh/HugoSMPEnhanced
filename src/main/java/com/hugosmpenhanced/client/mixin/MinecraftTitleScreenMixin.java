@@ -12,7 +12,7 @@ import org.spongepowered.asm.mixin.injection.ModifyVariable;
 /** Shows {@link HugoTitleScreen} wherever the game opens the vanilla title screen, while it is enabled. */
 @Mixin(Minecraft.class)
 public abstract class MinecraftTitleScreenMixin {
-	@ModifyVariable(method = "setScreen", at = @At("HEAD"), argsOnly = true)
+	@ModifyVariable(method = "setScreenAndShow", at = @At("HEAD"), argsOnly = true)
 	private Screen hugosmpenhanced$replaceTitleScreen(Screen screen) {
 		if (screen != null && screen.getClass() == TitleScreen.class && ModConfigManager.CONFIG.mainMenuCustom) {
 			return new HugoTitleScreen();

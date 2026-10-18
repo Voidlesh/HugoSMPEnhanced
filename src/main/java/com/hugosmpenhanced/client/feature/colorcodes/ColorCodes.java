@@ -9,7 +9,7 @@ import com.hugosmpenhanced.client.feature.tpa.TpaKeybinds;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.core.component.DataComponents;
@@ -36,12 +36,12 @@ public final class ColorCodes {
 
 	public static void register() {
 		migrate();
-		openKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.hugosmpenhanced.open_color_editor",
-			InputConstants.Type.KEYSYM, InputConstants.UNKNOWN.getValue(), TpaKeybinds.CATEGORY));
+		openKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.hugosmpenhanced.open_color_editor",
+			InputConstants.Type.KEYBOARD, InputConstants.UNKNOWN.getValue(), TpaKeybinds.CATEGORY));
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (openKey.consumeClick()) {
-				if (client.screen == null) {
-					client.setScreen(ColorCodeScreen.forHeldItem(null));
+				if (client.gui.screen() == null) {
+					client.setScreenAndShow(ColorCodeScreen.forHeldItem(null));
 				}
 			}
 		});

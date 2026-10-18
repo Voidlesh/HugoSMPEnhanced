@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.settings;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -8,11 +9,10 @@ import com.hugosmpenhanced.client.HugoSmpEnhancedClient;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.gui.StyledScreen;
 
-import org.lwjgl.glfw.GLFW;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.ChatFormatting;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
@@ -182,7 +182,7 @@ public class SettingsScreen extends Screen implements StyledScreen {
 	// ------------------------------------------------------------------ rendering
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		Theme.panel(graphics, this.fx, this.fy, this.fw, this.fh, Theme.FRAME, Theme.FRAME_BORDER);
 		this.renderSidebar(graphics, mouseX, mouseY);
 		List<SettingsSection> sections = this.sections();
@@ -192,11 +192,11 @@ public class SettingsScreen extends Screen implements StyledScreen {
 		if (this.font.width(footer) > this.contentWidth) {
 			footer = "Wird sofort gespeichert  -  ESC schließt";
 		}
-		graphics.drawString(this.font, footer, this.contentLeft, this.fy + this.fh - 12, Theme.FAINT, false);
-		super.render(graphics, mouseX, mouseY, partialTick);
+		graphics.text(this.font, footer, this.contentLeft, this.fy + this.fh - 12, Theme.FAINT, false);
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 	}
 
-	private void renderSidebar(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderSidebar(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		int left = this.fx + 1;
 		int right = this.fx + this.sidebarWidth;
 		graphics.fill(left, this.fy + 1, right, this.fy + this.fh - 1, Theme.SIDEBAR);
@@ -205,9 +205,9 @@ public class SettingsScreen extends Screen implements StyledScreen {
 		Theme.icon(graphics, "brand", this.fx + (this.compact ? 5 : 7), this.fy + 7, 20, Theme.WHITE);
 		if (!this.compact) {
 			int tx = this.fx + 31;
-			graphics.drawString(this.font, "Hugo", tx, this.fy + 8, 0xFFFF4646);
-			graphics.drawString(this.font, "SMP", tx + this.font.width("Hugo"), this.fy + 8, 0xFFC496FF);
-			graphics.drawString(this.font, "ENHANCED", tx, this.fy + 18, Theme.GOLD);
+			graphics.text(this.font, "Hugo", tx, this.fy + 8, 0xFFFF4646);
+			graphics.text(this.font, "SMP", tx + this.font.width("Hugo"), this.fy + 8, 0xFFC496FF);
+			graphics.text(this.font, "ENHANCED", tx, this.fy + 18, Theme.GOLD);
 		}
 
 		List<SettingsCategory> categories = ModSettings.categories();
@@ -225,7 +225,7 @@ public class SettingsScreen extends Screen implements StyledScreen {
 			int iconX = this.compact ? left + 6 : left + 9;
 			Theme.icon(graphics, cat.icon(), iconX, y + (this.categoryRow - 18) / 2, 16, selected || over ? Theme.ICON_ON : Theme.ICON_OFF);
 			if (!this.compact) {
-				graphics.drawString(this.font, this.font.plainSubstrByWidth(cat.name(), right - left - 34), left + 30, y + (this.categoryRow - 10) / 2,
+				graphics.text(this.font, this.font.plainSubstrByWidth(cat.name(), right - left - 34), left + 30, y + (this.categoryRow - 10) / 2,
 					selected ? Theme.WHITE : Theme.TEXT_DIM);
 			} else if (over) {
 				graphics.setTooltipForNextFrame(this.font, Component.literal(cat.name()), mouseX, mouseY);
@@ -236,14 +236,14 @@ public class SettingsScreen extends Screen implements StyledScreen {
 			int fy2 = this.fy + this.fh - 32;
 			graphics.fill(left + 7, fy2 - 4, right - 7, fy2 - 3, Theme.FRAME_BORDER);
 			Theme.icon(graphics, "key", left + 8, fy2 - 3, 16, 0xFF969696);
-			graphics.drawString(this.font, "Öffnen", left + 28, fy2 + 1, Theme.MUTED, false);
+			graphics.text(this.font, "Öffnen", left + 28, fy2 + 1, Theme.MUTED, false);
 			String key = SettingsFeature.openKey == null || SettingsFeature.openKey.isUnbound()
 				? "-" : SettingsFeature.openKey.getTranslatedKeyMessage().getString();
 			int kx = left + 32 + this.font.width("Öffnen");
 			int kw = this.font.width(key) + 8;
 			Theme.panel(graphics, kx, fy2 - 2, kw, 13, 0xFF282828, 0xFF646464);
-			graphics.drawString(this.font, key, kx + 4, fy2 + 1, Theme.WHITE, false);
-			graphics.drawString(this.font, "v" + version(), left + 8, fy2 + 16, Theme.FAINT, false);
+			graphics.text(this.font, key, kx + 4, fy2 + 1, Theme.WHITE, false);
+			graphics.text(this.font, "v" + version(), left + 8, fy2 + 16, Theme.FAINT, false);
 		}
 	}
 
@@ -251,7 +251,7 @@ public class SettingsScreen extends Screen implements StyledScreen {
 		return this.fy + 38 + index * this.categoryRow;
 	}
 
-	private void renderHeader(GuiGraphics graphics, int mouseX, int mouseY, List<SettingsSection> sections) {
+	private void renderHeader(GuiGraphicsExtractor graphics, int mouseX, int mouseY, List<SettingsSection> sections) {
 		String title;
 		String description;
 		if (this.searching()) {
@@ -264,9 +264,9 @@ public class SettingsScreen extends Screen implements StyledScreen {
 			description = this.current().description();
 		}
 		int textRoom = this.searchX - this.contentLeft - 8;
-		graphics.drawString(this.font, Component.literal(this.font.plainSubstrByWidth(title, textRoom)).withStyle(ChatFormatting.BOLD),
+		graphics.text(this.font, Component.literal(this.font.plainSubstrByWidth(title, textRoom)).withStyle(ChatFormatting.BOLD),
 			this.contentLeft, this.fy + 9, Theme.WHITE);
-		graphics.drawString(this.font, ellipsize(description, textRoom), this.contentLeft, this.fy + 21, Theme.MUTED, false);
+		graphics.text(this.font, ellipsize(description, textRoom), this.contentLeft, this.fy + 21, Theme.MUTED, false);
 
 		// search field
 		int sw = this.closeX - 4 - this.searchX;
@@ -303,7 +303,7 @@ public class SettingsScreen extends Screen implements StyledScreen {
 				} else if (over) {
 					Theme.panel(graphics, tx - 5, ty - 4, w + 10, 16, 0xFF1E1E1E, 0);
 				}
-				graphics.drawString(this.font, name, tx, ty, selected ? Theme.WHITE : over ? Theme.TEXT : Theme.MUTED, selected);
+				graphics.text(this.font, name, tx, ty, selected ? Theme.WHITE : over ? Theme.TEXT : Theme.MUTED, selected);
 				if (over && !name.equals(full)) {
 					graphics.setTooltipForNextFrame(this.font, Component.literal(full), mouseX, mouseY);
 				}
@@ -314,7 +314,7 @@ public class SettingsScreen extends Screen implements StyledScreen {
 		graphics.fill(this.contentLeft - 4, this.fy + 53, this.fx + this.fw - 8, this.fy + 54, Theme.FRAME_BORDER);
 	}
 
-	private void renderContent(GuiGraphics graphics, int mouseX, int mouseY, List<SettingsSection> sections) {
+	private void renderContent(GuiGraphicsExtractor graphics, int mouseX, int mouseY, List<SettingsSection> sections) {
 		this.contentHeight = this.measure(sections);
 		int viewport = this.contentBottom - this.contentTop;
 		this.scroll = Mth.clamp(this.scroll, 0, Math.max(0, this.contentHeight - viewport));
@@ -329,7 +329,7 @@ public class SettingsScreen extends Screen implements StyledScreen {
 			y += height + SECTION_GAP;
 		}
 		if (sections.isEmpty() && this.searching()) {
-			graphics.drawString(this.font, "Nichts gefunden. Versuch ein anderes Wort, z. B. \"Taste\" oder \"Chat\".",
+			graphics.text(this.font, "Nichts gefunden. Versuch ein anderes Wort, z. B. \"Taste\" oder \"Chat\".",
 				this.contentLeft, this.contentTop + 6, Theme.MUTED, false);
 		}
 		graphics.disableScissor();
@@ -359,10 +359,10 @@ public class SettingsScreen extends Screen implements StyledScreen {
 		return total;
 	}
 
-	private void renderSection(GuiGraphics graphics, SettingsSection section, int y, int height, int mouseX, int mouseY, boolean mouseInView) {
+	private void renderSection(GuiGraphicsExtractor graphics, SettingsSection section, int y, int height, int mouseX, int mouseY, boolean mouseInView) {
 		Theme.panel(graphics, this.contentLeft, y, this.contentWidth, height, Theme.SECTION, Theme.SECTION_BORDER);
 		String title = this.searching() ? section.title() : section.title().toUpperCase(Locale.ROOT);
-		graphics.drawString(this.font, this.font.plainSubstrByWidth(title, this.contentWidth - 16), this.contentLeft + 8, y + 5,
+		graphics.text(this.font, this.font.plainSubstrByWidth(title, this.contentWidth - 16), this.contentLeft + 8, y + 5,
 			this.searching() ? Theme.GOLD : 0xFFA0A0A0, false);
 		int rowY = y + SECTION_TITLE;
 		for (SettingsOption option : section.options()) {
@@ -490,18 +490,18 @@ public class SettingsScreen extends Screen implements StyledScreen {
 		if (capturing != null) {
 			return capturing.keyPressed(event);
 		}
-		boolean control = (event.modifiers() & GLFW.GLFW_MOD_CONTROL) != 0;
-		if (control && event.key() == GLFW.GLFW_KEY_F) {
+		boolean control = (event.modifiers() & InputConstants.MOD_CONTROL) != 0;
+		if (control && event.key() == InputConstants.KEY_F) {
 			this.setFocused(this.search);
 			this.search.setFocused(true);
 			return true;
 		}
 		if (this.search.isFocused()) {
-			if (event.key() == GLFW.GLFW_KEY_ESCAPE && !this.searchValue.isEmpty()) {
+			if (event.key() == InputConstants.KEY_ESCAPE && !this.searchValue.isEmpty()) {
 				this.search.setValue("");
 				return true;
 			}
-			if (event.key() == GLFW.GLFW_KEY_ESCAPE) {
+			if (event.key() == InputConstants.KEY_ESCAPE) {
 				this.search.setFocused(false);
 				this.setFocused(null);
 				return true;
@@ -530,7 +530,7 @@ public class SettingsScreen extends Screen implements StyledScreen {
 	public void onClose() {
 		this.stopCapturing(null);
 		ModConfigManager.save();
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	@Override

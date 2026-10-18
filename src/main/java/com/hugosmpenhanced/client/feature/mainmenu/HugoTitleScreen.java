@@ -14,7 +14,7 @@ import com.hugosmpenhanced.client.mixin.ScreenAccessor;
 
 import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.SharedConstants;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.CommonButtons;
 import net.minecraft.client.gui.components.Renderable;
 import net.minecraft.client.gui.screens.TitleScreen;
@@ -142,14 +142,14 @@ public class HugoTitleScreen extends TitleScreen implements StyledScreen {
 		y += 8;
 		int half = (buttonWidth - 4) / 2;
 		this.addRenderableWidget(new MenuButton(x, y, half, 20, Component.translatable("menu.options"), false, false,
-				b -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options))));
+				b -> this.minecraft.setScreenAndShow(new OptionsScreen(this, this.minecraft.options))));
 		this.addRenderableWidget(new MenuButton(x + half + 4, y, half, 20, Component.translatable("menu.quit"), false, false,
 				b -> this.minecraft.stop()));
-		var language = CommonButtons.language(20, b -> this.minecraft.setScreen(
+		var language = CommonButtons.language(20, b -> this.minecraft.setScreenAndShow(
 				new LanguageSelectScreen(this, this.minecraft.options, this.minecraft.getLanguageManager())), true);
 		language.setPosition(x - 24, y);
 		this.addRenderableWidget(language);
-		var accessibility = CommonButtons.accessibility(20, b -> this.minecraft.setScreen(
+		var accessibility = CommonButtons.accessibility(20, b -> this.minecraft.setScreenAndShow(
 				new AccessibilityOptionsScreen(this, this.minecraft.options)), true);
 		accessibility.setPosition(x + buttonWidth + 4, y);
 		this.addRenderableWidget(accessibility);
@@ -169,7 +169,7 @@ public class HugoTitleScreen extends TitleScreen implements StyledScreen {
 		y = addMainButtons(x, y, buttonWidth, join, modMenu, true);
 		y += 8;
 		this.addRenderableWidget(new MenuButton(x, y, buttonWidth, 20, Component.translatable("menu.options"), true, false,
-				b -> this.minecraft.setScreen(new OptionsScreen(this, this.minecraft.options))));
+				b -> this.minecraft.setScreenAndShow(new OptionsScreen(this, this.minecraft.options))));
 		y += 24;
 		this.addRenderableWidget(new MenuButton(x, y, buttonWidth, 20, Component.translatable("menu.quit"), true, false,
 				b -> this.minecraft.stop()));
@@ -191,10 +191,10 @@ public class HugoTitleScreen extends TitleScreen implements StyledScreen {
 			y += 24;
 		}
 		this.addRenderableWidget(new MenuButton(x, y, width, 20, Component.translatable("menu.singleplayer"), left, false,
-				b -> this.minecraft.setScreen(new SelectWorldScreen(this))));
+				b -> this.minecraft.setScreenAndShow(new SelectWorldScreen(this))));
 		y += 24;
 		this.addRenderableWidget(new MenuButton(x, y, width, 20, Component.translatable("menu.multiplayer"), left, false,
-				b -> this.minecraft.setScreen(this.minecraft.options.skipMultiplayerWarning
+				b -> this.minecraft.setScreenAndShow(this.minecraft.options.skipMultiplayerWarning
 						? new JoinMultiplayerScreen(this) : new SafetyScreen(this))));
 		y += 24;
 		if (join && !left) {
@@ -251,8 +251,8 @@ public class HugoTitleScreen extends TitleScreen implements StyledScreen {
 	}
 
 	@Override
-	public void renderBackground(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
-		this.renderPanorama(graphics, partialTick);
+	public void extractBackground(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
+		this.minecraft.gameRenderer.panorama().extractRenderState(graphics, this.width, this.height);
 		if (this.layout == MainMenuLayout.SIDEBAR) {
 			graphics.fill(0, 0, this.panelWidth, this.height, PANEL_FILL);
 			graphics.fill(this.panelWidth, 0, this.panelWidth + 1, this.height, PANEL_BORDER);
@@ -260,7 +260,7 @@ public class HugoTitleScreen extends TitleScreen implements StyledScreen {
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		if (this.relayoutPending) {
 			this.relayoutPending = false;
 			this.relayingOut = true;
@@ -274,23 +274,23 @@ public class HugoTitleScreen extends TitleScreen implements StyledScreen {
 		}
 		// TitleScreen.render would draw the vanilla logo and splash, so render the widgets directly
 		for (Renderable renderable : ((ScreenAccessor) this).hugosmpenhanced$getRenderables()) {
-			renderable.render(graphics, mouseX, mouseY, partialTick);
+			renderable.extractRenderState(graphics, mouseX, mouseY, partialTick);
 		}
 		renderSplash(graphics);
 
 		String version = versionText();
 		int copyrightWidth = this.font.width(COPYRIGHT);
 		if (this.versionFits()) {
-			graphics.drawString(this.font, version, 2, this.height - 10, 0xFFFFFFFF);
+			graphics.text(this.font, version, 2, this.height - 10, 0xFFFFFFFF);
 		} else if (this.layout == MainMenuLayout.SIDEBAR) {
-			graphics.drawString(this.font, version, this.width - this.font.width(version) - 2, this.height - 20, 0xFFFFFFFF);
+			graphics.text(this.font, version, this.width - this.font.width(version) - 2, this.height - 20, 0xFFFFFFFF);
 		} else {
-			graphics.drawString(this.font, version, 2, this.height - 20, 0xFFFFFFFF);
+			graphics.text(this.font, version, 2, this.height - 20, 0xFFFFFFFF);
 		}
-		graphics.drawString(this.font, COPYRIGHT, this.width - copyrightWidth - 2, this.height - 10, 0xFFFFFFFF);
+		graphics.text(this.font, COPYRIGHT, this.width - copyrightWidth - 2, this.height - 10, 0xFFFFFFFF);
 	}
 
-	private void renderSplash(GuiGraphics graphics) {
+	private void renderSplash(GuiGraphicsExtractor graphics) {
 		ModConfig config = ModConfigManager.CONFIG;
 		if (this.splash.isEmpty()) {
 			return;
@@ -325,15 +325,15 @@ public class HugoTitleScreen extends TitleScreen implements StyledScreen {
 		pose.translate(x, y);
 		pose.rotate(angle * Mth.DEG_TO_RAD);
 		pose.scale(scale, scale);
-		graphics.drawCenteredString(this.font, this.splash, 0, -8, color);
+		graphics.centeredText(this.font, this.splash, 0, -8, color);
 		pose.popMatrix();
 	}
 
-	private void renderServerCard(GuiGraphics graphics) {
+	private void renderServerCard(GuiGraphicsExtractor graphics) {
 		int x = this.cardX;
 		int y = this.cardY;
 		HugoStyle.drawBox(graphics, x, y, CARD_WIDTH, CARD_HEIGHT, HugoStyle.State.NORMAL);
-		graphics.drawString(this.font, "HugoSMP.net", x + 8, y + 8, 0xFFFFFFFF);
+		graphics.text(this.font, "HugoSMP.net", x + 8, y + 8, 0xFFFFFFFF);
 
 		ServerData data = this.server;
 		String status;
@@ -354,10 +354,10 @@ public class HugoTitleScreen extends TitleScreen implements StyledScreen {
 			statusColor = 0xFFAAAAAA;
 		}
 		int statusX = x + CARD_WIDTH - 8 - 6 - 4 - this.font.width(status);
-		graphics.drawString(this.font, status, statusX, y + 8, statusColor);
+		graphics.text(this.font, status, statusX, y + 8, statusColor);
 		graphics.fill(x + CARD_WIDTH - 14, y + 9, x + CARD_WIDTH - 8, y + 15, statusColor);
-		graphics.drawString(this.font, players, x + 8, y + 24, 0xFFBEBEBE);
-		graphics.drawString(this.font, ping, x + 8, y + 36, 0xFF969696);
+		graphics.text(this.font, players, x + 8, y + 24, 0xFFBEBEBE);
+		graphics.text(this.font, ping, x + 8, y + 36, 0xFF969696);
 	}
 
 	private static String modVersion() {

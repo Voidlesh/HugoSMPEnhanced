@@ -3,7 +3,7 @@ package com.hugosmpenhanced.client.feature.tpa;
 import com.mojang.blaze3d.platform.InputConstants;
 
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.resources.Identifier;
 
@@ -17,9 +17,9 @@ public final class TpaKeybinds {
 	}
 
 	public static void register() {
-		acceptKey = KeyBindingHelper.registerKeyBinding(new KeyMapping(
+		acceptKey = KeyMappingHelper.registerKeyMapping(new KeyMapping(
 				"key.hugosmpenhanced.accept_tpa",
-				InputConstants.Type.KEYSYM,
+				InputConstants.Type.KEYBOARD,
 				InputConstants.UNKNOWN.getValue(),
 				CATEGORY));
 

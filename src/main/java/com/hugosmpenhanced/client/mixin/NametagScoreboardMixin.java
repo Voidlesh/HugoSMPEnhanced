@@ -7,8 +7,8 @@ import org.spongepowered.asm.mixin.injection.Redirect;
 import com.hugosmpenhanced.client.feature.nametag.NametagStyleRenderer;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.Gui;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.Hud;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 /**
@@ -17,20 +17,20 @@ import net.minecraft.network.chat.Component;
  * never contain the local player's name so {@link NametagStyleRenderer#matchesLocalName} filters
  * them out.
  */
-@Mixin(Gui.class)
+@Mixin(Hud.class)
 public abstract class NametagScoreboardMixin {
 	@Redirect(
 		method = "displayScoreboardSidebar",
 		at = @At(
 			value = "INVOKE",
-			target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V"
+			target = "Lnet/minecraft/client/gui/GuiGraphicsExtractor;text(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V"
 		)
 	)
-	private void hugosmpenhanced$drawStyledSidebarName(GuiGraphics graphics, Font font, Component component, int x, int y, int color, boolean dropShadow) {
+	private void hugosmpenhanced$drawStyledSidebarName(GuiGraphicsExtractor graphics, Font font, Component component, int x, int y, int color, boolean dropShadow) {
 		if (NametagStyleRenderer.hasAnyEffect() && NametagStyleRenderer.matchesLocalName(component.getString())) {
 			NametagStyleRenderer.renderComponent2D(graphics, font, component, x, y, color, dropShadow);
 		} else {
-			graphics.drawString(font, component, x, y, color, dropShadow);
+			graphics.text(font, component, x, y, color, dropShadow);
 		}
 	}
 }

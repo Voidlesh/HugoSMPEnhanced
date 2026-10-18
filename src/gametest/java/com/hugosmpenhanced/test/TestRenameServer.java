@@ -29,7 +29,7 @@ public class TestRenameServer implements ModInitializer {
 					ItemStack stack = player.getMainHandItem();
 					Component component = ColorText.parse(name).toComponent().copy().withStyle(style -> style.withItalic(false));
 					stack.set(DataComponents.CUSTOM_NAME, component);
-					player.displayClientMessage(Component.literal("Umbenannt in ").append(component), false);
+					player.sendSystemMessage(Component.literal("Umbenannt in ").append(component));
 					return 1;
 				}))));
 	}

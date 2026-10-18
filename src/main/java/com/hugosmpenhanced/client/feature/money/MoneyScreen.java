@@ -13,7 +13,7 @@ import com.hugosmpenhanced.client.gui.PanelScreen;
 import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -81,7 +81,7 @@ public class MoneyScreen extends PanelScreen {
 	}
 
 	@Override
-	protected void renderSummary(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
+	protected void renderSummary(GuiGraphicsExtractor graphics, int x, int y, int width, int mouseX, int mouseY) {
 		MoneyTracker.Book book = this.book();
 		int figures = 120;
 		int graphWidth = width - figures - 8;
@@ -102,17 +102,17 @@ public class MoneyScreen extends PanelScreen {
 		}
 	}
 
-	private void figure(GuiGraphics graphics, int x, int y, String label, String value, int color) {
-		graphics.drawString(this.font, label, x, y + 3, Theme.MUTED, false);
+	private void figure(GuiGraphicsExtractor graphics, int x, int y, String label, String value, int color) {
+		graphics.text(this.font, label, x, y + 3, Theme.MUTED, false);
 		right(graphics, this.font, value, x + 118, y + 3, color);
 	}
 
 	/** Balance over the chosen range as a line, with the value under the mouse. */
-	private void graph(GuiGraphics graphics, int x, int y, int width, int height, int mouseX, int mouseY) {
+	private void graph(GuiGraphicsExtractor graphics, int x, int y, int width, int height, int mouseX, int mouseY) {
 		graphics.fill(x, y, x + width, y + height, 0x40000000);
 		List<long[]> samples = MoneyTracker.samples(this.since());
 		if (samples.size() < 2) {
-			graphics.drawCenteredString(this.font, "Noch zu wenig Verlauf", x + width / 2, y + height / 2 - 4, Theme.FAINT);
+			graphics.centeredText(this.font, "Noch zu wenig Verlauf", x + width / 2, y + height / 2 - 4, Theme.FAINT);
 			return;
 		}
 		long t0 = samples.get(0)[0];
@@ -140,7 +140,7 @@ public class MoneyScreen extends PanelScreen {
 			prevX = px;
 			prevY = py;
 		}
-		graphics.drawString(this.font, Money.compact(max), x + 3, y + 2, Theme.FAINT, false);
+		graphics.text(this.font, Money.compact(max), x + 3, y + 2, Theme.FAINT, false);
 		if (mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + height) {
 			long t = t0 + (long) (mouseX - x - 2) * (t1 - t0) / Math.max(1, width - 4);
 			long[] best = samples.get(0);
@@ -152,12 +152,12 @@ public class MoneyScreen extends PanelScreen {
 			graphics.fill(mouseX, y, mouseX + 1, y + height, 0x60FFFFFF);
 			String label = Money.compact(best[1]) + "  " + PayLog.ago(best[0]);
 			int lx = Math.min(mouseX + 4, x + width - this.font.width(label) - 2);
-			graphics.drawString(this.font, label, lx, y + height - 12, Theme.WHITE, true);
+			graphics.text(this.font, label, lx, y + height - 12, Theme.WHITE, true);
 		}
 	}
 
 	/** A line made of small steps; the GUI has no line primitive. */
-	private void segment(GuiGraphics graphics, int x0, int y0, int x1, int y1) {
+	private void segment(GuiGraphicsExtractor graphics, int x0, int y0, int x1, int y1) {
 		int steps = Math.max(Math.abs(x1 - x0), Math.abs(y1 - y0));
 		if (steps == 0) {
 			graphics.fill(x0, y0, x0 + 1, y0 + 1, LINE);
@@ -198,7 +198,7 @@ public class MoneyScreen extends PanelScreen {
 
 	private record SourceRow(String source, long in, long out, long scale) implements Row {
 		@Override
-		public void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, boolean hovered) {
+		public void render(GuiGraphicsExtractor graphics, Font font, int x, int y, int width, int height, boolean hovered) {
 			int ty = y + (height - 8) / 2;
 			clipped(graphics, font, this.source, x + 4, ty, 110, Theme.TEXT);
 			int barX = x + 120;
@@ -210,8 +210,8 @@ public class MoneyScreen extends PanelScreen {
 				graphics.fill(barX, y + 9, barX + outW, y + 12, OUT);
 			}
 			int col = x + width - 170;
-			graphics.drawString(font, this.in > 0 ? "+" + Money.compact(this.in) : "", col + 4, ty, IN, false);
-			graphics.drawString(font, this.out > 0 ? "−" + Money.compact(this.out) : "", col + 64, ty, OUT, false);
+			graphics.text(font, this.in > 0 ? "+" + Money.compact(this.in) : "", col + 4, ty, IN, false);
+			graphics.text(font, this.out > 0 ? "−" + Money.compact(this.out) : "", col + 64, ty, OUT, false);
 			long net = this.in - this.out;
 			right(graphics, font, MoneyHud.sign(net), x + width - 6, ty, net >= 0 ? IN : OUT);
 		}

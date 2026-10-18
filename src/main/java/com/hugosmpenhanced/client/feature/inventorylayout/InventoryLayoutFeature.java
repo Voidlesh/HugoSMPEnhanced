@@ -1,9 +1,9 @@
 package com.hugosmpenhanced.client.feature.inventorylayout;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.lwjgl.glfw.GLFW;
 
 import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.config.ModConfigManager;
@@ -19,7 +19,7 @@ import net.fabricmc.fabric.api.client.screen.v1.ScreenMouseEvents;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Tooltip;
 import net.minecraft.client.gui.screens.inventory.InventoryScreen;
 import net.minecraft.client.input.MouseButtonEvent;
@@ -109,11 +109,11 @@ public final class InventoryLayoutFeature {
 		}
 
 		private void register() {
-			ScreenEvents.beforeRender(this.screen).register((s, graphics, mouseX, mouseY, tickDelta) -> this.update(mouseX, mouseY));
-			ScreenEvents.afterRender(this.screen).register((s, graphics, mouseX, mouseY, tickDelta) -> this.render(graphics, mouseX, mouseY));
+			ScreenEvents.beforeExtract(this.screen).register((s, graphics, mouseX, mouseY, tickDelta) -> this.update(mouseX, mouseY));
+			ScreenEvents.afterExtract(this.screen).register((s, graphics, mouseX, mouseY, tickDelta) -> this.render(graphics, mouseX, mouseY));
 			ScreenMouseEvents.allowMouseClick(this.screen).register((s, event) -> this.onClick(event));
 			ScreenKeyboardEvents.allowKeyPress(this.screen).register((s, event) -> {
-				if (this.open != null && event.key() == GLFW.GLFW_KEY_ESCAPE) {
+				if (this.open != null && event.key() == InputConstants.KEY_ESCAPE) {
 					this.close();
 					return false;
 				}
@@ -295,14 +295,14 @@ public final class InventoryLayoutFeature {
 				this.close();
 				return false;
 			}
-			if (event.button() == GLFW.GLFW_MOUSE_BUTTON_LEFT) {
+			if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
 				Row row = this.rows.get(index);
 				(this.overDelete(event.x(), row) ? row.delete() : row.action()).run();
 			}
 			return false;
 		}
 
-		private void render(GuiGraphics graphics, int mouseX, int mouseY) {
+		private void render(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 			if (this.open == null || this.rows.isEmpty()) {
 				return;
 			}
@@ -310,7 +310,7 @@ public final class InventoryLayoutFeature {
 			Font font = Minecraft.getInstance().font;
 			int height = this.rows.size() * ROW_HEIGHT + 2;
 			graphics.fill(this.menuX, this.menuY, this.menuX + this.menuWidth, this.menuY + height, PANEL);
-			graphics.renderOutline(this.menuX, this.menuY, this.menuWidth, height, BORDER);
+			graphics.outline(this.menuX, this.menuY, this.menuWidth, height, BORDER);
 			int hovered = this.rowAt(mouseX, mouseY);
 			for (int i = 0; i < this.rows.size(); i++) {
 				Row row = this.rows.get(i);
@@ -318,10 +318,10 @@ public final class InventoryLayoutFeature {
 				if (i == hovered) {
 					graphics.fill(this.menuX + 1, y, this.menuX + this.menuWidth - 1, y + ROW_HEIGHT, ROW_HOVER);
 				}
-				graphics.drawString(font, row.label(), this.menuX + PAD, y + 3, row.color());
+				graphics.text(font, row.label(), this.menuX + PAD, y + 3, row.color());
 				if (row.delete() != null) {
 					boolean hot = i == hovered && this.overDelete(mouseX, row);
-					graphics.drawString(font, "✕", this.menuX + this.menuWidth - PAD - DELETE_WIDTH + 3, y + 3, hot ? TEXT_DELETE : TEXT_DIM);
+					graphics.text(font, "✕", this.menuX + this.menuWidth - PAD - DELETE_WIDTH + 3, y + 3, hot ? TEXT_DELETE : TEXT_DIM);
 				}
 			}
 		}

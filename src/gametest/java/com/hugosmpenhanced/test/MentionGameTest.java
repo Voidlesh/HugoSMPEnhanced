@@ -8,7 +8,7 @@ import com.hugosmpenhanced.client.settings.SettingsScreen;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
-import net.minecraft.client.GuiMessage;
+import net.minecraft.client.multiplayer.chat.GuiMessage;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
 /**
@@ -26,12 +26,12 @@ public class MentionGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			String name = context.computeOnClient(client -> client.player.getGameProfile().name());
 
 			for (MentionStyle style : MentionStyle.values()) {
 				ModConfigManager.CONFIG.mentionStyle = style;
-				context.runOnClient(client -> client.gui.getChat().clearMessages(false));
+				context.runOnClient(client -> client.gui.hud.getChat().clearMessages(false));
 				say(singleplayer, "[Clan] Ehrlich: hey " + name + ", kommst du?");
 				say(singleplayer, name + ": ich bin " + name);
 				say(singleplayer, "[HugoSMP] Willkommen zurück, " + name);
@@ -84,7 +84,7 @@ public class MentionGameTest implements FabricClientGameTest {
 		try {
 			java.lang.reflect.Field field = net.minecraft.client.gui.components.ChatComponent.class.getDeclaredField("allMessages");
 			field.setAccessible(true);
-			return (java.util.List<GuiMessage>) field.get(client.gui.getChat());
+			return (java.util.List<GuiMessage>) field.get(client.gui.hud.getChat());
 		} catch (ReflectiveOperationException e) {
 			throw new AssertionError(e);
 		}

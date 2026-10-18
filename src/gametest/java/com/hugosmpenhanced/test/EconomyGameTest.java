@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.test;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
@@ -26,7 +27,6 @@ import com.hugosmpenhanced.client.settings.SettingsScreen;
 import com.hugosmpenhanced.client.util.MenuContext;
 import com.hugosmpenhanced.client.util.ServerCheck;
 
-import org.lwjgl.glfw.GLFW;
 
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
@@ -66,7 +66,7 @@ public class EconomyGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			singleplayer.getServer().runCommand("gamerule doDaylightCycle false");
 			singleplayer.getServer().runCommand("time set 6000");
 			context.runOnClient(client -> {
@@ -185,9 +185,9 @@ public class EconomyGameTest implements FabricClientGameTest {
 		context.setScreen(() -> new ChatScreen("/pay " + SCAMMER + " 10k", false));
 		context.waitTicks(5);
 		context.takeScreenshot("economy-pay-scammer");
-		context.getInput().pressKey(GLFW.GLFW_KEY_ENTER);
+		context.getInput().pressKey(InputConstants.KEY_RETURN);
 		context.waitTicks(3);
-		context.runOnClient(client -> check(client.screen instanceof ChatScreen, "first Enter on a scammer payment must not send"));
+		context.runOnClient(client -> check(client.gui.screen() instanceof ChatScreen, "first Enter on a scammer payment must not send"));
 		context.takeScreenshot("economy-pay-scammer-enter");
 		context.setScreen(() -> null);
 		context.setScreen(() -> new ChatScreen("/pay FairerHaendler 2,5k", false));
@@ -213,7 +213,7 @@ public class EconomyGameTest implements FabricClientGameTest {
 			page.setItem(10, diamonds);
 			page.setItem(11, iron);
 			page.setItem(12, wheat);
-			client.setScreen(new ContainerScreen(new ChestMenu(MenuType.GENERIC_9x6, 0, inventory, page, 6), inventory,
+			client.setScreenAndShow(new ContainerScreen(new ChestMenu(MenuType.GENERIC_9x6, 0, inventory, page, 6), inventory,
 				Component.literal("Aufträge")));
 		});
 		context.waitTicks(5);
@@ -291,9 +291,9 @@ public class EconomyGameTest implements FabricClientGameTest {
 			ModConfigManager.CONFIG.keywordAlarmWords.clear();
 			ModConfigManager.CONFIG.keywordAlarmWords.add("verkauf elytra");
 			String line = "[VIP] KaiDerBauer: Verkaufe meine Elytra für 5m, /msg me";
-			client.gui.getChat().addMessage(Component.literal("Mika_77: wer hat Eisen?"));
+			client.gui.hud.getChat().addClientSystemMessage(Component.literal("Mika_77: wer hat Eisen?"));
 			KeywordAlarm.check(line);
-			client.gui.getChat().addMessage(Component.literal(line));
+			client.gui.hud.getChat().addClientSystemMessage(Component.literal(line));
 		});
 		context.setScreen(() -> new ChatScreen("", false));
 		context.waitTicks(5);
@@ -363,9 +363,9 @@ public class EconomyGameTest implements FabricClientGameTest {
 
 	private static void hoverSlotOf(ClientGameTestContext context, ItemStack stack) {
 		double[] pos = context.computeOnClient(client -> {
-			AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.screen;
+			AbstractContainerScreenAccessor screen = (AbstractContainerScreenAccessor) client.gui.screen();
 			double scale = client.getWindow().getGuiScale();
-			for (Slot slot : ((ContainerScreen) client.screen).getMenu().slots) {
+			for (Slot slot : ((ContainerScreen) client.gui.screen()).getMenu().slots) {
 				if (slot.getItem() == stack) {
 					return new double[] {(screen.hugosmpenhanced$getLeftPos() + slot.x + 8) * scale,
 						(screen.hugosmpenhanced$getTopPos() + slot.y + 8) * scale};

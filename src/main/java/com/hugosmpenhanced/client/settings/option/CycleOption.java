@@ -8,7 +8,7 @@ import com.hugosmpenhanced.client.settings.Labeled;
 import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /** Picks one enum value: left click goes to the next, right click to the previous. */
 public class CycleOption<E extends Enum<E> & Labeled> extends ValueOption<E> {
@@ -34,12 +34,12 @@ public class CycleOption<E extends Enum<E> & Labeled> extends ValueOption<E> {
 	}
 
 	@Override
-	protected void renderControl(GuiGraphics graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
+	protected void renderControl(GuiGraphicsExtractor graphics, Font font, int right, int centerY, int mouseX, int mouseY) {
 		int w = this.controlWidth(font);
 		int left = right - w;
 		boolean over = this.inside(mouseX, mouseY, left, centerY - 7, w, 15);
 		Theme.panel(graphics, left, centerY - 7, w, 15, Theme.FIELD, over ? Theme.GOLD : Theme.FIELD_BORDER);
-		graphics.drawString(font, this.get().getDisplayName(), left + 6, centerY - 3, Theme.WHITE, false);
+		graphics.text(font, this.get().getDisplayName(), left + 6, centerY - 3, Theme.WHITE, false);
 		Theme.glyph(graphics, Theme.DOWN, right - 11, centerY - 1, Theme.MUTED);
 	}
 

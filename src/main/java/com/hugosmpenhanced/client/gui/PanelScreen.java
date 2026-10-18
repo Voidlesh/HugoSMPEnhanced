@@ -8,7 +8,7 @@ import java.util.function.Supplier;
 import com.hugosmpenhanced.client.settings.Theme;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
@@ -29,7 +29,7 @@ public abstract class PanelScreen extends Screen implements StyledScreen {
 
 	/** One line in the list. */
 	public interface Row {
-		void render(GuiGraphics graphics, Font font, int x, int y, int width, int height, boolean hovered);
+		void render(GuiGraphicsExtractor graphics, Font font, int x, int y, int width, int height, boolean hovered);
 
 		/** Tooltip lines for the mouse, or an empty list. */
 		default List<Component> tooltip() {
@@ -103,7 +103,7 @@ public abstract class PanelScreen extends Screen implements StyledScreen {
 		return 0;
 	}
 
-	protected void renderSummary(GuiGraphics graphics, int x, int y, int width, int mouseX, int mouseY) {
+	protected void renderSummary(GuiGraphicsExtractor graphics, int x, int y, int width, int mouseX, int mouseY) {
 	}
 
 	protected abstract List<? extends Row> rows();
@@ -177,7 +177,7 @@ public abstract class PanelScreen extends Screen implements StyledScreen {
 	// ------------------------------------------------------------------ drawing
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		graphics.fill(this.left, this.top, this.left + this.panelWidth, this.top + this.panelHeight, Theme.FRAME);
 		HugoStyle.drawOutline(graphics, this.left, this.top, this.panelWidth, this.panelHeight, Theme.FRAME_BORDER);
 		graphics.fill(this.left + 1, this.top + 1, this.left + this.panelWidth - 1, this.top + 3, this.accent);
@@ -185,12 +185,12 @@ public abstract class PanelScreen extends Screen implements StyledScreen {
 		graphics.pose().pushMatrix();
 		graphics.pose().translate(this.left + PAD, this.top + 9);
 		graphics.pose().scale(1.5f, 1.5f);
-		graphics.drawString(this.font, this.title, 0, 0, Theme.WHITE, false);
+		graphics.text(this.font, this.title, 0, 0, Theme.WHITE, false);
 		graphics.pose().popMatrix();
-		graphics.drawString(this.font, this.subtitle(), this.left + PAD, this.top + 24, Theme.MUTED, false);
+		graphics.text(this.font, this.subtitle(), this.left + PAD, this.top + 24, Theme.MUTED, false);
 		String status = this.status();
 		if (!status.isEmpty()) {
-			graphics.drawString(this.font, status, this.left + this.panelWidth - PAD - this.font.width(status), this.top + 12, this.statusColor(), false);
+			graphics.text(this.font, status, this.left + this.panelWidth - PAD - this.font.width(status), this.top + 12, this.statusColor(), false);
 		}
 
 		this.renderTabs(graphics, mouseX, mouseY);
@@ -201,13 +201,13 @@ public abstract class PanelScreen extends Screen implements StyledScreen {
 		graphics.fill(this.left + 6, this.listTop - 2, this.left + this.panelWidth - 6, this.listTop - 1, Theme.SECTION_BORDER);
 		Row hovered = this.renderList(graphics, mouseX, mouseY);
 		this.footerButtons.forEach((button, footer) -> button.setMessage(Component.literal(footer.label().get())));
-		super.render(graphics, mouseX, mouseY, partialTick);
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 		if (hovered != null && !hovered.tooltip().isEmpty()) {
 			graphics.setComponentTooltipForNextFrame(this.font, hovered.tooltip(), mouseX, mouseY);
 		}
 	}
 
-	private void renderTabs(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderTabs(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		int x = this.left + PAD;
 		int y = this.top + HEADER;
 		for (int i = 0; i < this.tabs.size(); i++) {
@@ -217,19 +217,19 @@ public abstract class PanelScreen extends Screen implements StyledScreen {
 			boolean over = mouseX >= x && mouseX < x + width && mouseY >= y && mouseY < y + TAB_H;
 			graphics.fill(x, y, x + width, y + TAB_H, selected ? Theme.GOLD_FILL : over ? 0xF0303030 : 0xF0181818);
 			HugoStyle.drawOutline(graphics, x, y, width, TAB_H, selected ? Theme.GOLD : Theme.CHIP_BORDER);
-			graphics.drawString(this.font, label, x + 6, y + 3, selected ? Theme.WHITE : Theme.TEXT_DIM, false);
+			graphics.text(this.font, label, x + 6, y + 3, selected ? Theme.WHITE : Theme.TEXT_DIM, false);
 			x += width + 4;
 		}
 	}
 
-	private Row renderList(GuiGraphics graphics, int mouseX, int mouseY) {
+	private Row renderList(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		List<? extends Row> rows = this.rows();
 		int rowHeight = this.rowHeight();
 		int visible = this.listBottom - this.listTop;
 		int content = rows.size() * rowHeight;
 		this.scroll = Mth.clamp(this.scroll, 0, Math.max(0, content - visible));
 		if (rows.isEmpty()) {
-			graphics.drawCenteredString(this.font, this.emptyText(), this.left + this.panelWidth / 2, this.listTop + visible / 2 - 4, Theme.MUTED);
+			graphics.centeredText(this.font, this.emptyText(), this.left + this.panelWidth / 2, this.listTop + visible / 2 - 4, Theme.MUTED);
 			return null;
 		}
 		int x = this.left + 6;
@@ -347,7 +347,7 @@ public abstract class PanelScreen extends Screen implements StyledScreen {
 
 	@Override
 	public void onClose() {
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	@Override
@@ -358,14 +358,14 @@ public abstract class PanelScreen extends Screen implements StyledScreen {
 	// ------------------------------------------------------------------ helpers for rows
 
 	/** Draws text cut to a width with an ellipsis. */
-	public static void clipped(GuiGraphics graphics, Font font, String text, int x, int y, int width, int color) {
+	public static void clipped(GuiGraphicsExtractor graphics, Font font, String text, int x, int y, int width, int color) {
 		if (font.width(text) > width) {
 			text = font.plainSubstrByWidth(text, Math.max(0, width - font.width("…"))) + "…";
 		}
-		graphics.drawString(font, text, x, y, color, false);
+		graphics.text(font, text, x, y, color, false);
 	}
 
-	public static void right(GuiGraphics graphics, Font font, String text, int rightX, int y, int color) {
-		graphics.drawString(font, text, rightX - font.width(text), y, color, false);
+	public static void right(GuiGraphicsExtractor graphics, Font font, String text, int rightX, int y, int color) {
+		graphics.text(font, text, rightX - font.width(text), y, color, false);
 	}
 }

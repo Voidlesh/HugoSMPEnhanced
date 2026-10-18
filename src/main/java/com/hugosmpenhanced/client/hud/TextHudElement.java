@@ -1,7 +1,7 @@
 package com.hugosmpenhanced.client.hud;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /** A HUD element drawn as a {@link HudText} box; subclasses only say what goes in it. */
 public abstract class TextHudElement implements HudElement {
@@ -27,7 +27,7 @@ public abstract class TextHudElement implements HudElement {
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, Font font, boolean preview) {
+	public void render(GuiGraphicsExtractor graphics, Font font, boolean preview) {
 		HudText text = this.build(preview);
 		if (text != null) {
 			text.render(graphics, font);

@@ -9,7 +9,7 @@ import com.hugosmpenhanced.client.hud.HudElement;
 import com.hugosmpenhanced.client.hud.HudPos;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 
 /**
  * The AFK farm's status pill: a coloured dot, the state and the session's sales and income. It only
@@ -128,7 +128,7 @@ public final class SellHud implements HudElement {
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, Font font, boolean preview) {
+	public void render(GuiGraphicsExtractor graphics, Font font, boolean preview) {
 		Content content = content(preview);
 		if (content == null) {
 			return;
@@ -148,11 +148,11 @@ public final class SellHud implements HudElement {
 		List<Part> parts = content.parts();
 		for (int i = 0; i < parts.size(); i++) {
 			if (i > 0) {
-				graphics.drawString(font, SEPARATOR, tx, y + 4, SEP, false);
+				graphics.text(font, SEPARATOR, tx, y + 4, SEP, false);
 				tx += font.width(SEPARATOR);
 			}
 			Part part = parts.get(i);
-			graphics.drawString(font, part.text(), tx, y + 4, part.color(), true);
+			graphics.text(font, part.text(), tx, y + 4, part.color(), true);
 			tx += font.width(part.text());
 		}
 		int fill = content.fill();
