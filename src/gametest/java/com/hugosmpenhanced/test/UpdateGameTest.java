@@ -40,6 +40,9 @@ import net.minecraft.world.level.levelgen.presets.WorldPresets;
  */
 @SuppressWarnings("UnstableApiUsage")
 public class UpdateGameTest implements FabricClientGameTest {
+	/** The running game, so the fixture jars depend on the version this client actually has. */
+	private static final String GAME_VERSION = net.minecraft.SharedConstants.getCurrentVersion().name();
+
 	private static final String CHANGELOG = """
 		## Neu
 		- **Update-Hinweis**: neue Versionen erscheinen im Hauptmenü, mit Klick installieren
@@ -99,8 +102,8 @@ public class UpdateGameTest implements FabricClientGameTest {
 				}
 			}
 			// stands in for the installed mod: the helper runs from a copy of it
-			Files.write(oldJar, jar("0.1.0-alpha", "1.21.11", true));
-			byte[] good = jar("9.9.9", "1.21.11", false);
+			Files.write(oldJar, jar("0.1.0-alpha", GAME_VERSION, true));
+			byte[] good = jar("9.9.9", GAME_VERSION, false);
 			byte[] future = jar("9.9.10", "1.22", false);
 			this.files.put("/dl/hugosmpenhanced-9.9.9.jar", good);
 			this.files.put("/dl/hugosmpenhanced-9.9.10.jar", future);

@@ -1182,9 +1182,9 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 				if (this.pickingEnd >= 0) {
 					LEGACY_SLOTS[this.pickingEnd] = PALETTE[i];
 					this.pickingEnd = -1;
-				} else if (button == 1 && ColorCodes.legacy()) {
+				} else if (button == InputConstants.MOUSE_BUTTON_RIGHT && ColorCodes.legacy()) {
 					LEGACY_SLOTS[0] = PALETTE[i];
-				} else if (button == 1) {
+				} else if (button == InputConstants.MOUSE_BUTTON_RIGHT) {
 					this.setPicked(Formats.color(PALETTE[i]) & 0xFFFFFF);
 					this.loadSlot();
 				} else {
@@ -1337,7 +1337,7 @@ public class ColorCodeScreen extends Screen implements StyledScreen {
 					this.deleteArmed = index;
 					this.deleteUntil = System.currentTimeMillis() + 3000;
 				}
-			} else if (inside(mx, my, left + width - 28, rowY, 12, ROW - 1) || button == 1) {
+			} else if (inside(mx, my, left + width - 28, rowY, 12, ROW - 1) || button == InputConstants.MOUSE_BUTTON_RIGHT) {
 				this.applyTemplateStyle(template);
 			} else {
 				this.loadTemplate(template);

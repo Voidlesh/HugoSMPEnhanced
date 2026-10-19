@@ -79,7 +79,7 @@ public class KeyBindOption extends SettingsOption {
 
 	@Override
 	protected boolean clickControl(double mouseX, double mouseY, int button) {
-		if (button != 0 || this.mapping.get() == null) {
+		if (button != InputConstants.MOUSE_BUTTON_LEFT || this.mapping.get() == null) {
 			return false;
 		}
 		this.listening = !this.listening;

@@ -34,6 +34,8 @@ import net.minecraft.world.phys.Vec3;
  */
 @SuppressWarnings("UnstableApiUsage")
 public class QolGameTest implements FabricClientGameTest {
+	private static final java.util.concurrent.atomic.AtomicInteger FAKE_ID = new java.util.concurrent.atomic.AtomicInteger(900000);
+
 	@Override
 	public void runTest(ClientGameTestContext context) {
 		HugoGuard.fetchAll();
@@ -183,6 +185,7 @@ public class QolGameTest implements FabricClientGameTest {
 		RemotePlayer player = new RemotePlayer(client.level, new GameProfile(uuid, name));
 		player.snapTo(at.x, at.y, at.z, yaw, 0);
 		player.setYHeadRot(yaw);
+		player.setId(FAKE_ID.getAndIncrement());
 		client.level.addEntity(player);
 	}
 }

@@ -82,7 +82,7 @@ public class KeyboardGalleryGameTest implements FabricClientGameTest {
 			context.waitTicks(20);
 			context.takeScreenshot("gallery-grid");
 			context.runOnClient(client -> client.gui.screen().mouseClicked(
-				new net.minecraft.client.input.MouseButtonEvent(30, 30, new net.minecraft.client.input.MouseButtonInfo(0, 0)), false));
+				new net.minecraft.client.input.MouseButtonEvent(30, 30, new net.minecraft.client.input.MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0)), false));
 			context.waitTicks(20);
 			context.takeScreenshot("gallery-viewer");
 			context.clickScreenButton("Kopieren");

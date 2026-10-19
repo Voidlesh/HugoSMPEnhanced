@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.settings.option;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.function.BiConsumer;
 import java.util.function.Function;
 
@@ -45,7 +46,7 @@ public class CycleOption<E extends Enum<E> & Labeled> extends ValueOption<E> {
 
 	@Override
 	protected boolean clickControl(double mouseX, double mouseY, int button) {
-		int index = this.get().ordinal() + (button == 1 ? -1 : 1);
+		int index = this.get().ordinal() + (button == InputConstants.MOUSE_BUTTON_RIGHT ? -1 : 1);
 		this.set(this.values[Math.floorMod(index, this.values.length)]);
 		this.save();
 		return true;

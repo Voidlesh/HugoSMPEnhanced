@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.settings.option;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -103,7 +104,7 @@ public class PillsOption extends SettingsOption {
 
 	@Override
 	protected boolean clickControl(double mouseX, double mouseY, int button) {
-		if (this.belowOrigin == null || button != 0) {
+		if (this.belowOrigin == null || button != InputConstants.MOUSE_BUTTON_LEFT) {
 			return false;
 		}
 		Font font = Minecraft.getInstance().font;

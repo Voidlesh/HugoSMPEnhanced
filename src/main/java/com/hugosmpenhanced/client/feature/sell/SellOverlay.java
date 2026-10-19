@@ -126,7 +126,7 @@ public final class SellOverlay {
 
 	private static boolean allowClick(AbstractContainerScreen<?> screen, MouseButtonEvent event) {
 		if (screen == SellEngine.boundScreen()) {
-			if (SellEngine.state() == SellEngine.State.CONFIRM && event.button() == 0) {
+			if (SellEngine.state() == SellEngine.State.CONFIRM && event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
 				if (inside(confirmBox, event.x(), event.y())) {
 					SellEngine.confirm();
 					return false;
@@ -146,11 +146,11 @@ public final class SellOverlay {
 		if (slot == null || !(slot.container instanceof Inventory) || slot.getContainerSlot() >= SellPlan.MAIN_END) {
 			return true;
 		}
-		if (event.button() == 0 && slot.hasItem()) {
+		if (event.button() == InputConstants.MOUSE_BUTTON_LEFT && slot.hasItem()) {
 			toggleRule(slot.getItem());
 			return false;
 		}
-		if (event.button() == 1) {
+		if (event.button() == InputConstants.MOUSE_BUTTON_RIGHT) {
 			toggleLock(slot.getContainerSlot());
 			return false;
 		}
