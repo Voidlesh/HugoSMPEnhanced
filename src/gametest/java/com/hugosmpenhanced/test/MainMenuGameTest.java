@@ -7,6 +7,8 @@ import com.hugosmpenhanced.client.feature.mainmenu.MainMenuLayout;
 import com.hugosmpenhanced.client.feature.mainmenu.MenuButton;
 import com.hugosmpenhanced.client.feature.mainmenu.SplashAnimation;
 
+import com.mojang.blaze3d.platform.InputConstants;
+
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.minecraft.client.gui.components.events.GuiEventListener;
@@ -36,7 +38,7 @@ public class MainMenuGameTest implements FabricClientGameTest {
 			for (GuiEventListener child : client.gui.screen().children()) {
 				if (child instanceof MenuButton button && button.getMessage().getString().startsWith("⇄")) {
 					client.gui.screen().mouseClicked(new MouseButtonEvent(button.getX() + 2, button.getY() + 2,
-							new MouseButtonInfo(0, 0)), false);
+							new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0)), false);
 					return;
 				}
 			}

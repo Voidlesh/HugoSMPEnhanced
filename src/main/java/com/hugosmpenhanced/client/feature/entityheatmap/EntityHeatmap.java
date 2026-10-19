@@ -76,6 +76,7 @@ public final class EntityHeatmap {
 				}
 			}
 			cells = shown && ModConfigManager.CONFIG.entityHeatmapEnabled ? collect(client) : List.of();
+			warmGlyphs(client.font, cells);
 		});
 
 		LevelRenderEvents.AFTER_TRANSLUCENT_TERRAIN.register(EntityHeatmap::render);
@@ -83,6 +84,28 @@ public final class EntityHeatmap {
 
 	/** One block position and what stands in it. */
 	public record Cell(BlockPos pos, double floorY, double topY, int total, int mobs, List<Group> groups) {
+	}
+
+	/**
+	 * Measures every label on the tick. Glyphs that are not in the font atlas yet get uploaded when they are
+	 * first measured, and that is not allowed inside the level's render pass, so the render only ever finds
+	 * glyphs that are already there.
+	 */
+	private static void warmGlyphs(Font font, List<Cell> cells) {
+		for (Cell cell : cells) {
+			font.width(String.valueOf(cell.total()));
+			if (cell.groups().size() > 1) {
+				for (Group group : cell.groups()) {
+					font.width(detailLine(group));
+				}
+			}
+		}
+	}
+
+	/** Drops are listed by stack size, mobs by head count. */
+	private static String detailLine(Group group) {
+		int amount = group.items() > 0 ? group.items() : group.count();
+		return amount + "× " + group.name().getString();
 	}
 
 	/** One mob type or item in a cell. */
@@ -225,10 +248,7 @@ public final class EntityHeatmap {
 			List<FormattedCharSequence> details = new ArrayList<>();
 			if (cell.groups().size() > 1) {
 				for (Group group : cell.groups()) {
-					// Drops are listed by stack size, mobs by head count.
-					int amount = group.items() > 0 ? group.items() : group.count();
-					String line = amount + "× " + group.name().getString();
-					details.add(Component.literal(line).getVisualOrderText());
+					details.add(Component.literal(detailLine(group)).getVisualOrderText());
 				}
 			}
 			float detailHeight = details.size() * 10 * PIXEL * DETAIL_SCALE;

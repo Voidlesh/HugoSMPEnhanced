@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.settings.option;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.hugosmpenhanced.client.settings.SettingsOption;
 import com.hugosmpenhanced.client.settings.Theme;
 
@@ -77,7 +78,7 @@ public class ButtonOption extends SettingsOption {
 
 	@Override
 	protected boolean clickControl(double mouseX, double mouseY, int button) {
-		if (button != 0) {
+		if (button != InputConstants.MOUSE_BUTTON_LEFT) {
 			return false;
 		}
 		if (this.danger) {

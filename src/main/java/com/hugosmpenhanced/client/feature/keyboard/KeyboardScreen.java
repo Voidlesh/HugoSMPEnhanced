@@ -250,7 +250,7 @@ public class KeyboardScreen extends Screen implements StyledScreen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-		if (event.button() == 0) {
+		if (event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
 			KeyDef def = this.keyAt(event.x(), event.y());
 			if (def != null) {
 				this.select(def.key());

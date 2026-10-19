@@ -330,7 +330,7 @@ public class GalleryScreen extends Screen implements StyledScreen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-		if (this.viewing < 0 && event.button() == 0) {
+		if (this.viewing < 0 && event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
 			int index = this.fileAt(event.x(), event.y());
 			if (index >= 0) {
 				this.view(index);

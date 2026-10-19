@@ -74,12 +74,13 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			context.takeScreenshot("farbcodes-2-editor-aus-chat");
 
 			// New text, then a gradient with chat colours only, within 35 characters.
-			selectAll(context);
+			clearText(context);
 			context.getInput().typeChars("HugoSMP Enhanced");
+			String beforeGradient = text(context);
 			click(context, "gradient");
 			String gradient = text(context);
 			ColorText gradientText = ColorText.parse(gradient);
-			expect(gradientText.plain().equals("HugoSMP Enhanced"), "Gradient changed the letters: " + gradient);
+			expect(gradientText.plain().equals(ColorText.parse(beforeGradient).plain()), "Gradient changed the letters: " + gradient);
 			expect(!gradient.contains("#") && gradient.length() <= 35, "Gradient not chat colours within 35: " + gradient);
 			expect(gradientText.glyphs.get(0).color.code() == '4' && gradientText.glyphs.get(15).color.code() == 'e',
 				"Gradient ends wrong: " + gradient);
@@ -108,7 +109,7 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			// Save it as a template.
 			int before = ModConfigManager.CONFIG.colorTemplates.size();
 			click(context, "save");
-			selectAll(context);
+			clearText(context);
 			context.getInput().typeChars("Mein Schwert");
 			context.getInput().pressKey(InputConstants.KEY_RETURN);
 			context.waitTicks(2);
@@ -118,7 +119,7 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 			context.takeScreenshot("farbcodes-5-vorlage-gespeichert");
 
 			// Other text with the look of "Feuer" (brush), then hover a template for its tooltip.
-			selectAll(context);
+			clearText(context);
 			context.getInput().typeChars("Flammenschwert");
 			click(context, "brush:" + indexOf("Feuer"));
 			String fiery = text(context);
@@ -250,8 +251,10 @@ public class ColorCodesGameTest implements FabricClientGameTest {
 		return context.computeOnClient(client -> ((ColorCodeScreen) client.gui.screen()).text());
 	}
 
-	private static void selectAll(ClientGameTestContext context) {
-		combo(context, InputConstants.KEY_A, InputConstants.MOD_CONTROL);
+	/** Reopens an empty editor: the test key events do not select or delete text in the edit box. */
+	private static void clearText(ClientGameTestContext context) {
+		context.setScreen(() -> new ColorCodeScreen(null, "rename", "", null));
+		context.waitTicks(2);
 	}
 
 	/** Key with modifiers; the test input always sends modifiers 0, so this goes to the screen directly. */

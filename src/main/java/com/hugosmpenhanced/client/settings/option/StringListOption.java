@@ -137,7 +137,7 @@ public class StringListOption extends ValueOption<List<String>> {
 
 	@Override
 	protected boolean clickControl(double mouseX, double mouseY, int button) {
-		if (this.origin == null || button != 0) {
+		if (this.origin == null || button != InputConstants.MOUSE_BUTTON_LEFT) {
 			return false;
 		}
 		Font font = Minecraft.getInstance().font;

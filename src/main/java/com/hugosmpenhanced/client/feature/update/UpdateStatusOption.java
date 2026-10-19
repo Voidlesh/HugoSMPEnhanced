@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.feature.update;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import com.hugosmpenhanced.client.settings.SettingsOption;
 import com.hugosmpenhanced.client.settings.Theme;
 
@@ -79,7 +80,7 @@ public class UpdateStatusOption extends SettingsOption {
 		int w = buttonWidth(font);
 		int right = this.x + this.width - PAD;
 		int centerY = this.y + this.height / 2;
-		if (button != 0 || !buttonActive() || !this.inside(mouseX, mouseY, right - w, centerY - 7, w, 15)) {
+		if (button != InputConstants.MOUSE_BUTTON_LEFT || !buttonActive() || !this.inside(mouseX, mouseY, right - w, centerY - 7, w, 15)) {
 			return false;
 		}
 		ModUpdates.Release release = ModUpdates.available();

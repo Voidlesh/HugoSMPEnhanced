@@ -1,5 +1,6 @@
 package com.hugosmpenhanced.client.settings.option;
 
+import com.mojang.blaze3d.platform.InputConstants;
 import java.util.function.BiConsumer;
 import java.util.function.DoubleFunction;
 import java.util.function.DoubleSupplier;
@@ -92,7 +93,7 @@ public class SliderOption extends ValueOption<Double> {
 	@Override
 	protected boolean clickControl(double mouseX, double mouseY, int button) {
 		int left = this.trackLeft();
-		if (button != 0 || mouseX < left - 4 || mouseX > left + TRACK + 4) {
+		if (button != InputConstants.MOUSE_BUTTON_LEFT || mouseX < left - 4 || mouseX > left + TRACK + 4) {
 			return false;
 		}
 		this.dragging = true;

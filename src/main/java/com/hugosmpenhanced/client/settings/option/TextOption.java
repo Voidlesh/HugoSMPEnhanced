@@ -73,7 +73,7 @@ public class TextOption extends ValueOption<String> {
 
 	@Override
 	protected boolean clickControl(double mouseX, double mouseY, int button) {
-		if (this.field == null || button != 0 || !this.inside(mouseX, mouseY, this.field[0], this.field[1], this.field[2], H)) {
+		if (this.field == null || button != InputConstants.MOUSE_BUTTON_LEFT || !this.inside(mouseX, mouseY, this.field[0], this.field[1], this.field[2], H)) {
 			return false;
 		}
 		if (this.input == null) {

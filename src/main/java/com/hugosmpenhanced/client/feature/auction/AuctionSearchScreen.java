@@ -207,7 +207,7 @@ public class AuctionSearchScreen extends Screen implements StyledScreen {
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
 		int index = this.rowAt(event.x(), event.y());
-		if (index >= 0 && event.button() == 0) {
+		if (index >= 0 && event.button() == InputConstants.MOUSE_BUTTON_LEFT) {
 			Row row = this.rows.get(index);
 			if (row.kind() != Kind.QUERY && event.x() >= this.starX()) {
 				AuctionSearch.toggleFavorite(row.send());
