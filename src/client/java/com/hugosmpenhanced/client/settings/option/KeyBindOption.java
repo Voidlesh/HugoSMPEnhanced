@@ -23,6 +23,8 @@ import net.minecraft.network.chat.Component;
 public class KeyBindOption extends SettingsOption {
 	private final Supplier<KeyMapping> mapping;
 	private boolean listening;
+	/** The "Auch belegt" note while the mouse is on the key box, drawn by the screen as a tooltip. */
+	private Component conflictNote;
 
 	public KeyBindOption(String label, String description, Supplier<KeyMapping> mapping) {
 		super(label, description);
@@ -71,11 +73,15 @@ public class KeyBindOption extends SettingsOption {
 		KeyMapping conflict = this.listening ? null : this.conflict();
 		int color = this.listening ? Theme.GOLD : conflict != null ? Theme.RED_TEXT : Theme.WHITE;
 		graphics.drawString(font, this.keyText(), left + 5, centerY - 3, color, false);
-		if (conflict != null && over) {
-			graphics.setTooltipForNextFrame(font, Component.literal("Auch belegt: ").append(Component.translatable(conflict.getName()))
-				.append(" (" + conflict.getCategory().label().getString() + ")"),
-				mouseX, mouseY);
-		}
+		this.conflictNote = conflict != null && over
+			? Component.literal("Auch belegt: ").append(Component.translatable(conflict.getName()))
+				.append(" (" + conflict.getCategory().label().getString() + ")")
+			: null;
+	}
+
+	@Override
+	public Component tooltip() {
+		return this.conflictNote;
 	}
 
 	@Override

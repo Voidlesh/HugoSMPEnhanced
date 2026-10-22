@@ -119,7 +119,8 @@ public class SettingsGameTest implements FabricClientGameTest {
 		// A side mouse button can be bound too.
 		clickGui(context, key[0] + key[2] - 14, key[1] + key[3] / 2.0);
 		context.runOnClient(client -> {
-			MouseButtonEvent side = new MouseButtonEvent(key[0] + 10, key[1] + 5, new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_4, 0));
+			double scale = ((SettingsScreen) client.screen).layoutScale();
+			MouseButtonEvent side = new MouseButtonEvent((key[0] + 10) * scale, (key[1] + 5) * scale, new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_4, 0));
 			client.screen.mouseClicked(side, false);
 			client.screen.mouseReleased(side);
 			check(SettingsFeature.openKey.saveString().startsWith("key.mouse."), "mouse button 4 was not bound: " + SettingsFeature.openKey.saveString());
@@ -129,10 +130,12 @@ public class SettingsGameTest implements FabricClientGameTest {
 		context.setScreen(() -> null);
 	}
 
+	/** Clicks where the settings menu drew something, given in its layout units (see SettingsScreen). */
 	private static void clickGui(ClientGameTestContext context, double x, double y) {
 		context.runOnClient(client -> {
-			client.screen.mouseClicked(click(x, y), false);
-			client.screen.mouseReleased(click(x, y));
+			double scale = ((SettingsScreen) client.screen).layoutScale();
+			client.screen.mouseClicked(click(x * scale, y * scale), false);
+			client.screen.mouseReleased(click(x * scale, y * scale));
 		});
 	}
 
