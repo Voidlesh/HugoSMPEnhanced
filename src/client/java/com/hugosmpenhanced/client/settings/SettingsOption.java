@@ -133,6 +133,11 @@ public abstract class SettingsOption {
 		return new int[] {resetX, centerY - 2};
 	}
 
+	/** A tooltip for the row under the mouse, or null. Drawn by the screen, so it lands where the mouse is. */
+	public Component tooltip() {
+		return null;
+	}
+
 	protected boolean inside(double mouseX, double mouseY, int left, int top, int w, int h) {
 		return mouseX >= left && mouseX < left + w && mouseY >= top && mouseY < top + h;
 	}

@@ -18,6 +18,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.CharacterEvent;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
+import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.Mth;
 
@@ -30,6 +31,14 @@ public class SettingsScreen extends Screen implements StyledScreen {
 	private static final int SECTION_TITLE = 16;
 	private static final int SECTION_GAP = 6;
 	private static final int CATEGORY_ROW = 24;
+	/**
+	 * The menu is laid out in its own units, MAX_WIDTH by MAX_HEIGHT of them, and each unit is this many
+	 * screen pixels. So the menu looks the same at every GUI scale: only a window that is too small for
+	 * it makes it smaller, and then in half steps of this.
+	 */
+	private static final double PIXELS_PER_UNIT = 2;
+	private static final int MAX_WIDTH = 620;
+	private static final int MAX_HEIGHT = 360;
 	/** Row height in the sidebar; smaller when the window is too low for all categories. */
 	private int categoryRow = CATEGORY_ROW;
 
@@ -45,7 +54,11 @@ public class SettingsScreen extends Screen implements StyledScreen {
 	private String searchValue = "";
 	private SettingsOption active;
 
-	// layout, recomputed in init()
+	// layout, recomputed in init(); the layout is in units, see PIXELS_PER_UNIT
+	/** GUI units per layout unit, so the screen's GUI size times this is the layout size. */
+	private double scale = 1;
+	private int layoutWidth;
+	private int layoutHeight;
 	private int fx;
 	private int fy;
 	private int fw;
@@ -102,10 +115,16 @@ public class SettingsScreen extends Screen implements StyledScreen {
 
 	@Override
 	protected void init() {
-		this.fw = Math.min(this.width - 12, 620);
-		this.fh = Math.min(this.height - 12, 360);
-		this.fx = (this.width - this.fw) / 2;
-		this.fy = (this.height - this.fh) / 2;
+		double guiScale = this.minecraft.getWindow().getGuiScale();
+		double pixelsPerUnit = Math.max(1, Math.min(PIXELS_PER_UNIT,
+			Math.floor(Math.min((this.width * guiScale - 24) / MAX_WIDTH, (this.height * guiScale - 24) / MAX_HEIGHT) * 2) / 2));
+		this.scale = pixelsPerUnit / guiScale;
+		this.layoutWidth = (int) (this.width * guiScale / pixelsPerUnit);
+		this.layoutHeight = (int) (this.height * guiScale / pixelsPerUnit);
+		this.fw = Math.min(this.layoutWidth - 12, MAX_WIDTH);
+		this.fh = Math.min(this.layoutHeight - 12, MAX_HEIGHT);
+		this.fx = (this.layoutWidth - this.fw) / 2;
+		this.fy = (this.layoutHeight - this.fh) / 2;
 		this.compact = this.fw < 380;
 		int widest = 0;
 		for (SettingsCategory cat : ModSettings.categories()) {
@@ -182,7 +201,12 @@ public class SettingsScreen extends Screen implements StyledScreen {
 	// ------------------------------------------------------------------ rendering
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	public void render(GuiGraphics graphics, int guiMouseX, int guiMouseY, float partialTick) {
+		// Everything below is drawn and hit-tested in layout units; the pose scales it to the screen.
+		int mouseX = (int) (guiMouseX / this.scale);
+		int mouseY = (int) (guiMouseY / this.scale);
+		graphics.pose().pushMatrix();
+		graphics.pose().scale((float) this.scale, (float) this.scale);
 		Theme.panel(graphics, this.fx, this.fy, this.fw, this.fh, Theme.FRAME, Theme.FRAME_BORDER);
 		this.renderSidebar(graphics, mouseX, mouseY);
 		List<SettingsSection> sections = this.sections();
@@ -193,7 +217,18 @@ public class SettingsScreen extends Screen implements StyledScreen {
 			footer = "Wird sofort gespeichert  -  ESC schließt";
 		}
 		graphics.drawString(this.font, footer, this.contentLeft, this.fy + this.fh - 12, Theme.FAINT, false);
-		super.render(graphics, mouseX, mouseY, partialTick);
+		super.render(graphics, guiMouseX, guiMouseY, partialTick);
+		graphics.pose().popMatrix();
+	}
+
+	/** GUI units per layout unit: a click at a layout position is at this many GUI units times it. */
+	public double layoutScale() {
+		return this.scale;
+	}
+
+	/** Shows a tooltip at a layout position; tooltips are placed in screen pixels, so this converts. */
+	private void tooltip(GuiGraphics graphics, Component text, int x, int y) {
+		graphics.setTooltipForNextFrame(this.font, text, (int) Math.round(x * this.scale), (int) Math.round(y * this.scale));
 	}
 
 	private void renderSidebar(GuiGraphics graphics, int mouseX, int mouseY) {
@@ -228,7 +263,7 @@ public class SettingsScreen extends Screen implements StyledScreen {
 				graphics.drawString(this.font, this.font.plainSubstrByWidth(cat.name(), right - left - 34), left + 30, y + (this.categoryRow - 10) / 2,
 					selected ? Theme.WHITE : Theme.TEXT_DIM);
 			} else if (over) {
-				graphics.setTooltipForNextFrame(this.font, Component.literal(cat.name()), mouseX, mouseY);
+				this.tooltip(graphics, Component.literal(cat.name()), mouseX, mouseY);
 			}
 		}
 
@@ -305,7 +340,7 @@ public class SettingsScreen extends Screen implements StyledScreen {
 				}
 				graphics.drawString(this.font, name, tx, ty, selected ? Theme.WHITE : over ? Theme.TEXT : Theme.MUTED, selected);
 				if (over && !name.equals(full)) {
-					graphics.setTooltipForNextFrame(this.font, Component.literal(full), mouseX, mouseY);
+					this.tooltip(graphics, Component.literal(full), mouseX, mouseY);
 				}
 				this.tabBoxes.add(new int[] {tx - 5, ty - 4, w + 10, 16});
 				tx += w + gap;
@@ -367,7 +402,12 @@ public class SettingsScreen extends Screen implements StyledScreen {
 		int rowY = y + SECTION_TITLE;
 		for (SettingsOption option : section.options()) {
 			graphics.fill(this.contentLeft + 8, rowY - 1, this.contentLeft + this.contentWidth - 8, rowY, Theme.DIVIDER);
-			option.render(graphics, this.contentLeft + 2, rowY, this.contentWidth - 4, mouseX, mouseY, mouseInView && this.active == null);
+			boolean allowHover = mouseInView && this.active == null;
+			option.render(graphics, this.contentLeft + 2, rowY, this.contentWidth - 4, mouseX, mouseY, allowHover);
+			Component tip = allowHover ? option.tooltip() : null;
+			if (tip != null) {
+				this.tooltip(graphics, tip, mouseX, mouseY);
+			}
 			rowY += option.height(this.font, this.contentWidth - 4);
 		}
 	}
@@ -397,8 +437,8 @@ public class SettingsScreen extends Screen implements StyledScreen {
 
 	@Override
 	public boolean mouseClicked(MouseButtonEvent event, boolean doubleClick) {
-		double mx = event.x();
-		double my = event.y();
+		double mx = event.x() / this.scale;
+		double my = event.y() / this.scale;
 		int button = event.button();
 
 		SettingsOption capturing = this.capturingOption();
@@ -438,7 +478,7 @@ public class SettingsScreen extends Screen implements StyledScreen {
 			this.stopCapturing(null);
 			this.setFocused(this.search);
 			this.search.setFocused(true);
-			super.mouseClicked(event, doubleClick);
+			this.search.mouseClicked(new MouseButtonEvent(mx, my, new MouseButtonInfo(button, 0)), doubleClick);
 			return true;
 		}
 		this.search.setFocused(false);
@@ -455,12 +495,12 @@ public class SettingsScreen extends Screen implements StyledScreen {
 			}
 		}
 		this.stopCapturing(null);
-		return super.mouseClicked(event, doubleClick);
+		return false;
 	}
 
 	@Override
 	public boolean mouseDragged(MouseButtonEvent event, double dragX, double dragY) {
-		if (this.active != null && this.active.mouseDragged(event.x(), event.y())) {
+		if (this.active != null && this.active.mouseDragged(event.x() / this.scale, event.y() / this.scale)) {
 			return true;
 		}
 		return super.mouseDragged(event, dragX, dragY);
@@ -477,7 +517,8 @@ public class SettingsScreen extends Screen implements StyledScreen {
 
 	@Override
 	public boolean mouseScrolled(double mouseX, double mouseY, double scrollX, double scrollY) {
-		if (mouseY >= this.contentTop && mouseY < this.contentBottom) {
+		double layoutY = mouseY / this.scale;
+		if (layoutY >= this.contentTop && layoutY < this.contentBottom) {
 			this.scroll -= scrollY * 24;
 			return true;
 		}
