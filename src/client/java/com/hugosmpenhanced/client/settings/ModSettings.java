@@ -457,6 +457,9 @@ public final class ModSettings {
 						c -> c.hugoGuardTrusted, (c, v) -> c.hugoGuardTrusted = v),
 					toggle("Leuchten (nur in Sicht)", "Roter bzw. grüner Schimmer, von Wänden verdeckt",
 						c -> c.hugoGuardGlow, (c, v) -> c.hugoGuardGlow = v)),
+				new SettingsSection("Fake-Clans",
+					toggle("Fake-Clan-Warnung", "Markiert Spieler, deren Clan-Tag einem echten Clan ähnelt oder manuell als Fake eingetragen ist",
+						c -> c.fakeClanWarning, (c, v) -> c.fakeClanWarning = v).keywords("fake clan tag")),
 				new SettingsSection("Warnungen",
 					new PillsOption("Wo gewarnt wird", null)
 						.pill("Über dem Kopf", c -> c.hugoGuardOverhead, (c, v) -> c.hugoGuardOverhead = v)

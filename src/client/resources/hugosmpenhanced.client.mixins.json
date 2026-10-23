@@ -22,6 +22,7 @@
 		"AbstractContainerScreenAccessor",
 		"GuiGraphicsStyleMixin",
 		"HugoGuardNametagMixin",
+		"FakeClanNametagMixin",
 		"HugoGuardChatMixin",
 		"MentionChatMixin",
 		"SideChatHideMixin",

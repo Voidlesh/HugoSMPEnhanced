@@ -115,6 +115,10 @@ public class ModConfig {
 	public boolean hugoGuardTpa = true;
 	public boolean hugoGuardTrusted = true;
 	public boolean hugoGuardGlow = true;
+	// Fake-Clan-Warnung (nur HugoSMP): echte Clans und manuell markierte Fake-Clans, nur die Namen ohne Klammern
+	public boolean fakeClanWarning = true;
+	public List<String> fakeClanReal = new ArrayList<>();
+	public List<String> fakeClanFake = new ArrayList<>();
 	// Chat-Rechner
 	public boolean chatCalculatorEnabled = true;
 	// Farbcode-Editor (/rename, /sign)
