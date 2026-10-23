@@ -6,6 +6,7 @@ import java.util.regex.Pattern;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.hugoguard.HugoGuard;
 import com.hugosmpenhanced.client.feature.hugoguard.HugoGuardChat;
+import com.hugosmpenhanced.client.feature.messages.MessageLog;
 import com.hugosmpenhanced.client.util.ServerCheck;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
@@ -27,11 +28,21 @@ public final class TpaRequestHandler {
 	}
 
 	public static void handleSystemMessage(String message) {
-		if (!ModConfigManager.CONFIG.tpaToastEnabled || !ServerCheck.isHugoSmp() || isDuplicate(message)) {
+		if (!ServerCheck.isHugoSmp() || isDuplicate(message)) {
 			return;
 		}
 
 		Matcher matcher = TPA_PATTERN.matcher(message);
+		if (matcher.find()) {
+			MessageLog.note(matcher.group(1), "hat dir eine TPA-Anfrage geschickt", false);
+		} else if ((matcher = TPAHERE_PATTERN.matcher(message)).find()) {
+			MessageLog.note(matcher.group(1), "fragt, ob du zu ihm teleportierst", false);
+		}
+		if (!ModConfigManager.CONFIG.tpaToastEnabled) {
+			return;
+		}
+
+		matcher = TPA_PATTERN.matcher(message);
 		if (matcher.find()) {
 			trigger(matcher.group(1), Items.ENDER_PEARL, "hugosmpenhanced.tpa.title", "hugosmpenhanced.tpa.subtitle");
 			return;

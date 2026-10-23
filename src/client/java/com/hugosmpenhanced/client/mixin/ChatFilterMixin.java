@@ -1,7 +1,9 @@
 package com.hugosmpenhanced.client.mixin;
 
 import com.hugosmpenhanced.client.feature.chatfilter.ChatFilterService;
+import com.hugosmpenhanced.client.feature.messages.MessageFeature;
 import com.hugosmpenhanced.client.util.ServerCheck;
+import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientPacketListener;
 import net.minecraft.network.chat.Component;
 import net.minecraft.network.protocol.game.ClientboundDisguisedChatPacket;
@@ -17,6 +19,10 @@ public abstract class ChatFilterMixin {
 	@Inject(method = "handleSystemChat", at = @At("HEAD"), cancellable = true)
 	private void hugosmpenhanced$onSystemChat(ClientboundSystemChatPacket packet, CallbackInfo ci) {
 		if (ServerCheck.isHugoSmp() && ChatFilterService.shouldCancel(packet.content().getString())) {
+			// Hidden from the chat, but private messages still belong in the messages tab.
+			// The first pass runs on the network thread and cancels the packet there, so hand the text over.
+			String hidden = packet.content().getString();
+			Minecraft.getInstance().execute(() -> MessageFeature.onSystemLine(hidden));
 			ci.cancel();
 		}
 	}

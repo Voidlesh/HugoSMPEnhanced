@@ -24,6 +24,7 @@
 		"HugoGuardNametagMixin",
 		"HugoGuardChatMixin",
 		"MentionChatMixin",
+		"SideChatHideMixin",
 		"ChatCalculatorMixin",
 		"ColorChatPreviewMixin",
 		"EditBoxAccessor",
