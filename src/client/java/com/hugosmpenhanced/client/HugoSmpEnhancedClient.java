@@ -18,6 +18,7 @@ import com.hugosmpenhanced.client.feature.inventorybuttons.InventoryButtonsFeatu
 import com.hugosmpenhanced.client.feature.keyboard.KeyboardFeature;
 import com.hugosmpenhanced.client.feature.keywords.KeywordAlarm;
 import com.hugosmpenhanced.client.feature.mentions.MentionHighlightFeature;
+import com.hugosmpenhanced.client.feature.messages.MessageFeature;
 import com.hugosmpenhanced.client.feature.money.MoneyFeature;
 import com.hugosmpenhanced.client.feature.notes.NotesFeature;
 import com.hugosmpenhanced.client.feature.orders.OrdersHelper;
@@ -57,6 +58,7 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		SpawnerStorageFeature.register();
 		KeywordAlarm.register();
 		FarmFeature.register();
+		MessageFeature.register();
 		PricePerItemFeature.register();
 		AuctionSearch.register();
 		LimitedOffers.register();

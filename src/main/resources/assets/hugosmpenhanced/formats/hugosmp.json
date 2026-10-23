@@ -1,5 +1,5 @@
 {
-  "version": 1,
+  "version": 2,
   "about": "Texte und Muster von HugoSMP, die die Mod liest. Die Mod lädt diese Datei beim Start von GitHub nach, so lassen sich Erkennungen ohne neue Jar reparieren. Platzhalter: {name} = Spielername, {amount} = Geldbetrag, {count} = Zahl. Alle Muster ignorieren Groß/klein und werden auf den Text ohne Farbcodes angewendet.",
   "patterns": {
     "pay.received": [
@@ -34,6 +34,20 @@
     "order.owner": [
       "(?:von|from|ersteller|erstellt von|owner|auftraggeber|spieler|player|by)\\s*[:»]?\\s*{name}$"
     ],
+    "msg.incoming": [
+      "^\\[Nachricht]\\s*{name}\\s*(?:->|→|»|>>|➡|➜)\\s*(?:mir|me|dir|du|you|ich)\\s*[:»>|]\\s*(?<text>.+)$",
+      "^\\[Nachricht]\\s*(?:von|from)\\s+{name}\\s*[:»>|]\\s*(?<text>.+)$",
+      "^\\[Nachricht]\\s*{name}\\s*[:»>|]\\s*(?<text>.+)$",
+      "^(?:nachricht )?von {name}\\s*[:»>|]\\s*(?<text>.+)$"
+    ],
+    "msg.outgoing": [
+      "^\\[Nachricht]\\s*(?:ich|mir|me|du|you)\\s*(?:->|→|»|>>|➡|➜)\\s*{name}\\s*[:»>|]\\s*(?<text>.+)$",
+      "^\\[Nachricht]\\s*(?:an|to)\\s+{name}\\s*[:»>|]\\s*(?<text>.+)$",
+      "^\\[\\s*(?:ich|mir|me|du|you)\\s*(?:->|→|»|>>|➡|➜)\\s*{name}\\s*]\\s*[:»>]?\\s*(?<text>.+)$",
+      "^(?:nachricht )?an {name}\\s*[:»>|]\\s*(?<text>.+)$",
+      "^you whisper to {name}\\s*[:»]?\\s*(?<text>.+)$",
+      "^du flüsterst {name} zu\\s*[:»]?\\s*(?<text>.+)$"
+    ],
     "spawner.storage": [
       "(?:lager|storage|speicher|inhalt|kapazität|capacity|items)[^\\d]{0,20}(?<done>\\d[\\d.,]*)\\s*/\\s*(?<total>\\d[\\d.,]*)"
     ],
@@ -45,7 +59,8 @@
   },
   "words": {
     "pay.commands": ["pay", "zahlen", "bezahlen", "geben"],
-    "msg.commands": ["msg", "tell", "w", "whisper"],
+    "msg.commands": ["msg", "tell", "w", "whisper", "m", "t", "pm", "dm", "message", "nachricht", "pn"],
+    "msg.reply": ["r", "reply", "antwort", "antworten"],
     "menu.orders": ["order", "aufträge", "auftrag", "bestellung"],
     "menu.spawner": ["spawner"],
     "menu.auction": ["auktion", "auction", "ah"],

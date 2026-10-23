@@ -24,6 +24,9 @@ import com.hugosmpenhanced.client.feature.debug.DebugDump;
 import com.hugosmpenhanced.client.feature.farm.FarmTracker;
 import com.hugosmpenhanced.client.feature.money.MoneyScreen;
 import com.hugosmpenhanced.client.feature.money.MoneyTracker;
+import com.hugosmpenhanced.client.feature.messages.MessageFeature;
+import com.hugosmpenhanced.client.feature.messages.MessageLog;
+import com.hugosmpenhanced.client.feature.messages.MessagesScreen;
 import com.hugosmpenhanced.client.feature.pay.PayLogScreen;
 import com.hugosmpenhanced.client.feature.spawnerstorage.SpawnerStorageScreen;
 import com.hugosmpenhanced.client.feature.discord.DiscordOutside;
@@ -401,6 +404,31 @@ public final class ModSettings {
 						ModConfigManager.CONFIG.colorTemplates.clear();
 						ModConfigManager.save();
 					}))),
+			new SettingsTab("Nachrichten",
+				new SettingsSection("Nachrichten-Tab",
+					toggle("Nachrichten mitlesen", "Speichert deine Privatnachrichten pro Spieler, auch nach einem Neustart. Nur auf HugoSMP, nur auf deinem PC.",
+						c -> c.messagesEnabled, (c, v) -> c.messagesEnabled = v).keywords("pn msg privat whatsapp"),
+					ButtonOption.page("Nachrichten öffnen", "Unterhaltungen wie bei WhatsApp, mit TPA-Knopf. Auch per /hse nachrichten.",
+						"Öffnen", () -> open(MessagesScreen::new)).keywords("msg pn privat unterhaltung tpa"),
+					new KeyBindOption("Taste", "Öffnet die Nachrichten überall im Spiel", () -> MessageFeature.openKey).keywords("msg pn"),
+					new InfoOption("Gespeichert", null, () -> MessageLog.count() + " Unterhaltungen, " + MessageLog.unreadTotal() + " ungelesen"),
+					ButtonOption.danger("Alle Nachrichten löschen", "Löscht alle gespeicherten Unterhaltungen", "Löschen", MessageLog::clear)),
+				new SettingsSection("Zweiter Chat",
+					toggle("Zweiten Chat anzeigen", "Ein eigenes Fenster für Privatnachrichten und Server-Meldungen, damit sie im Chat nicht untergehen. "
+						+ "Platz und Größe im HUD-Editor.", c -> c.sideChatEnabled, (c, v) -> c.sideChatEnabled = v).keywords("second chat nachrichten fenster"),
+					new PillsOption("Zeigt", "Freunde und Clan nur, wenn der Server sie so beschriftet")
+						.pill("Privat", c -> c.sideChatPrivate, (c, v) -> c.sideChatPrivate = v)
+						.pill("Server", c -> c.sideChatServer, (c, v) -> c.sideChatServer = v)
+						.pill("Freunde", c -> c.sideChatFriends, (c, v) -> c.sideChatFriends = v)
+						.pill("Clan", c -> c.sideChatClan, (c, v) -> c.sideChatClan = v),
+					SliderOption.ofInt("Zeilen", null, 3, 12, v -> String.valueOf((int) v),
+						c -> c.sideChatLines, (c, v) -> c.sideChatLines = v),
+					SliderOption.ofInt("Breite", null, 120, 320, v -> (int) v + " px",
+						c -> c.sideChatWidth, (c, v) -> c.sideChatWidth = v),
+					SliderOption.ofInt("Ausblenden nach", "Wie lange eine Zeile steht. Mit offenem Chat sind alle sichtbar.", 0, 120,
+						v -> (int) v == 0 ? "nie" : (int) v + " s", c -> c.sideChatFade, (c, v) -> c.sideChatFade = v),
+					toggle("Im Hauptchat ausblenden", "Diese Zeilen stehen dann nur im zweiten Chat und in den Nachrichten, nicht mehr im normalen Chat",
+						c -> c.sideChatHideFromMain, (c, v) -> c.sideChatHideFromMain = v).keywords("verstecken entfernen"))),
 			new SettingsTab("TPA",
 				new SettingsSection("Teleport-Anfragen",
 					toggle("TPA-Toast anzeigen", "Kleine Einblendung bei einer neuen Anfrage",

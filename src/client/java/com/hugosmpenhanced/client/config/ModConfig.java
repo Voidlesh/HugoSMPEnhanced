@@ -273,6 +273,17 @@ public class ModConfig {
 	public boolean farmWarnFull = true;
 	public boolean farmWarnDurability = true;
 	public int farmDurabilityPercent = 10;
+	// Nachrichten und zweiter Chat
+	public boolean messagesEnabled = true;
+	public boolean sideChatEnabled = true;
+	public boolean sideChatPrivate = true;
+	public boolean sideChatServer = true;
+	public boolean sideChatFriends = false;
+	public boolean sideChatClan = false;
+	public int sideChatLines = 6;
+	public int sideChatWidth = 190;
+	public int sideChatFade = 30;
+	public boolean sideChatHideFromMain = false;
 	// HUD-Editor: Position und Größe jedes HUD-Elements
 	public Map<String, HudPos> hudPositions = new HashMap<>();
 	public int hudVersion = 0;
