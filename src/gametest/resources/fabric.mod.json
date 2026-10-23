@@ -28,7 +28,8 @@
 			"com.hugosmpenhanced.test.UpdateGameTest",
 			"com.hugosmpenhanced.test.ClientSettingsGameTest",
 			"com.hugosmpenhanced.test.EconomyGameTest",
-			"com.hugosmpenhanced.test.MessagesGameTest"
+			"com.hugosmpenhanced.test.MessagesGameTest",
+			"com.hugosmpenhanced.test.FakeClanGameTest"
 		],
 		"main": [
 			"com.hugosmpenhanced.test.TestSellServer",
