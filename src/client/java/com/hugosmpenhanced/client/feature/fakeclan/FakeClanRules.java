@@ -82,6 +82,19 @@ public final class FakeClanRules {
 		return null;
 	}
 
+	/** Whether the clan tag is exactly one of the real clans, ignoring case. */
+	public static boolean isReal(String clan, Collection<String> real) {
+		if (clan == null || clan.isBlank()) {
+			return false;
+		}
+		for (String name : real) {
+			if (name != null && name.trim().equalsIgnoreCase(clan.trim())) {
+				return true;
+			}
+		}
+		return false;
+	}
+
 	/** Lower case, with the look-alike characters mapped to one letter each. */
 	static String fold(String text) {
 		StringBuilder folded = new StringBuilder(text.length());
