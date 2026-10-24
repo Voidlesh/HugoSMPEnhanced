@@ -8,22 +8,23 @@ import com.hugosmpenhanced.client.util.ServerCheck;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.network.chat.Component;
-import net.minecraft.world.scores.PlayerTeam;
 import net.minecraft.world.entity.player.Player;
+import net.minecraft.world.scores.PlayerTeam;
 
-/** Looks up the clan tag a player shows on HugoSMP and checks it against the clan lists. */
+/** Reads the clan tag a remote player shows on HugoSMP, for the fake and trusted clan lines. */
 public final class FakeClan {
 	private FakeClan() {
 	}
 
 	/**
-	 * The fake-clan match for a remote player, or null. The tag is read the way the nametag shows it:
-	 * the team's text around the name, so a clan set by a server team is found as well.
+	 * The clan tag of a remote player, or null. Only read while on HugoSMP and while one of the clan
+	 * lines is on. The tag is read the way the nametag shows it: the team's text around the name.
 	 */
-	public static FakeClanRules.Match of(Player player) {
+	public static String tagOf(Player player) {
 		ModConfig config = ModConfigManager.CONFIG;
 		Minecraft minecraft = Minecraft.getInstance();
-		if (!config.fakeClanWarning || minecraft.level == null || player == minecraft.player || !ServerCheck.isHugoSmp()) {
+		boolean wanted = config.fakeClanWarning || config.trustedClanOverhead;
+		if (!wanted || minecraft.level == null || player == minecraft.player || !ServerCheck.isHugoSmp()) {
 			return null;
 		}
 		String name = player.getScoreboardName();
@@ -33,11 +34,18 @@ public final class FakeClan {
 		if (at < 0) {
 			return null;
 		}
-		String clan = FakeClanRules.clanOf(shown.substring(at + name.length()));
-		return FakeClanRules.check(clan, orEmpty(config.fakeClanReal), orEmpty(config.fakeClanFake));
+		return FakeClanRules.clanOf(shown.substring(at + name.length()));
 	}
 
-	private static List<String> orEmpty(List<String> list) {
+	/** The real clan list from the config, never null. */
+	public static List<String> realClans() {
+		List<String> list = ModConfigManager.CONFIG.fakeClanReal;
+		return list == null ? List.of() : list;
+	}
+
+	/** The manual fake clan list from the config, never null. */
+	public static List<String> fakeClans() {
+		List<String> list = ModConfigManager.CONFIG.fakeClanFake;
 		return list == null ? List.of() : list;
 	}
 }

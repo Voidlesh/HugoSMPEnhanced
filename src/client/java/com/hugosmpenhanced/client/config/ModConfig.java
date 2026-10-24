@@ -119,6 +119,10 @@ public class ModConfig {
 	public boolean fakeClanWarning = true;
 	public List<String> fakeClanReal = new ArrayList<>();
 	public List<String> fakeClanFake = new ArrayList<>();
+	/** Shows a green line for players in a real clan; the list is fakeClanReal. */
+	public boolean trustedClanOverhead = true;
+	/** Size of the lines above the nametag (trusted, scammer, clan), 1.0 = normal. */
+	public double overheadScale = 1.0;
 	// Chat-Rechner
 	public boolean chatCalculatorEnabled = true;
 	// Farbcode-Editor (/rename, /sign)
