@@ -7,6 +7,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.hugosmpenhanced.client.feature.aliases.ChatAlias;
 import com.hugosmpenhanced.client.feature.antileak.CoordinateMask;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
 import com.hugosmpenhanced.client.feature.client.HudCorner;
@@ -292,6 +293,10 @@ public class ModConfig {
 	public int sideChatWidth = 190;
 	public int sideChatFade = 30;
 	public boolean sideChatHideFromMain = false;
+	// Kürzel für Nachrichten: Kürzel allein im Chat ersetzen beim Enter
+	public boolean chatAliasesEnabled = true;
+	public boolean chatAliasPreview = true;
+	public List<ChatAlias> chatAliases = new ArrayList<>();
 	// HUD-Editor: Position und Größe jedes HUD-Elements
 	public Map<String, HudPos> hudPositions = new HashMap<>();
 	public int hudVersion = 0;

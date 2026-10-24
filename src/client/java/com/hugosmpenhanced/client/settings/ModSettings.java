@@ -11,6 +11,7 @@ import com.hugosmpenhanced.client.config.ModConfig;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.config.NametagStyleScreen;
 import com.hugosmpenhanced.client.config.SecondNametagScreen;
+import com.hugosmpenhanced.client.feature.aliases.ChatAliasScreen;
 import com.hugosmpenhanced.client.feature.antileak.AntiLeak;
 import com.hugosmpenhanced.client.feature.antileak.CoordinateMask;
 import com.hugosmpenhanced.client.feature.auction.AuctionSearchLanguage;
@@ -404,6 +405,15 @@ public final class ModSettings {
 						ModConfigManager.CONFIG.colorTemplates.clear();
 						ModConfigManager.save();
 					}))),
+			new SettingsTab("Kürzel",
+				new SettingsSection("Nachrichten-Kürzel",
+					toggle("Kürzel aktiv", "Schreibst du nur ein Kürzel in den Chat und drückst Enter, wird der Text dahinter gesendet. Befehle mit / sind nicht betroffen.",
+						c -> c.chatAliasesEnabled, (c, v) -> c.chatAliasesEnabled = v).keywords("alias abkürzung shortcut makro"),
+					toggle("Vorschau über dem Chat", "Zeigt den Text, der gesendet wird, während du das Kürzel tippst",
+						c -> c.chatAliasPreview, (c, v) -> c.chatAliasPreview = v).keywords("alias anzeige"),
+					ButtonOption.page("Kürzel bearbeiten", "Anlegen, ändern und löschen. Texte dürfen höchstens 256 Zeichen lang sein.",
+						"Öffnen", () -> open(ChatAliasScreen::new)).keywords("alias kürzel makro text"),
+					new InfoOption("Gespeichert", null, () -> String.valueOf(ModConfigManager.CONFIG.chatAliases.size())))),
 			new SettingsTab("Nachrichten",
 				new SettingsSection("Nachrichten-Tab",
 					toggle("Nachrichten mitlesen", "Speichert deine Privatnachrichten pro Spieler, auch nach einem Neustart. Nur auf HugoSMP, nur auf deinem PC.",
