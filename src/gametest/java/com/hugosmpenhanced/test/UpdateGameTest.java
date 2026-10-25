@@ -15,6 +15,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import com.google.gson.JsonParser;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.mainmenu.MainMenuLayout;
 import com.hugosmpenhanced.client.feature.update.ModUpdates;
@@ -141,6 +142,16 @@ public class UpdateGameTest implements FabricClientGameTest {
 		check(context, base + "/good");
 		ModUpdates.Release release = ModUpdates.available();
 		assertTrue(release != null && release.version().equals("9.9.9") && release.jar() != null, "9.9.9 with jar");
+		// one release with a jar per Minecraft version: each game gets its own, sources are never offered
+		com.google.gson.JsonObject both = JsonParser.parseString("{\"assets\":["
+			+ "{\"name\":\"hugosmpenhanced-1.0.0-sources.jar\",\"browser_download_url\":\"http://x/s\"},"
+			+ "{\"name\":\"hugosmpenhanced-1.0.0.jar\",\"browser_download_url\":\"http://x/a\"},"
+			+ "{\"name\":\"hugosmpenhanced-1.0.0-mc26.3.jar\",\"browser_download_url\":\"http://x/b\"}]}").getAsJsonObject();
+		assertTrue(ModUpdates.pickJar(both, "26.3").name().equals("hugosmpenhanced-1.0.0-mc26.3.jar"), "26.3 gets its own jar");
+		assertTrue(ModUpdates.pickJar(both, "1.21.11").name().equals("hugosmpenhanced-1.0.0.jar"), "1.21.11 gets the untagged jar");
+		com.google.gson.JsonObject onlyTagged = JsonParser.parseString("{\"assets\":["
+			+ "{\"name\":\"hugosmpenhanced-1.0.0-mc26.3.jar\",\"browser_download_url\":\"http://x/b\"}]}").getAsJsonObject();
+		assertTrue(ModUpdates.pickJar(onlyTagged, "1.21.11") == null, "a jar for another game is not offered");
 		context.setScreen(TitleScreen::new);
 		context.waitTicks(10);
 		context.takeScreenshot("update-hauptmenue-klassisch");
