@@ -14,11 +14,11 @@ import com.hugosmpenhanced.client.util.ServerCheck;
 import com.mojang.blaze3d.platform.InputConstants;
 import com.mojang.brigadier.arguments.StringArgumentType;
 
-import org.lwjgl.glfw.GLFW;
+import com.mojang.blaze3d.platform.InputConstants;
 
-import net.fabricmc.fabric.api.client.command.v2.ClientCommandManager;
+import net.fabricmc.fabric.api.client.command.v2.ClientCommands;
 import net.fabricmc.fabric.api.client.event.lifecycle.v1.ClientTickEvents;
-import net.fabricmc.fabric.api.client.keybinding.v1.KeyBindingHelper;
+import net.fabricmc.fabric.api.client.keymapping.v1.KeyMappingHelper;
 import net.fabricmc.fabric.api.client.message.v1.ClientReceiveMessageEvents;
 import net.fabricmc.fabric.api.client.message.v1.ClientSendMessageEvents;
 import net.minecraft.client.KeyMapping;
@@ -50,12 +50,12 @@ public final class MessageFeature {
 	}
 
 	public static void register() {
-		openKey = KeyBindingHelper.registerKeyBinding(new KeyMapping("key.hugosmpenhanced.open_messages",
-			InputConstants.Type.KEYSYM, GLFW.GLFW_KEY_N, TpaKeybinds.CATEGORY));
+		openKey = KeyMappingHelper.registerKeyMapping(new KeyMapping("key.hugosmpenhanced.open_messages",
+			InputConstants.Type.KEYBOARD, InputConstants.KEY_N, TpaKeybinds.CATEGORY));
 		ClientTickEvents.END_CLIENT_TICK.register(client -> {
 			while (openKey.consumeClick()) {
-				if (client.screen == null && client.player != null) {
-					client.setScreen(new MessagesScreen(null));
+				if (client.gui.screen() == null && client.player != null) {
+					client.setScreenAndShow(new MessagesScreen(null));
 				}
 			}
 		});
@@ -82,9 +82,9 @@ public final class MessageFeature {
 			}
 		});
 
-		ConfigCommand.addSubcommand(root -> root.then(ClientCommandManager.literal("nachrichten")
+		ConfigCommand.addSubcommand(root -> root.then(ClientCommands.literal("nachrichten")
 			.executes(context -> ConfigCommand.open(MessagesScreen::new))
-			.then(ClientCommandManager.argument("spieler", StringArgumentType.word())
+			.then(ClientCommands.argument("spieler", StringArgumentType.word())
 				.executes(context -> {
 					String name = StringArgumentType.getString(context, "spieler");
 					return ConfigCommand.open(parent -> new MessagesScreen(parent, name));

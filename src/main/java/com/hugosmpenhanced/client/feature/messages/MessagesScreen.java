@@ -13,11 +13,11 @@ import com.hugosmpenhanced.client.gui.HugoStyle;
 import com.hugosmpenhanced.client.gui.StyledScreen;
 import com.hugosmpenhanced.client.settings.Theme;
 
-import org.lwjgl.glfw.GLFW;
+import com.mojang.blaze3d.platform.InputConstants;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.Tooltip;
@@ -25,7 +25,7 @@ import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.multiplayer.PlayerInfo;
-import net.minecraft.client.gui.components.PlayerFaceRenderer;
+import net.minecraft.client.gui.components.PlayerFaceExtractor;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
 import net.minecraft.util.Mth;
@@ -405,7 +405,7 @@ public class MessagesScreen extends Screen implements StyledScreen {
 	// ------------------------------------------------------------------ drawing
 
 	@Override
-	public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
+	public void extractRenderState(GuiGraphicsExtractor graphics, int mouseX, int mouseY, float partialTick) {
 		if (this.confirmDelete && System.currentTimeMillis() - this.confirmDeleteAt > 3500) {
 			this.confirmDelete = false;
 		}
@@ -425,37 +425,37 @@ public class MessagesScreen extends Screen implements StyledScreen {
 			this.renderHeader(graphics);
 			this.renderMessages(graphics, mouseX, mouseY);
 		}
-		super.render(graphics, mouseX, mouseY, partialTick);
+		super.extractRenderState(graphics, mouseX, mouseY, partialTick);
 		this.renderTooltips(graphics, mouseX, mouseY);
 	}
 
-	private void renderEmpty(GuiGraphics graphics) {
+	private void renderEmpty(GuiGraphicsExtractor graphics) {
 		int cx = (this.paneLeft + this.paneRight) / 2;
 		int cy = (this.top + this.panelHeight) / 2;
-		graphics.drawCenteredString(this.font, "Noch keine Unterhaltung", cx, cy - 14, Theme.TEXT);
-		graphics.drawCenteredString(this.font, "Schreib links einen Spielernamen ins Feld", cx, cy, Theme.MUTED);
-		graphics.drawCenteredString(this.font, "oder warte, bis dir jemand per /msg schreibt.", cx, cy + 10, Theme.MUTED);
+		graphics.centeredText(this.font, "Noch keine Unterhaltung", cx, cy - 14, Theme.TEXT);
+		graphics.centeredText(this.font, "Schreib links einen Spielernamen ins Feld", cx, cy, Theme.MUTED);
+		graphics.centeredText(this.font, "oder warte, bis dir jemand per /msg schreibt.", cx, cy + 10, Theme.MUTED);
 		if (!MessageFeature.active()) {
-			graphics.drawCenteredString(this.font, "Nachrichten werden nur auf HugoSMP mitgelesen.", cx, cy + 28, Theme.GOLD);
+			graphics.centeredText(this.font, "Nachrichten werden nur auf HugoSMP mitgelesen.", cx, cy + 28, Theme.GOLD);
 		}
 	}
 
-	private void renderList(GuiGraphics graphics, int mouseX, int mouseY) {
-		graphics.drawString(this.font, "Nachrichten", this.left + 8, this.top + 10, Theme.WHITE, false);
+	private void renderList(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
+		graphics.text(this.font, "Nachrichten", this.left + 8, this.top + 10, Theme.WHITE, false);
 		int unread = MessageLog.unreadTotal();
 		if (unread > 0) {
 			String badge = String.valueOf(unread);
 			int bw = this.font.width(badge) + 8;
 			int bx = this.left + 8 + this.font.width("Nachrichten") + 6;
 			graphics.fill(bx, this.top + 8, bx + bw, this.top + 19, Theme.GREEN);
-			graphics.drawString(this.font, badge, bx + 4, this.top + 10, Theme.WHITE, false);
+			graphics.text(this.font, badge, bx + 4, this.top + 10, Theme.WHITE, false);
 		}
 		List<ListRow> rows = this.rows();
 		int content = rows.size() * ROW_H;
 		int visible = this.listBottom - this.listTop;
 		this.listScroll = Mth.clamp(this.listScroll, 0, Math.max(0, content - visible));
 		if (rows.isEmpty()) {
-			graphics.drawCenteredString(this.font, this.search.getValue().isBlank() ? "Noch nichts" : "Keine Treffer", this.left + this.listWidth / 2, this.listTop + 12, Theme.MUTED);
+			graphics.centeredText(this.font, this.search.getValue().isBlank() ? "Noch nichts" : "Keine Treffer", this.left + this.listWidth / 2, this.listTop + 12, Theme.MUTED);
 			return;
 		}
 		graphics.enableScissor(this.left + 1, this.listTop, this.left + this.listWidth, this.listBottom);
@@ -490,7 +490,7 @@ public class MessagesScreen extends Screen implements StyledScreen {
 			}
 			clipped(graphics, this.font, name, textX, y + 4, textWidth - timeWidth - 4, hasUnread ? Theme.WHITE : Theme.TEXT);
 			if (!time.isEmpty()) {
-				graphics.drawString(this.font, time, this.left + this.listWidth - 6 - timeWidth, y + 4, hasUnread ? Theme.GREEN : Theme.FAINT, false);
+				graphics.text(this.font, time, this.left + this.listWidth - 6 - timeWidth, y + 4, hasUnread ? Theme.GREEN : Theme.FAINT, false);
 			}
 			String preview;
 			int previewColor = Theme.MUTED;
@@ -513,7 +513,7 @@ public class MessagesScreen extends Screen implements StyledScreen {
 				badgeWidth = this.font.width(count) + 7;
 				int bx = this.left + this.listWidth - 6 - badgeWidth;
 				graphics.fill(bx, y + 14, bx + badgeWidth, y + 24, Theme.GREEN);
-				graphics.drawString(this.font, count, bx + 3, y + 15, Theme.WHITE, false);
+				graphics.text(this.font, count, bx + 3, y + 15, Theme.WHITE, false);
 			}
 			clipped(graphics, this.font, Component.literal(preview), textX, y + 15, textWidth - badgeWidth - (badgeWidth > 0 ? 3 : 0), previewColor);
 			graphics.fill(this.left + 6, y + ROW_H - 1, this.left + this.listWidth - 6, y + ROW_H, Theme.DIVIDER);
@@ -526,10 +526,10 @@ public class MessagesScreen extends Screen implements StyledScreen {
 		}
 	}
 
-	private void avatar(GuiGraphics graphics, String name, int x, int y, int size) {
+	private void avatar(GuiGraphicsExtractor graphics, String name, int x, int y, int size) {
 		PlayerInfo info = this.info(name);
 		if (info != null) {
-			PlayerFaceRenderer.draw(graphics, info.getSkin(), x, y, size);
+			PlayerFaceExtractor.extractRenderState(graphics, info.getSkin(), x, y, size);
 			graphics.fill(x + size - 4, y + size - 4, x + size + 1, y + size + 1, Theme.FRAME);
 			graphics.fill(x + size - 3, y + size - 3, x + size, y + size, Theme.GREEN);
 			return;
@@ -538,33 +538,33 @@ public class MessagesScreen extends Screen implements StyledScreen {
 		int color = 0xFF000000 | Mth.hsvToRgb(Math.floorMod(hash, 360) / 360f, 0.45f, 0.55f);
 		graphics.fill(x, y, x + size, y + size, color);
 		String letter = name.isEmpty() ? "?" : name.substring(0, 1).toUpperCase(Locale.ROOT);
-		graphics.drawString(this.font, letter, x + (size - this.font.width(letter)) / 2 + 1, y + (size - 8) / 2 + 1, Theme.WHITE, false);
+		graphics.text(this.font, letter, x + (size - this.font.width(letter)) / 2 + 1, y + (size - 8) / 2 + 1, Theme.WHITE, false);
 	}
 
-	private void renderHeader(GuiGraphics graphics) {
+	private void renderHeader(GuiGraphicsExtractor graphics) {
 		this.avatar(graphics, this.selected, this.paneLeft + 8, this.top + 8, 20);
 		int x = this.paneLeft + 34;
-		graphics.drawString(this.font, this.selected, x, this.top + 9, Theme.WHITE, false);
+		graphics.text(this.font, this.selected, x, this.top + 9, Theme.WHITE, false);
 		String online = this.onlineName(this.selected);
 		String status = online != null ? "online" : "offline";
-		graphics.drawString(this.font, status, x, this.top + 20, online != null ? Theme.GREEN : Theme.FAINT, false);
+		graphics.text(this.font, status, x, this.top + 20, online != null ? Theme.GREEN : Theme.FAINT, false);
 		if (!this.note.isEmpty() && System.currentTimeMillis() - this.noteAt < 2500) {
 			int noteX = x + Math.max(this.font.width(this.selected), this.font.width(status)) + 10;
 			int limit = (this.accept.visible ? this.accept.getX() : this.tpa.getX()) - 4;
 			if (noteX + this.font.width(this.note) <= limit) {
-				graphics.drawString(this.font, this.note, noteX, this.top + 20, Theme.MUTED, false);
+				graphics.text(this.font, this.note, noteX, this.top + 20, Theme.MUTED, false);
 			}
 		}
 		graphics.fill(this.paneLeft + 4, this.top + HEAD_H, this.paneRight - 4, this.top + HEAD_H + 1, Theme.SECTION_BORDER);
 	}
 
-	private void renderMessages(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderMessages(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		int height = this.areaBottom - this.areaTop;
 		this.scroll = Mth.clamp(this.scroll, 0, Math.max(0, this.itemsHeight - height));
 		if (this.items.isEmpty()) {
 			int cx = (this.paneLeft + this.paneRight) / 2;
-			graphics.drawCenteredString(this.font, "Noch keine Nachrichten mit " + this.selected, cx, this.areaTop + height / 2 - 10, Theme.MUTED);
-			graphics.drawCenteredString(this.font, "Schreib unten die erste.", cx, this.areaTop + height / 2 + 2, Theme.FAINT);
+			graphics.centeredText(this.font, "Noch keine Nachrichten mit " + this.selected, cx, this.areaTop + height / 2 - 10, Theme.MUTED);
+			graphics.centeredText(this.font, "Schreib unten die erste.", cx, this.areaTop + height / 2 + 2, Theme.FAINT);
 			return;
 		}
 		int baseline = this.areaBottom - this.itemsHeight + (int) this.scroll;
@@ -578,7 +578,7 @@ public class MessagesScreen extends Screen implements StyledScreen {
 			if (item.kind != 0) {
 				int x = center - item.width / 2;
 				Theme.panel(graphics, x, y, item.width, item.height, item.kind == 1 ? 0xFF262626 : 0xFF1C1C1C, 0);
-				graphics.drawString(this.font, item.label, x + 6, y + 3, item.kind == 1 ? Theme.TEXT_DIM : Theme.GOLD, false);
+				graphics.text(this.font, item.label, x + 6, y + 3, item.kind == 1 ? Theme.TEXT_DIM : Theme.GOLD, false);
 				continue;
 			}
 			boolean out = item.message.out;
@@ -586,7 +586,7 @@ public class MessagesScreen extends Screen implements StyledScreen {
 			Theme.panel(graphics, x, y, item.width, item.height, out ? OUT_BUBBLE : IN_BUBBLE, 0);
 			int ty = y + 4;
 			for (FormattedCharSequence line : item.lines) {
-				graphics.drawString(this.font, line, x + 6, ty, Theme.WHITE, false);
+				graphics.text(this.font, line, x + 6, ty, Theme.WHITE, false);
 				ty += 10;
 			}
 			String time = TIME.format(Instant.ofEpochMilli(item.message.time).atZone(ZoneId.systemDefault()));
@@ -596,10 +596,10 @@ public class MessagesScreen extends Screen implements StyledScreen {
 			graphics.pose().pushMatrix();
 			graphics.pose().translate(timeX, timeY + 1);
 			graphics.pose().scale(0.75f, 0.75f);
-			graphics.drawString(this.font, time, 0, 0, out ? 0xFF8FC59F : Theme.MUTED, false);
+			graphics.text(this.font, time, 0, 0, out ? 0xFF8FC59F : Theme.MUTED, false);
 			graphics.pose().popMatrix();
 			if (item.message.failed) {
-				graphics.drawString(this.font, "Nicht zugestellt", x + 6, y + item.height - 11, Theme.RED_TEXT, false);
+				graphics.text(this.font, "Nicht zugestellt", x + 6, y + item.height - 11, Theme.RED_TEXT, false);
 			}
 		}
 		graphics.disableScissor();
@@ -618,7 +618,7 @@ public class MessagesScreen extends Screen implements StyledScreen {
 		}
 	}
 
-	private void renderTooltips(GuiGraphics graphics, int mouseX, int mouseY) {
+	private void renderTooltips(GuiGraphicsExtractor graphics, int mouseX, int mouseY) {
 		if (mouseX < this.paneLeft || mouseX >= this.paneRight || mouseY < this.areaTop || mouseY >= this.areaBottom) {
 			return;
 		}
@@ -638,12 +638,12 @@ public class MessagesScreen extends Screen implements StyledScreen {
 		}
 	}
 
-	private static void clipped(GuiGraphics graphics, Font font, Component text, int x, int y, int width, int color) {
+	private static void clipped(GuiGraphicsExtractor graphics, Font font, Component text, int x, int y, int width, int color) {
 		String plain = text.getString();
 		if (font.width(plain) > width) {
 			text = Component.literal(font.plainSubstrByWidth(plain, Math.max(0, width - font.width("…"))) + "…").withStyle(text.getStyle());
 		}
-		graphics.drawString(font, text, x, y, color, false);
+		graphics.text(font, text, x, y, color, false);
 	}
 
 	// ------------------------------------------------------------------ input
@@ -705,11 +705,11 @@ public class MessagesScreen extends Screen implements StyledScreen {
 
 	@Override
 	public boolean keyPressed(KeyEvent event) {
-		if ((event.key() == GLFW.GLFW_KEY_ENTER || event.key() == GLFW.GLFW_KEY_KP_ENTER) && this.getFocused() == this.input) {
+		if ((event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER) && this.getFocused() == this.input) {
 			this.onSend();
 			return true;
 		}
-		if ((event.key() == GLFW.GLFW_KEY_ENTER || event.key() == GLFW.GLFW_KEY_KP_ENTER) && this.getFocused() == this.search) {
+		if ((event.key() == InputConstants.KEY_RETURN || event.key() == InputConstants.KEY_NUMPADENTER) && this.getFocused() == this.search) {
 			List<ListRow> rows = this.rows();
 			if (!rows.isEmpty()) {
 				ListRow row = rows.get(0);
@@ -719,11 +719,11 @@ public class MessagesScreen extends Screen implements StyledScreen {
 				return true;
 			}
 		}
-		if (event.key() == GLFW.GLFW_KEY_PAGE_UP) {
+		if (event.key() == InputConstants.KEY_PAGEUP) {
 			this.scroll += 100;
 			return true;
 		}
-		if (event.key() == GLFW.GLFW_KEY_PAGE_DOWN) {
+		if (event.key() == InputConstants.KEY_PAGEDOWN) {
 			this.scroll -= 100;
 			return true;
 		}
@@ -743,7 +743,7 @@ public class MessagesScreen extends Screen implements StyledScreen {
 	@Override
 	public void onClose() {
 		MessageLog.setViewing(null);
-		this.minecraft.setScreen(this.parent);
+		this.minecraft.setScreenAndShow(this.parent);
 	}
 
 	@Override

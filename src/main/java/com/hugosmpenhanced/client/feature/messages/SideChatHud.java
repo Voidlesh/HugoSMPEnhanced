@@ -10,7 +10,7 @@ import com.hugosmpenhanced.client.hud.HudText;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.ChatScreen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.util.FormattedCharSequence;
@@ -52,12 +52,12 @@ public final class SideChatHud implements HudElement {
 	}
 
 	private static boolean chatOpen() {
-		return Minecraft.getInstance().screen instanceof ChatScreen;
+		return Minecraft.getInstance().gui.screen() instanceof ChatScreen;
 	}
 
 	@Override
 	public boolean visible() {
-		return !(Minecraft.getInstance().screen instanceof MessagesScreen) && !SideChat.recent(1, chatOpen()).isEmpty();
+		return !(Minecraft.getInstance().gui.screen() instanceof MessagesScreen) && !SideChat.recent(1, chatOpen()).isEmpty();
 	}
 
 	private static int width() {
@@ -115,7 +115,7 @@ public final class SideChatHud implements HudElement {
 	}
 
 	@Override
-	public void render(GuiGraphics graphics, Font font, boolean preview) {
+	public void render(GuiGraphicsExtractor graphics, Font font, boolean preview) {
 		List<FormattedCharSequence> lines = this.lines(font, preview);
 		int width = width();
 		int height = HEADER + lines.size() * LINE + 4;
@@ -126,11 +126,11 @@ public final class SideChatHud implements HudElement {
 		graphics.fill(0, 1, 1, height - 1, BORDER);
 		graphics.fill(width - 1, 1, width, height - 1, BORDER);
 		boolean unread = MessageLog.unreadTotal() > 0;
-		graphics.drawString(font, preview ? "Nachrichten" : this.header(), 5, 3, unread && !preview ? HudText.GOLD : HudText.MUTED, false);
+		graphics.text(font, preview ? "Nachrichten" : this.header(), 5, 3, unread && !preview ? HudText.GOLD : HudText.MUTED, false);
 		graphics.fill(4, HEADER - 1, width - 4, HEADER, 0x30FFFFFF);
 		int y = HEADER + 2;
 		for (FormattedCharSequence line : lines) {
-			graphics.drawString(font, line, 5, y, HudText.TEXT, true);
+			graphics.text(font, line, 5, y, HudText.TEXT, true);
 			y += LINE;
 		}
 	}

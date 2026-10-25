@@ -72,6 +72,10 @@ java {
 }
 
 jar {
+	// A release carries one jar per Minecraft version; this line's jar is hugosmpenhanced-<version>-mc<minecraft>.jar
+	// and the in-game updater picks the one that matches the running game.
+	archiveClassifier = "mc${project.minecraft_version}"
+
 	def projectName = project.name
 	inputs.property "projectName", projectName
 

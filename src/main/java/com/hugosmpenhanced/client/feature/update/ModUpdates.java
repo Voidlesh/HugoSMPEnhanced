@@ -330,13 +330,25 @@ public final class ModUpdates {
 		return best;
 	}
 
-	/** The mod jar among a release's files: the first .jar that is not a sources or dev jar. */
+	/**
+	 * The mod jar among a release's files. A release can carry one jar per Minecraft version, named
+	 * {@code hugosmpenhanced-<version>-mc<minecraft>.jar}; the one for the running game wins. A jar without such
+	 * a tag is the build for the oldest line and is used when nothing is tagged for the running game. Sources and
+	 * dev jars never count.
+	 */
 	private static Asset jar(JsonObject release) {
+		String minecraft = FabricLoader.getInstance().getModContainer("minecraft")
+			.map(mod -> mod.getMetadata().getVersion().getFriendlyString()).orElse("");
+		return pickJar(release, minecraft);
+	}
+
+	public static Asset pickJar(JsonObject release, String minecraft) {
 		if (!release.has("assets") || !release.get("assets").isJsonArray()) {
 			return null;
 		}
-		JsonArray assets = release.getAsJsonArray("assets");
-		for (JsonElement element : assets) {
+		String tag = "-mc" + minecraft + ".jar";
+		Asset untagged = null;
+		for (JsonElement element : release.getAsJsonArray("assets")) {
 			if (!element.isJsonObject()) {
 				continue;
 			}
@@ -354,9 +366,15 @@ public final class ModUpdates {
 			String digest = string(asset, "digest");
 			String sha256 = digest != null && digest.startsWith("sha256:") ? digest.substring(7).toLowerCase(Locale.ROOT) : null;
 			long size = asset.has("size") && asset.get("size").isJsonPrimitive() ? asset.get("size").getAsLong() : -1;
-			return new Asset(name, url, size, sha256);
+			Asset found = new Asset(name, url, size, sha256);
+			if (!minecraft.isEmpty() && lower.endsWith(tag.toLowerCase(Locale.ROOT))) {
+				return found;
+			}
+			if (untagged == null && !lower.matches(".*-mc[0-9][^/]*\\.jar")) {
+				untagged = found;
+			}
 		}
-		return null;
+		return untagged;
 	}
 
 	static Version parse(String version) {
