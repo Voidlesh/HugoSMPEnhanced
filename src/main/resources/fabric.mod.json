@@ -8,7 +8,7 @@
 		"Voidlesh"
 	],
 	"contact": {},
-	"license": "CC0-1.0",
+	"license": "MIT",
 	"icon": "assets/hugosmpenhanced/icon.png",
 	"environment": "client",
 	"entrypoints": {
