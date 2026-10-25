@@ -1,63 +1,94 @@
+<div align="center">
+
+<img src="docs/discord/app-icon.png" alt="HugoSMP Enhanced" width="128">
+
 # HugoSMP Enhanced
 
-Inoffizieller Community-Client-Mod für [HugoSMP.net](https://hugosmp.net) — visuelle und QoL-Erweiterungen für Fabric.
-Nicht offiziell von HugoSMP oder LetsHugo affiliiert.
+**Der Client-Mod für HugoSMP.net: Wirtschaft, Sicherheit und Komfort an einem Ort.**
 
-## Status
+[![Release](https://img.shields.io/github/v/release/Voidlesh/HugoSMPEnhanced?include_prereleases&label=Release)](https://github.com/Voidlesh/HugoSMPEnhanced/releases)
+[![Build](https://img.shields.io/github/actions/workflow/status/Voidlesh/HugoSMPEnhanced/build.yml?label=Build)](https://github.com/Voidlesh/HugoSMPEnhanced/actions)
+[![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-blue.svg)](LICENSE)
+![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11-62b47a)
+![Fabric](https://img.shields.io/badge/Mod--Loader-Fabric-dbd0b4)
 
-Früher Aufbau. Implementierte Features:
+</div>
 
-- **Preis pro Item** — im Auktionshaus-Tooltip wird bei Stapeln (>1 Item) zusätzlich der Preis pro Stück angezeigt (`src/client/.../feature/auction`)
-- **HugoSMP-Items in der AH-Suche** — eigene Server-Items (Plugin-ID in den Item-Daten, eigenes Modell/Custom-Model-Data oder farbiger Server-Name bei Angeboten) werden aus AH, Orders und Inventar gemerkt (`config/hugosmpenhanced-items.json`) und in der Suche mit Name, Farbe und echtem Modell vorgeschlagen (`CustomItems`)
-- **Limitierte Items: Preis pro Stunde** — erkennt die Restlaufzeit (Zeitstempel in den Item-Daten, Erstelldatum + Lebensdauer, Ablaufdatum oder Restzeit in der Lore; die AH-eigene Angebotslaufzeit wird ignoriert), zeigt sie und den Preis pro Stunde im Tooltip und rahmt das günstigste Angebot pro Stunde je Sorte gold ein (`LimitedItems`, `LimitedOffers`). Das echte Lore-Format von HugoSMP war beim Bau nicht bekannt
-- **Mention-Highlighting** — bei Erwähnung des eigenen Namens (oder konfigurierter Zusatzbegriffe) im Chat: Sound + zusätzliche hervorgehobene Hinweiszeile (`src/client/.../feature/mentions`)
-- **TPA-Toast** — bei `/tpa`- oder `/tpahere`-Anfragen erscheint ein eigenes Toast (Icon, Titel, Untertitel, Fortschrittsbalken) statt nur Chat-Text; per Tastenkombination (Steuerung-Menü, Kategorie "HugoSMP Enhanced", standardmäßig nicht belegt) sofort annehmbar, ohne `/tpaccept` zu tippen (`src/client/.../feature/tpa`, Mixin in `ClientPacketListener.handleSystemChat`)
-- **Chat-Erhalt beim Weltwechsel** — HugoSMP wechselt zwischen seinen Welten intern per Reconnect, was Vanilla wie jeden Disconnect behandelt und den Chatverlauf löscht (`Hud.onDisconnected()`). Ein Mixin unterdrückt das gezielt nur für HugoSMP-Verbindungen (`src/client/.../mixin/PersistentChatMixin.java`)
-- **Kompakte Tabliste** — skaliert die Tabliste (Halten von Tab) einstellbar herunter (`src/client/.../mixin/CompactTabListMixin.java`)
-- **"HugoSMP.net beitreten"-Button im Hauptmenü** — verbindet direkt, ohne den Server manuell in der Multiplayer-Liste einzutragen (`src/client/.../mixin/TitleScreenQuickJoinMixin.java`, nutzt Vanillas eigenen `ConnectScreen`-Verbindungsablauf)
-- **Eigenes Hauptmenü** — offizielles HugoSMP-Logo, eigene Splash-Texte mit Animation (Pulsieren, Wackeln, Regenbogen) und Farbe, Layout "Klassisch" oder "Seitenleiste" mit Server-Karte; oben rechts umschaltbar, in der Konfig abschaltbar (`src/client/.../feature/mainmenu/`)
-- **Chat-Filter** — Öffentlicher Chat/Systemnachrichten/Private Nachrichten/Clan/Freunde einzeln ausblendbar, erkannt an den echten HugoSMP-Präfixen (`[HugoSMP]`, `[Nachricht]`, `[Clan]`, `[Freunde]`); eigene Nachrichten werden nie ausgeblendet (`src/client/.../feature/chatfilter`, Mixin in `ClientPacketListener.handleSystemChat/handlePlayerChat/handleDisguisedChat`)
-- **Tastatur-Ansicht** — im Vanilla-Menü "Tastenbelegung" öffnet ein Button eine gezeichnete QWERTZ-Tastatur samt Maustasten: belegte Tasten grün, doppelt belegte rot (F3-Kombinationen und Zuschauer-Tasten zählen nicht als Doppelbelegung). Taste anklicken, rechts eine Aktion suchen und per Klick drauflegen oder mit ✕ entfernen (`src/client/.../feature/keyboard`)
-- **Screenshot-Galerie** — Kamera-Symbol rechts neben "Zurück zum Spiel" im Pause-Menü (oder eigene Taste, standardmäßig nicht belegt): Vorschaubilder seitenweise, Klick zeigt das Bild groß mit Kopieren (in die Zwischenablage, über PowerShell/osascript/xclip), Löschen und Im-Ordner-Zeigen (`src/client/.../feature/gallery`)
-- **HugoGuard-Scammer- und Trusted-Markierung** — lädt die Scammer- und Trusted-Liste von [hugoguard.net](https://hugoguard.net) (öffentliche API, alle 10 Minuten) und zeigt gelistete Spieler mit rotem "⚠ SCAMMER" bzw. grünem "✔ TRUSTED" über dem Kopf, vor ihren Chatnachrichten (Hover: Meldungen bzw. Reputation, Klick: Profil) und bei TPA-Anfragen. Dazu ein roter/grüner Schimmer um den Spieler, der wie jedes Modell von Wänden verdeckt wird (kein Durch-Wände-Sehen). Jede Stelle einzeln abschaltbar (`src/client/.../feature/hugoguard`)
-- **`/hg <Name>`** — Profilseite mit drehbarem Skin, HugoGuard-Status, Reputation (▲/▼), Anzahl Reports, letztem Report und Button zum Profil auf hugoguard.net; ohne Name das eigene Profil
-- **Chat-Rechner** — steht am Ende der Chat-Eingabe eine Rechnung (z. B. "verkaufe für 64*3,5"), erscheint das Ergebnis live darüber, mit Stacks/Shulkern; Tab ersetzt die Rechnung durch das Ergebnis. Versteht + - * x / : ^ %, Klammern, deutsche/englische Kommazahlen und k, m, st (Stack = 64) (`src/client/.../feature/calculator`)
-- **Notizblock** — mehrere Notizen mit Titel, über ein Symbol im Pause-Menü oder eine eigene Taste (standardmäßig nicht belegt); angeheftete Notizen bleiben oben links im HUD sichtbar (`src/client/.../feature/notes`)
-- **Discord Rich Presence** — zeigt im Discord-Profil Ort (SMP, Spawn, AFK-Welt, Duels, PvP), Geld, Kills, Tode und K/D samt Spielzeit, Logo, eigenem Kopf und Buttons; zwei Textzeilen mit Platzhaltern, alles in Einstellungen → Allgemein → Discord. Werte kommen aus Scoreboard, Tabliste, Weltname, Befehlen wie `/afk` und Chat-Antworten, Kills/Tode sonst aus der Vanilla-Statistik; `/hugosmpenhanced discord` zeigt, was erkannt wurde. Spricht lokal mit der Discord-App (`discord-ipc`), kein Login (`src/client/.../feature/discord`)
+> **Alpha:** Die Mod ist in aktiver Entwicklung. Einige Erkennungen (z. B. Texte von Zahlungen, Aufträgen oder Privatnachrichten) sind noch nicht auf jeder Seite von HugoSMP bestätigt. Fehler bitte als [Issue](https://github.com/Voidlesh/HugoSMPEnhanced/issues) melden.
+>
+> Inoffizieller Community-Mod. Nicht von HugoSMP oder LetsHugo betrieben oder unterstützt.
 
-Alle Features (außer dem Hauptmenü-Button, der ja vor jeder Verbindung greift) sind über `ServerCheck` (`src/client/.../util/ServerCheck.java`) auf Verbindungen zu `hugosmp.net` beschränkt — sie tun nichts auf anderen Servern.
+## Überblick
+
+HugoSMP Enhanced erweitert den Minecraft-Client um Werkzeuge, die auf HugoSMP.net den Alltag leichter machen: bessere Übersicht im Auktionshaus, Warnungen vor Scammern, ein Chat, der mitdenkt, und ein eigenes Einstellungsmenü.
+
+Alle serverbezogenen Funktionen sind auf Verbindungen zu `hugosmp.net` beschränkt. Auf anderen Servern tut die Mod nichts. Sie läuft rein clientseitig, auf dem Server muss nichts installiert werden.
+
+## Features
+
+### Wirtschaft
+- **Auktionshaus:** Preis pro Item bei Stapeln, eigene Suche mit Vorschlägen, Verlauf und Favoriten, HugoSMP-Spezialitems mit echtem Modell, bei limitierten Items Restlaufzeit und Preis pro Stunde mit Markierung des günstigsten Angebots.
+- **Aufträge-Helfer:** Lieferbare Aufträge grün, der lukrativste gold umrandet, mit Tooltip zu Menge und Ertrag.
+- **Geld-Tracker und Zahlungs-Log:** Kontostand, Verlauf als Kurve, Herkunft des Geldes und alle Zahlungen mit CSV-Export.
+- **Farm-Tracker und Spawner-Lager:** Ertrag pro Stunde, Warnung bei vollem Inventar oder fast kaputtem Werkzeug, Erinnerung bevor ein Spawner voll ist, Spawner-Preise.
+- **Verkaufs-Assistent und Chat-Rechner:** Rechnungen im Chat live auswerten, mit Stacks und Shulkern.
+
+### Sicherheit
+- **HugoGuard-Anbindung:** Scammer- und Trusted-Markierung über dem Kopf, im Chat und bei TPA-Anfragen, Warnung beim Bezahlen. Profilseite mit `/hg <Name>`.
+- **Clan-Abzeichen:** Echte Clans werden markiert, ähnlich aussehende Fake-Clans gewarnt.
+- **Anti-Leak:** Verbirgt oder verfälscht Koordinaten in F3, damit sie nicht versehentlich im Stream oder auf Bildern landen.
+- **Streamer-Modus:** Blendet Namen und Skins aus, dazu Werkzeuge für Auktionen und Verlosungen mit Glücksrad.
+
+### Chat und Komfort
+- **Chat:** Filter nach Kategorie, Erwähnungs-Hervorhebung, Stichwort-Alarm, Nachrichten-Tab mit Unterhaltungen pro Spieler, zweiter Chat, Chat bleibt beim Weltwechsel erhalten.
+- **Eigene Menüs:** Hauptmenü mit Schnell-Beitritt, Tastatur-Ansicht mit Doppelbelegungs-Erkennung, Screenshot-Galerie, Notizblock, Farbcode-Editor für `/rename` und `/sign`.
+- **Inventar:** Eigene Knöpfe und mehrere speicherbare Layouts.
+- **Anzeigen:** HUD-Editor, Entity-Heatmap für Farmen, kompakte Tabliste, Zoom, Fullbright, FPS-Anzeige.
+- **Discord Rich Presence:** Ort, Geld, Kills und Spielzeit im Discord-Profil.
+- **Updates:** Hinweis im Spiel, wenn ein neues Release erscheint, mit Changelog und Installation per Klick.
+
+Eine Übersicht pro Version steht in den [Release-Notizen](release-notes/).
+
+## Installation
+
+1. [Fabric Loader](https://fabricmc.net/use/installer/) ab `0.19.5` für **Minecraft 1.21.11** installieren.
+2. [Fabric API](https://modrinth.com/mod/fabric-api) in den Ordner `mods` legen.
+3. Die neueste `hugosmpenhanced-<Version>.jar` von der [Releases-Seite](https://github.com/Voidlesh/HugoSMPEnhanced/releases) ebenfalls nach `mods` legen.
+4. Optional: [Mod Menu](https://modrinth.com/mod/modmenu) für den Zugang über die Mods-Liste.
+5. Minecraft starten und `hugosmp.net` beitreten, oder den neuen Knopf im Hauptmenü nutzen.
+
+Voraussetzungen: Java 21 oder neuer.
+
+### Updates
+
+Die Mod prüft beim Start und danach alle sechs Stunden, ob auf GitHub ein neueres Release vorliegt. Dann erscheinen ein Hinweis im Hauptmenü und eine Chatzeile. Im Update-Fenster stehen die Änderungen, "Installieren" lädt die Jar herunter, prüft sie und tauscht sie beim Beenden des Spiels aus. Automatische Installation ist standardmäßig aus.
+
+Manuell aktualisieren: neue Jar in `mods` legen und die alte löschen, denn der Dateiname enthält die Version.
 
 ## Konfiguration
 
-Richtige In-Game-Konfigurationsoberfläche (YACL), erreichbar über:
-- **Befehl**: `/hugosmpenhanced` im Chat
-- **Mod Menu**: falls installiert, über die Mods-Liste → HugoSMP Enhanced → Zahnrad-Symbol
+Die Einstellungen öffnest du mit `/hugosmpenhanced` (Kurzform `/hse`) oder über Mod Menu. Sie sind nach Kategorien geordnet und durchsuchbar. Die Konfiguration liegt unter `config/hugosmpenhanced.json` im Minecraft-Verzeichnis, weitere Daten wie Notizen oder Zahlungen unter `config/hugosmpenhanced/`.
 
-Deckt alle Features ab (Mention-Highlighting inkl. Trigger-Liste, Preis pro Item, TPA-Toast, Tabliste, Chat-Erhalt, Chat-Filter, Hauptmenü-Button). Die TPA-Tastenkombination wird separat im normalen Steuerung-Menü unter der Kategorie "HugoSMP Enhanced" gebunden.
+Nützliche Befehle: `/hse hud` (Anzeigen verschieben), `/hse geld`, `/hse zahlungen`, `/hse farm`, `/hse spawner`, `/hse nachrichten`, `/hse update`, `/hg <Name>`.
 
-Gespeichert wird unter `config/hugosmpenhanced.json` (im Minecraft-Instanzverzeichnis).
+Tastenbelegungen findest du im Steuerungsmenü unter der Kategorie "HugoSMP Enhanced". Wenn etwas nicht erkannt wird, kopiert `Strg+Shift+C` in einem Menü oder `/hse debug` die Rohdaten für einen Fehlerbericht.
 
-## Ziel-Setup
+## Selbst bauen
 
-- Minecraft `26.2`
-- Fabric Loader `>=0.19.5`
-- Fabric API `0.160.0+26.2`
-- YACL `3.9.6+26.2-fabric` (Pflicht, für die Config-GUI)
-- Mod Menu `20.0.2` (optional, nur für die Mods-Liste-Integration)
-- Java `25`
-
-Reiner Client-Mod (`"environment": "client"`) — läuft nicht auf dem Server, keine Serverseite nötig.
-
-## Build
+Benötigt wird ein JDK 21 oder neuer.
 
 ```
 ./gradlew build
 ```
 
-Das gebaute Jar liegt danach unter `build/libs/`.
+Die fertige Jar liegt danach in `build/libs/`. Einen Testclient startest du mit `./gradlew runClient`, die automatischen Client-Tests mit `./gradlew runClientGameTest`.
 
-`gradle.properties` pinnt `org.gradle.java.home` aktuell auf einen JDK-25-Pfad dieser Maschine (`C:/Program Files/Eclipse Adoptium/jdk-25.0.1.8-hotspot`) — bei anderer JDK-Installation anpassen oder entfernen, falls Java 25 bereits Standard auf dem `PATH` ist.
+`gradle.properties` enthält einen festen JDK-Pfad für Windows (`org.gradle.java.home`). Bei anderer Installation anpassen oder entfernen.
+
+## Releases
+
+Ändert sich `version` in `gradle.properties` auf `main`, baut eine GitHub Action die Mod und legt einen Release-Entwurf mit der Jar an. Der Text kommt aus `release-notes/<version>.md`. Mehr dazu in den [Release-Notizen](release-notes/README.md).
 
 ## Lizenz
 
-Aktuell `CC0-1.0` (vom Fabric-Template übernommen) — noch final zu entscheiden.
+[MIT](LICENSE) © 2026 Voidlesh
