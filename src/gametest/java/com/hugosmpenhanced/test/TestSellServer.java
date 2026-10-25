@@ -6,6 +6,9 @@ import java.util.Locale;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+//? if modern
+import net.minecraft.util.Prediction;
+//? end
 import net.minecraft.commands.Commands;
 import net.minecraft.core.component.DataComponents;
 import net.minecraft.network.chat.Component;
@@ -14,7 +17,7 @@ import net.minecraft.world.SimpleContainer;
 import net.minecraft.world.SimpleMenuProvider;
 import net.minecraft.world.entity.player.Player;
 import net.minecraft.world.inventory.ChestMenu;
-import net.minecraft.world.inventory.ClickType;
+import net.minecraft.world.inventory.ContainerInput;
 import net.minecraft.world.inventory.MenuType;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
@@ -63,7 +66,7 @@ public class TestSellServer implements ModInitializer {
 		}
 
 		@Override
-		public void clicked(int slot, int button, ClickType type, Player player) {
+		public void clicked(int slot, int button, ContainerInput type, Player player) {
 			if (slot != 35) {
 				super.clicked(slot, button, type, player);
 				return;
@@ -81,7 +84,11 @@ public class TestSellServer implements ModInitializer {
 			}
 			sales++;
 			DecimalFormat format = new DecimalFormat("#,##0", DecimalFormatSymbols.getInstance(Locale.GERMANY));
+			//? if modern
+			player.sendSystemMessage(Component.literal("Du hast " + format.format(items) + " Items für $" + format.format(money) + " verkauft!"));
+			//? else
 			player.displayClientMessage(Component.literal("Du hast " + format.format(items) + " Items für $" + format.format(money) + " verkauft!"), false);
+			//? end
 			if (player instanceof ServerPlayer serverPlayer) {
 				serverPlayer.level().getServer().execute(serverPlayer::closeContainer);
 			}
@@ -93,7 +100,11 @@ public class TestSellServer implements ModInitializer {
 			for (int i = 0; i < 35; i++) {
 				ItemStack stack = this.goods.removeItemNoUpdate(i);
 				if (!stack.isEmpty()) {
+					//? if modern
+					player.getInventory().placeItemBackInInventory(stack, Prediction.SERVER_ONLY);
+					//? else
 					player.getInventory().placeItemBackInInventory(stack);
+					//? end
 				}
 			}
 		}

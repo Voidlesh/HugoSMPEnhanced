@@ -1,5 +1,8 @@
 package com.hugosmpenhanced.test;
 
+//? if modern
+import com.mojang.blaze3d.platform.InputConstants;
+//? end
 import java.io.IOException;
 import java.util.function.Predicate;
 
@@ -26,7 +29,9 @@ import net.minecraft.client.input.MouseButtonInfo;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
+//? if legacy
 import org.lwjgl.glfw.GLFW;
+//? end
 
 /**
  * Discord Rich Presence against a fake Discord app on a Unix socket: handshake, the activity in
@@ -78,7 +83,7 @@ public class DiscordPresenceGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			TestServerContext server = singleplayer.getServer();
 			BlockPos spawn = context.computeOnClient(client -> client.player.blockPosition());
 			// Away from the world spawn; the spawn radius is checked further down.
@@ -125,16 +130,20 @@ public class DiscordPresenceGameTest implements FabricClientGameTest {
 			int[] field = option("Obere Zeile").bounds();
 			context.runOnClient(client -> {
 				MouseButtonEvent click = new MouseButtonEvent(field[0] + 20, field[1] + field[3] - 10,
-					new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0));
-				client.screen.mouseClicked(click, false);
-				client.screen.mouseReleased(click);
+					new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0));
+				client.gui.screen().mouseClicked(click, false);
+				client.gui.screen().mouseReleased(click);
 				for (char c : " auf HugoSMP".toCharArray()) {
+					//? if modern
+					client.gui.screen().charTyped(new CharacterEvent(c));
+					//? else
 					client.screen.charTyped(new CharacterEvent(c, 0));
+					//? end
 				}
 			});
 			context.waitTicks(2);
 			context.takeScreenshot("discord-text-bearbeiten");
-			context.runOnClient(client -> client.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_ENTER, 0, 0)));
+			context.runOnClient(client -> client.gui.screen().keyPressed(new KeyEvent(InputConstants.KEY_RETURN, 0, 0)));
 			check("{ort} auf HugoSMP".equals(ModConfigManager.CONFIG.discordDetails), "typed upper line: " + ModConfigManager.CONFIG.discordDetails);
 			waitFor(context, discord, a -> "SMP auf HugoSMP".equals(str(a, "details")), "own upper line");
 			context.runOnClient(client -> ModConfigManager.CONFIG.discordDetails = "{ort}");

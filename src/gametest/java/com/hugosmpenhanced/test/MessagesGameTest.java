@@ -13,7 +13,11 @@ import com.hugosmpenhanced.client.hud.HudEditorScreen;
 import com.hugosmpenhanced.client.settings.SettingsScreen;
 import com.hugosmpenhanced.client.util.ServerCheck;
 
+//? if modern
+import com.mojang.blaze3d.platform.InputConstants;
+//? else
 import org.lwjgl.glfw.GLFW;
+//? end
 
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
@@ -35,7 +39,7 @@ public class MessagesGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			singleplayer.getServer().runCommand("gamerule doDaylightCycle false");
 			singleplayer.getServer().runCommand("time set 6000");
 			context.runOnClient(client -> {
@@ -102,7 +106,11 @@ public class MessagesGameTest implements FabricClientGameTest {
 		check(mika.unread == 1, "Mika unread 1");
 		check(context.computeOnClient(client -> SideChat.recent(50, true).size()) >= 5, "second chat has the lines");
 		check(context.computeOnClient(client -> SideChat.recent(50, true).stream()
+			//? if modern
 			.noneMatch(e -> e.text().contains("wie komme ich"))), "public chat stays out of the second chat");
+			//? else
+			.noneMatch(e -> e.text().contains("wie komme ich"))), "public chat stays out of the second chat");
+			//? end
 		check(context.computeOnClient(client -> MessageFeature.tpa("Hugo", false)), "tpa sends");
 		check(context.computeOnClient(client -> MessageFeature.tpaWait()) > 0, "tpa cooldown runs");
 		check(!context.computeOnClient(client -> MessageFeature.tpa("Hugo", true)), "second tpa blocked during the cooldown");
@@ -126,14 +134,14 @@ public class MessagesGameTest implements FabricClientGameTest {
 		context.takeScreenshot("nachrichten-chat");
 
 		context.runOnClient(client -> {
-			if (client.screen instanceof MessagesScreen screen) {
+			if (client.gui.screen() instanceof MessagesScreen screen) {
 				screen.setSearchForTest("Mika");
 			}
 		});
 		context.waitTicks(3);
 		context.takeScreenshot("nachrichten-suche");
 		context.runOnClient(client -> {
-			if (client.screen instanceof MessagesScreen screen) {
+			if (client.gui.screen() instanceof MessagesScreen screen) {
 				screen.setSearchForTest("");
 				screen.selectForTest("Mika_77");
 			}
@@ -143,7 +151,7 @@ public class MessagesGameTest implements FabricClientGameTest {
 
 		// Type an answer and send it with Enter.
 		context.getInput().typeChars("Alles klar");
-		context.getInput().pressKey(GLFW.GLFW_KEY_ENTER);
+		context.getInput().pressKey(InputConstants.KEY_RETURN);
 		context.waitTicks(3);
 		check(context.computeOnClient(client -> MessageLog.find("Mika_77").messages.stream().anyMatch(m -> m.out && m.text.equals("Alles klar"))),
 			"answer typed in the screen is sent and logged");

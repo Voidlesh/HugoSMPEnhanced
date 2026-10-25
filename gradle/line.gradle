@@ -1,0 +1,57 @@
+// Shared by versions/*/build.gradle, applied after the Loom plugin and the fabricApi test setup of the line.
+// The caller sets ext.modern (true for 26.x). The sources are the shared ones of src/, written for this line
+// by hse.Preprocessor (see docs/MULTIVERSION.md).
+
+fabricApi {
+	configureTests {
+		// Client game tests (src/gametest) start the real client and take screenshots of the
+		// nametag previews and of the styled nametag in a test world: ./gradlew :mc1_21_11:runClientGameTest
+		createSourceSet = true
+		modId = "hugosmpenhanced-test"
+		enableGameTests = false
+		enableClientGameTests = true
+		eula = true
+	}
+}
+
+def swapsFile = rootProject.layout.projectDirectory.file('versions/swaps.txt')
+
+def prepare = { String name, String set ->
+	tasks.register(name, hse.PreprocessTask) {
+		source = rootProject.layout.projectDirectory.dir("src/${set}")
+		swaps = swapsFile
+		modern = project.ext.modern
+		target = layout.buildDirectory.dir("generated/${set}")
+	}
+}
+
+def prepareMain = prepare('prepareMain', 'main')
+sourceSets.main.java.srcDirs = [prepareMain.flatMap { it.target.dir('java') }]
+sourceSets.main.resources.srcDirs = [prepareMain.flatMap { it.target.dir('resources') }]
+
+def prepareGametest = prepare('prepareGametest', 'gametest')
+sourceSets.gametest.java.srcDirs = [prepareGametest.flatMap { it.target.dir('java') }]
+sourceSets.gametest.resources.srcDirs = [prepareGametest.flatMap { it.target.dir('resources') }]
+
+processResources {
+	def version = project.version
+	inputs.property "version", version
+
+	filesMatching("fabric.mod.json") {
+		expand "version": version
+	}
+}
+
+base {
+	archivesName = 'hugosmpenhanced'
+}
+
+java {
+	withSourcesJar()
+}
+
+jar {
+	from(rootProject.file('LICENSE')) {
+		rename { "${it}_hugosmpenhanced" }
+	}
+}

@@ -1,0 +1,46 @@
+plugins {
+	id 'net.fabricmc.fabric-loom-remap'
+}
+
+repositories {
+	maven {
+		name = "Modrinth"
+		url = "https://api.modrinth.com/maven"
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	mappings loom.officialMojangMappings()
+	modImplementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	modImplementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	modImplementation "maven.modrinth:modmenu:${project.modmenu_version}"
+}
+
+loom {
+	mods {
+		"hugosmpenhanced" {
+			sourceSet sourceSets.main
+		}
+	}
+}
+
+ext.modern = false
+apply from: rootProject.file('gradle/line.gradle')
+
+// The gate classes of the one-jar build run on both lines, so they are built here (Java 21) and only added to this line.
+sourceSets.main.java.srcDir rootProject.file('src/loader/java')
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 21
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_21
+	targetCompatibility = JavaVersion.VERSION_21
+}
+
+remapJar {
+	// jar per Minecraft line, the release carries the merged one (root project, mergedJar)
+	archiveClassifier = "mc${project.minecraft_version}"
+}

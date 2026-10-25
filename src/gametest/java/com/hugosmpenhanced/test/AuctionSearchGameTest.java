@@ -1,5 +1,8 @@
 package com.hugosmpenhanced.test;
 
+//? if modern
+import com.mojang.blaze3d.platform.InputConstants;
+//? end
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.auction.AuctionLore;
 import com.hugosmpenhanced.client.feature.auction.AuctionMarket;
@@ -12,12 +15,17 @@ import com.hugosmpenhanced.client.hud.HudEditorScreen;
 import com.hugosmpenhanced.client.hud.HudManager;
 import com.hugosmpenhanced.client.hud.HudPos;
 
+//? if legacy
 import org.lwjgl.glfw.GLFW;
+//? end
 
 import com.hugosmpenhanced.client.settings.SettingsScreen;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
 import net.fabricmc.fabric.api.client.gametest.v1.context.ClientGameTestContext;
 import net.fabricmc.fabric.api.client.gametest.v1.context.TestSingleplayerContext;
+//? if modern
+import net.minecraft.world.level.block.entity.SignTextSlot;
+//? end
 import net.minecraft.client.gui.screens.inventory.ContainerScreen;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Holder;
@@ -69,7 +77,7 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			context.runOnClient(client -> {
 				AuctionPriceMemory.record(new ItemStack(Items.DIAMOND), 152.5, AuctionMarket.AUCTION);
 				AuctionPriceMemory.record(new ItemStack(Items.DIAMOND_SWORD), 900, AuctionMarket.AUCTION);
@@ -92,7 +100,7 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 			context.waitTicks(5);
 			openSign(singleplayer, pos);
 			context.waitTicks(10);
-			boolean replaced = context.computeOnClient(client -> client.screen instanceof AuctionSearchScreen);
+			boolean replaced = context.computeOnClient(client -> client.gui.screen() instanceof AuctionSearchScreen);
 			System.out.println("AUCTION screen replaced sign: " + replaced);
 			if (!replaced) {
 				throw new AssertionError("Search sign was not replaced");
@@ -104,15 +112,15 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 			context.takeScreenshot("auction-search-dia");
 
 			// Too short: Enter must not send anything.
-			context.getInput().pressKey(GLFW.GLFW_KEY_BACKSPACE);
-			context.getInput().pressKey(GLFW.GLFW_KEY_ENTER);
+			context.getInput().pressKey(InputConstants.KEY_BACKSPACE);
+			context.getInput().pressKey(InputConstants.KEY_RETURN);
 			context.waitTicks(3);
 			context.takeScreenshot("auction-search-too-short");
-			if (!context.computeOnClient(client -> client.screen instanceof AuctionSearchScreen)) {
+			if (!context.computeOnClient(client -> client.gui.screen() instanceof AuctionSearchScreen)) {
 				throw new AssertionError("Too short search was sent");
 			}
-			context.getInput().pressKey(GLFW.GLFW_KEY_BACKSPACE);
-			context.getInput().pressKey(GLFW.GLFW_KEY_BACKSPACE);
+			context.getInput().pressKey(InputConstants.KEY_BACKSPACE);
+			context.getInput().pressKey(InputConstants.KEY_BACKSPACE);
 
 			context.getInput().typeChars("repa");
 			context.waitTicks(3);
@@ -127,13 +135,17 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 			// Pick the first suggestion for "diamantschw" with the arrow key and send it.
 			context.getInput().typeChars("diamantschw");
 			context.waitTicks(3);
-			context.getInput().pressKey(GLFW.GLFW_KEY_DOWN);
+			context.getInput().pressKey(InputConstants.KEY_DOWN);
 			context.waitTicks(2);
 			context.takeScreenshot("auction-search-selected");
-			context.getInput().pressKey(GLFW.GLFW_KEY_ENTER);
+			context.getInput().pressKey(InputConstants.KEY_RETURN);
 			context.waitTicks(10);
 			String line = singleplayer.getServer().computeOnServer(server ->
+				//? if modern
+				((SignBlockEntity) server.overworld().getBlockEntity(pos)).getText(SignTextSlot.FRONT).getMessages(false).get(0).getString());
+				//? else
 				((SignBlockEntity) server.overworld().getBlockEntity(pos)).getText(true).getMessage(0, false).getString());
+				//? end
 			String expected = context.computeOnClient(client -> new ItemStack(Items.DIAMOND_SWORD).getHoverName().getString());
 			System.out.println("AUCTION sign line 1 after enter: '" + line + "' expected '" + expected + "' history="
 				+ ModConfigManager.CONFIG.auctionSearchHistory);
@@ -145,7 +157,7 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 			openSign(singleplayer, pos);
 			context.waitTicks(10);
 			context.runOnClient(client -> {
-				var screen = client.screen;
+				var screen = client.gui.screen();
 				for (var child : screen.children()) {
 					if (child instanceof net.minecraft.client.gui.components.Button button
 						&& button.getMessage().getString().equals("Schild benutzen")) {
@@ -154,7 +166,7 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 				}
 			});
 			context.waitTicks(5);
-			String fallback = context.computeOnClient(client -> client.screen == null ? "null" : client.screen.getClass().getSimpleName());
+			String fallback = context.computeOnClient(client -> client.gui.screen() == null ? "null" : client.gui.screen().getClass().getSimpleName());
 			System.out.println("AUCTION fallback screen: " + fallback);
 			context.takeScreenshot("auction-search-fallback");
 			context.setScreen(() -> null);
@@ -162,7 +174,7 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 			// The same sign opened from the orders menu becomes the order search.
 			context.runOnClient(client -> {
 				var inventory = client.player.getInventory();
-				client.setScreen(new ContainerScreen(ChestMenu.sixRows(0, inventory), inventory, Component.literal("Orders")));
+				client.setScreenAndShow(new ContainerScreen(ChestMenu.sixRows(0, inventory), inventory, Component.literal("Orders")));
 			});
 			context.waitTicks(3);
 			openSign(singleplayer, pos);
@@ -209,7 +221,11 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 			client.getLanguageManager().setSelected(code);
 			client.reloadResourcePacks();
 		});
+		//? if modern
+		context.waitFor(client -> client.gui.overlay() == null, 1200);
+		//? else
 		context.waitFor(client -> client.getOverlay() == null, 1200);
+		//? end
 		context.waitTicks(5);
 	}
 
@@ -223,7 +239,7 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 
 	private static void clear(ClientGameTestContext context) {
 		context.runOnClient(client -> {
-			for (var child : client.screen.children()) {
+			for (var child : client.gui.screen().children()) {
 				if (child instanceof net.minecraft.client.gui.components.EditBox box) {
 					box.setValue("");
 				}
@@ -237,7 +253,11 @@ public class AuctionSearchGameTest implements FabricClientGameTest {
 			ServerPlayer player = server.getPlayerList().getPlayers().get(0);
 			SignBlockEntity sign = (SignBlockEntity) server.overworld().getBlockEntity(pos);
 			sign.setAllowedPlayerEditor(player.getUUID());
+			//? if modern
+			player.openTextEdit(sign, SignTextSlot.FRONT);
+			//? else
 			player.openTextEdit(sign, true);
+			//? end
 		});
 	}
 }

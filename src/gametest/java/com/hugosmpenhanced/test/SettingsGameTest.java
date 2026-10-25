@@ -1,5 +1,8 @@
 package com.hugosmpenhanced.test;
 
+//? if modern
+import com.mojang.blaze3d.platform.InputConstants;
+//? end
 import java.util.List;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
@@ -18,7 +21,9 @@ import net.minecraft.client.input.KeyEvent;
 import net.minecraft.client.input.MouseButtonEvent;
 import net.minecraft.client.input.MouseButtonInfo;
 
+//? if legacy
 import org.lwjgl.glfw.GLFW;
+//? end
 
 /**
  * The settings menu: every category and tab at GUI scale 2 and 1, the search, clicking a toggle
@@ -36,7 +41,7 @@ public class SettingsGameTest implements FabricClientGameTest {
 		for (int scale : new int[] {2, 1}) {
 			context.runOnClient(client -> {
 				client.options.guiScale().set(scale);
-				client.resizeDisplay();
+				client.resizeGui();
 			});
 			List<SettingsCategory> categories = ModSettings.categories();
 			for (SettingsCategory category : categories) {
@@ -50,20 +55,28 @@ public class SettingsGameTest implements FabricClientGameTest {
 
 		context.runOnClient(client -> {
 			client.options.guiScale().set(2);
-			client.resizeDisplay();
+			client.resizeGui();
 		});
 
 		// Search: letters typed without the field focused do nothing; Ctrl+F (or a click) starts it.
 		context.setScreen(() -> new SettingsScreen(null).select("Allgemein", "Menü"));
 		context.waitTicks(2);
 		context.runOnClient(client -> {
+			//? if modern
+			client.gui.screen().charTyped(new CharacterEvent('x'));
+			//? else
 			client.screen.charTyped(new CharacterEvent('x', 0));
-			check(((SettingsScreen) client.screen).searchText().isEmpty(), "a letter typed without focus went into the search");
-			client.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_F, 0, GLFW.GLFW_MOD_CONTROL));
+			//? end
+			check(((SettingsScreen) client.gui.screen()).searchText().isEmpty(), "a letter typed without focus went into the search");
+			client.gui.screen().keyPressed(new KeyEvent(InputConstants.KEY_F, 0, InputConstants.MOD_CONTROL));
 			for (char c : "name".toCharArray()) {
+				//? if modern
+				client.gui.screen().charTyped(new CharacterEvent(c));
+				//? else
 				client.screen.charTyped(new CharacterEvent(c, 0));
+				//? end
 			}
-			check("name".equals(((SettingsScreen) client.screen).searchText()), "Ctrl+F then typing did not search");
+			check("name".equals(((SettingsScreen) client.gui.screen()).searchText()), "Ctrl+F then typing did not search");
 		});
 		context.waitTicks(2);
 		context.takeScreenshot("settings-search-name");
@@ -84,12 +97,16 @@ public class SettingsGameTest implements FabricClientGameTest {
 		clickGui(context, list[0] + 14, list[1] + list[3] - 12);
 		context.runOnClient(client -> {
 			for (char c : "Hugo".toCharArray()) {
+				//? if modern
+				client.gui.screen().charTyped(new CharacterEvent(c));
+				//? else
 				client.screen.charTyped(new CharacterEvent(c, 0));
+				//? end
 			}
 		});
 		context.waitTicks(2);
 		context.takeScreenshot("settings-list-typing");
-		context.runOnClient(client -> client.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_ENTER, 0, 0)));
+		context.runOnClient(client -> client.gui.screen().keyPressed(new KeyEvent(InputConstants.KEY_RETURN, 0, 0)));
 		context.waitTicks(2);
 		if (!ModConfigManager.CONFIG.mentionTriggers.contains("Hugo")) {
 			throw new AssertionError("Typing into the list did not add the word: " + ModConfigManager.CONFIG.mentionTriggers);
@@ -104,25 +121,33 @@ public class SettingsGameTest implements FabricClientGameTest {
 		clickGui(context, key[0] + key[2] - 14, key[1] + key[3] / 2.0);
 		context.waitTicks(1);
 		context.takeScreenshot("settings-key-listening");
-		context.runOnClient(client -> client.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_ESCAPE, 0, 0)));
+		context.runOnClient(client -> client.gui.screen().keyPressed(new KeyEvent(InputConstants.KEY_ESCAPE, 0, 0)));
 		// A key pressed for a binding sets it; its letter (GLFW sends one right after) stays out of the search.
 		clickGui(context, key[0] + key[2] - 14, key[1] + key[3] / 2.0);
 		context.runOnClient(client -> {
-			client.screen.keyPressed(new KeyEvent(GLFW.GLFW_KEY_K, 0, 0));
+			client.gui.screen().keyPressed(new KeyEvent(InputConstants.KEY_K, 0, 0));
+			//? if modern
+			client.gui.screen().charTyped(new CharacterEvent('k'));
+			//? else
 			client.screen.charTyped(new CharacterEvent('k', 0));
+			//? end
 			check(SettingsFeature.openKey.getTranslatedKeyMessage().getString().equalsIgnoreCase("K"),
 				"key K was not bound but " + SettingsFeature.openKey.getTranslatedKeyMessage().getString());
-			check(((SettingsScreen) client.screen).searchText().isEmpty(), "the bound key's letter went into the search");
+			check(((SettingsScreen) client.gui.screen()).searchText().isEmpty(), "the bound key's letter went into the search");
 		});
 		context.waitTicks(2);
 		context.takeScreenshot("settings-key-set");
 		// A side mouse button can be bound too.
 		clickGui(context, key[0] + key[2] - 14, key[1] + key[3] / 2.0);
 		context.runOnClient(client -> {
-			double scale = ((SettingsScreen) client.screen).layoutScale();
+			double scale = ((SettingsScreen) client.gui.screen()).layoutScale();
+			//? if modern
+			MouseButtonEvent side = new MouseButtonEvent((key[0] + 10) * scale, (key[1] + 5) * scale, new MouseButtonInfo(3, 0));
+			//? else
 			MouseButtonEvent side = new MouseButtonEvent((key[0] + 10) * scale, (key[1] + 5) * scale, new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_4, 0));
-			client.screen.mouseClicked(side, false);
-			client.screen.mouseReleased(side);
+			//? end
+			client.gui.screen().mouseClicked(side, false);
+			client.gui.screen().mouseReleased(side);
 			check(SettingsFeature.openKey.saveString().startsWith("key.mouse."), "mouse button 4 was not bound: " + SettingsFeature.openKey.saveString());
 			SettingsFeature.openKey.setKey(SettingsFeature.openKey.getDefaultKey());
 			KeyMapping.resetMapping();
@@ -133,14 +158,14 @@ public class SettingsGameTest implements FabricClientGameTest {
 	/** Clicks where the settings menu drew something, given in its layout units (see SettingsScreen). */
 	private static void clickGui(ClientGameTestContext context, double x, double y) {
 		context.runOnClient(client -> {
-			double scale = ((SettingsScreen) client.screen).layoutScale();
-			client.screen.mouseClicked(click(x * scale, y * scale), false);
-			client.screen.mouseReleased(click(x * scale, y * scale));
+			double scale = ((SettingsScreen) client.gui.screen()).layoutScale();
+			client.gui.screen().mouseClicked(click(x * scale, y * scale), false);
+			client.gui.screen().mouseReleased(click(x * scale, y * scale));
 		});
 	}
 
 	private static MouseButtonEvent click(double x, double y) {
-		return new MouseButtonEvent(x, y, new MouseButtonInfo(GLFW.GLFW_MOUSE_BUTTON_LEFT, 0));
+		return new MouseButtonEvent(x, y, new MouseButtonInfo(InputConstants.MOUSE_BUTTON_LEFT, 0));
 	}
 
 	private static String slug(String name) {

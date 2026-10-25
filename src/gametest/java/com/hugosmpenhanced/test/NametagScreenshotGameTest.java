@@ -68,7 +68,7 @@ public class NametagScreenshotGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			context.runOnClient(client -> client.options.setCameraType(CameraType.THIRD_PERSON_FRONT));
 			context.runOnClient(client -> ModConfigManager.CONFIG.secondNametagPosition = SecondNametagPosition.ABOVE);
 			useEffects(context, EnumSet.of(NametagEffect.RAINBOW, NametagEffect.SHIMMER));
@@ -96,7 +96,11 @@ public class NametagScreenshotGameTest implements FabricClientGameTest {
 
 			// Chat, where the name is overlaid on the line vanilla already drew.
 			context.runOnClient(client -> client.options.setCameraType(CameraType.FIRST_PERSON));
+			//? if modern
+			context.runOnClient(client -> client.gui.hud.getChat().addClientSystemMessage(
+			//? else
 			context.runOnClient(client -> client.gui.getChat().addMessage(
+			//? end
 				Component.literal("<" + client.player.getGameProfile().name() + "> Outline im Chat")));
 			for (Set<NametagEffect> effects : List.of(EnumSet.of(NametagEffect.OUTLINE), EnumSet.of(NametagEffect.RAINBOW))) {
 				useEffects(context, effects);

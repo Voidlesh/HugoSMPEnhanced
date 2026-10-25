@@ -27,8 +27,13 @@
 	],
 	"depends": {
 		"fabricloader": ">=0.19.5",
+		//? if modern
+		"minecraft": "26.3",
+		"java": ">=25",
+		//? else
 		"minecraft": "1.21.11",
 		"java": ">=21",
+		//? end
 		"fabric-api": "*"
 	},
 	"suggests": {

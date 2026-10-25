@@ -1,0 +1,41 @@
+plugins {
+	id 'net.fabricmc.fabric-loom'
+}
+
+repositories {
+	maven {
+		name = "Modrinth"
+		url = "https://api.modrinth.com/maven"
+	}
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.minecraft_version}"
+	implementation "net.fabricmc:fabric-loader:${project.loader_version}"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.fabric_api_version}"
+	implementation "maven.modrinth:modmenu:${project.modmenu_version}"
+}
+
+loom {
+	mods {
+		"hugosmpenhanced" {
+			sourceSet sourceSets.main
+		}
+	}
+}
+
+ext.modern = true
+apply from: rootProject.file('gradle/line.gradle')
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+jar {
+	archiveClassifier = "mc${project.minecraft_version}"
+}

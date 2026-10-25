@@ -41,6 +41,11 @@ import net.minecraft.world.level.levelgen.presets.WorldPresets;
  */
 @SuppressWarnings("UnstableApiUsage")
 public class UpdateGameTest implements FabricClientGameTest {
+	//? if modern
+	/** The running game, so the fixture jars depend on the version this client actually has. */
+	private static final String GAME_VERSION = net.minecraft.SharedConstants.getCurrentVersion().name();
+
+	//? end
 	private static final String CHANGELOG = """
 		## Neu
 		- **Update-Hinweis**: neue Versionen erscheinen im Hauptmenü, mit Klick installieren
@@ -100,8 +105,13 @@ public class UpdateGameTest implements FabricClientGameTest {
 				}
 			}
 			// stands in for the installed mod: the helper runs from a copy of it
+			//? if modern
+			Files.write(oldJar, jar("0.1.0-alpha", GAME_VERSION, true));
+			byte[] good = jar("9.9.9", GAME_VERSION, false);
+			//? else
 			Files.write(oldJar, jar("0.1.0-alpha", "1.21.11", true));
 			byte[] good = jar("9.9.9", "1.21.11", false);
+			//? end
 			byte[] future = jar("9.9.10", "1.22", false);
 			this.files.put("/dl/hugosmpenhanced-9.9.9.jar", good);
 			this.files.put("/dl/hugosmpenhanced-9.9.10.jar", future);
@@ -166,7 +176,7 @@ public class UpdateGameTest implements FabricClientGameTest {
 		context.setScreen(TitleScreen::new);
 		context.waitTicks(10);
 		context.takeScreenshot("update-hauptmenue-vanilla");
-		boolean badge = context.computeOnClient(client -> client.screen.children().stream()
+		boolean badge = context.computeOnClient(client -> client.gui.screen().children().stream()
 			.anyMatch(w -> w.getClass().getSimpleName().equals("UpdateBadge")));
 		assertTrue(badge, "vanilla title screen has the badge");
 		context.runOnClient(client -> ModConfigManager.CONFIG.mainMenuCustom = true);
@@ -192,15 +202,15 @@ public class UpdateGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			context.waitTicks(110);
-			context.runOnClient(client -> client.setScreen(new net.minecraft.client.gui.screens.ChatScreen("", false)));
+			context.runOnClient(client -> client.setScreenAndShow(new net.minecraft.client.gui.screens.ChatScreen("", false)));
 			context.waitTicks(3);
 			context.takeScreenshot("update-chat");
 			// what clicking [Ansehen] does
 			context.runOnClient(client -> client.player.connection.sendUnattendedCommand("hugosmpenhanced update", null));
 			context.waitTicks(3);
-			boolean opened = context.computeOnClient(client -> client.screen instanceof UpdateScreen);
+			boolean opened = context.computeOnClient(client -> client.gui.screen() instanceof UpdateScreen);
 			assertTrue(opened, "/hugosmpenhanced update opens the update screen");
 			context.setScreen(() -> null);
 		}

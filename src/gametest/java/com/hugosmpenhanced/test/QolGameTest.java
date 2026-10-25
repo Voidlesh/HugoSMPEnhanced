@@ -1,5 +1,8 @@
 package com.hugosmpenhanced.test;
 
+//? if modern
+import com.mojang.blaze3d.platform.InputConstants;
+//? end
 import java.lang.reflect.Field;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -15,7 +18,9 @@ import com.hugosmpenhanced.client.feature.notes.Note;
 import com.hugosmpenhanced.client.feature.notes.NotesScreen;
 import com.mojang.authlib.GameProfile;
 
+//? if legacy
 import org.lwjgl.glfw.GLFW;
+//? end
 
 import com.hugosmpenhanced.client.settings.SettingsScreen;
 import net.fabricmc.fabric.api.client.gametest.v1.FabricClientGameTest;
@@ -34,6 +39,10 @@ import net.minecraft.world.phys.Vec3;
  */
 @SuppressWarnings("UnstableApiUsage")
 public class QolGameTest implements FabricClientGameTest {
+	//? if modern
+	private static final java.util.concurrent.atomic.AtomicInteger FAKE_ID = new java.util.concurrent.atomic.AtomicInteger(900000);
+
+	//? end
 	@Override
 	public void runTest(ClientGameTestContext context) {
 		HugoGuard.fetchAll();
@@ -53,7 +62,7 @@ public class QolGameTest implements FabricClientGameTest {
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
 				.filter(entry -> entry.preset().is(WorldPresets.FLAT)).findFirst().ifPresent(settings::setWorldType))
 			.create()) {
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			singleplayer.getServer().runCommand("time set day");
 			int[] base = context.computeOnClient(client -> {
 				var self = client.player;
@@ -76,14 +85,14 @@ public class QolGameTest implements FabricClientGameTest {
 			singleplayer.getServer().runCommand("fill " + (base[0] + 0) + " " + base[1] + " " + (base[2] + 3)
 				+ " " + (base[0] + 4) + " " + (base[1] + 3) + " " + (base[2] + 3) + " minecraft:stone");
 			context.waitTicks(20);
-			singleplayer.getClientWorld().waitForChunksRender();
+			singleplayer.getConnection().waitForChunksRender();
 			context.takeScreenshot("qol-glow-wall");
 
 			// Chat calculator: the result shows above the input; Tab puts it in.
 			context.setScreen(() -> new ChatScreen("verkaufe für 64*3,5", false));
 			context.waitTicks(5);
 			context.takeScreenshot("qol-calculator");
-			context.getInput().pressKey(GLFW.GLFW_KEY_TAB);
+			context.getInput().pressKey(InputConstants.KEY_TAB);
 			context.waitTicks(2);
 			String after = context.computeOnClient(client -> chatInput(client).getValue());
 			System.out.println("QOL calculator after tab: " + after);
@@ -134,21 +143,21 @@ public class QolGameTest implements FabricClientGameTest {
 			context.waitTicks(2);
 
 			// O opens the settings in game, O closes them again; the pause menu has the logo button.
-			context.getInput().pressKey(GLFW.GLFW_KEY_O);
+			context.getInput().pressKey(InputConstants.KEY_O);
 			context.waitTicks(3);
 			context.runOnClient(client -> {
-				if (!(client.screen instanceof SettingsScreen)) {
-					throw new AssertionError("Key O did not open the settings, screen is " + client.screen);
+				if (!(client.gui.screen() instanceof SettingsScreen)) {
+					throw new AssertionError("Key O did not open the settings, screen is " + client.gui.screen());
 				}
 			});
-			context.getInput().pressKey(GLFW.GLFW_KEY_O);
+			context.getInput().pressKey(InputConstants.KEY_O);
 			context.waitTicks(3);
 			context.runOnClient(client -> {
-				if (client.screen != null) {
-					throw new AssertionError("Key O did not close the settings, screen is " + client.screen);
+				if (client.gui.screen() != null) {
+					throw new AssertionError("Key O did not close the settings, screen is " + client.gui.screen());
 				}
 			});
-			context.getInput().pressKey(GLFW.GLFW_KEY_ESCAPE);
+			context.getInput().pressKey(InputConstants.KEY_ESCAPE);
 			context.waitTicks(5);
 			context.takeScreenshot("qol-pause-buttons");
 			context.setScreen(() -> null);
@@ -173,7 +182,7 @@ public class QolGameTest implements FabricClientGameTest {
 		try {
 			Field field = ChatScreen.class.getDeclaredField("input");
 			field.setAccessible(true);
-			return (EditBox) field.get(client.screen);
+			return (EditBox) field.get(client.gui.screen());
 		} catch (ReflectiveOperationException e) {
 			throw new AssertionError(e);
 		}
@@ -183,6 +192,9 @@ public class QolGameTest implements FabricClientGameTest {
 		RemotePlayer player = new RemotePlayer(client.level, new GameProfile(uuid, name));
 		player.snapTo(at.x, at.y, at.z, yaw, 0);
 		player.setYHeadRot(yaw);
+		//? if modern
+		player.setId(FAKE_ID.getAndIncrement());
+		//? end
 		client.level.addEntity(player);
 	}
 }

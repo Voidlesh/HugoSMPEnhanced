@@ -53,7 +53,7 @@ Eine Übersicht pro Version steht in den [Release-Notizen](release-notes/).
 
 1. [Fabric Loader](https://fabricmc.net/use/installer/) ab `0.19.5` für **Minecraft 1.21.11** oder **26.3** installieren.
 2. [Fabric API](https://modrinth.com/mod/fabric-api) in den Ordner `mods` legen.
-3. Von der [Releases-Seite](https://github.com/Voidlesh/HugoSMPEnhanced/releases) die Jar zu deiner Minecraft-Version nach `mods` legen: `hugosmpenhanced-<Version>.jar` für 1.21.11, `hugosmpenhanced-<Version>-mc26.3.jar` für 26.3.
+3. Von der [Releases-Seite](https://github.com/Voidlesh/HugoSMPEnhanced/releases) die Jar `hugosmpenhanced-<Version>.jar` nach `mods` legen. Es ist dieselbe Datei für Minecraft 1.21.11 und 26.3.
 4. Optional: [Mod Menu](https://modrinth.com/mod/modmenu) für den Zugang über die Mods-Liste.
 5. Minecraft starten und `hugosmp.net` beitreten, oder den neuen Knopf im Hauptmenü nutzen.
 
@@ -75,13 +75,13 @@ Tastenbelegungen findest du im Steuerungsmenü unter der Kategorie "HugoSMP Enha
 
 ## Selbst bauen
 
-Benötigt wird ein JDK 21 oder neuer.
+Benötigt wird ein JDK 25 (die 1.21.11-Hälfte wird mit Java-21-Ziel gebaut).
 
 ```
 ./gradlew build
 ```
 
-Die fertige Jar liegt danach in `build/libs/`. Einen Testclient startest du mit `./gradlew runClient`, die automatischen Client-Tests mit `./gradlew runClientGameTest`.
+Die fertige Jar für beide Minecraft-Versionen liegt danach in `build/libs/hugosmpenhanced-<Version>.jar`. Beide Versionen entstehen aus denselben Quellen in `src/`, siehe [Mehrere Minecraft-Versionen](docs/MULTIVERSION.md). Einen Testclient startest du mit `./gradlew :mc1_21_11:runClient` oder `./gradlew :mc26_3:runClient`, die automatischen Client-Tests mit `./gradlew :mc1_21_11:runClientGameTest` (oder `:mc26_3:`).
 
 `gradle.properties` enthält einen festen JDK-Pfad für Windows (`org.gradle.java.home`). Bei anderer Installation anpassen oder entfernen.
 

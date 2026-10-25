@@ -11,3 +11,8 @@ pluginManagement {
 
 // Should match your modid
 rootProject.name = 'hugosmpenhanced'
+
+// One project per Minecraft line, both built from the shared sources in src/. See docs/MULTIVERSION.md.
+include 'mc1_21_11', 'mc26_3'
+project(':mc1_21_11').projectDir = file('versions/1.21.11')
+project(':mc26_3').projectDir = file('versions/26.3')
