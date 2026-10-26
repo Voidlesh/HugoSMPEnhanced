@@ -6,6 +6,7 @@
 	"environment": "client",
 	"entrypoints": {
 		"fabric-client-gametest": [
+			"com.hugosmpenhanced.test.MixinAuditGameTest",
 			"com.hugosmpenhanced.test.NametagScreenshotGameTest",
 			"com.hugosmpenhanced.test.InventoryButtonsGameTest",
 			"com.hugosmpenhanced.test.KeyboardGalleryGameTest",
