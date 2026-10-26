@@ -125,6 +125,12 @@ public class UpdateGameTest implements FabricClientGameTest {
 
 		context.runOnClient(client -> {
 			client.options.menuBackgroundBlurriness().set(0);
+			// Beta-Modus ist ab Werk an (frische Konfig und die geladene Test-Konfig)
+			if (!new com.hugosmpenhanced.client.config.ModConfig().updatePrereleases || !ModConfigManager.CONFIG.updatePrereleases) {
+				throw new AssertionError("updatePrereleases sollte standardmäßig an sein");
+			}
+			// der Rest prüft die Stabil-Logik; Beta-Verhalten siehe Block nach "/none"
+			ModConfigManager.CONFIG.updatePrereleases = false;
 			ModConfigManager.CONFIG.updateCheck = true;
 			ModConfigManager.CONFIG.updateAutoInstall = false;
 			ModConfigManager.CONFIG.updateSkippedVersion = "";
@@ -135,6 +141,16 @@ public class UpdateGameTest implements FabricClientGameTest {
 		// nothing newer: no badge
 		check(context, base + "/none");
 		assertTrue(ModUpdates.status() == ModUpdates.Status.UP_TO_DATE, "empty list means up to date, was " + ModUpdates.status());
+
+		// beta mode (the default): the pre-release 10.0.0-beta.1 is offered, with the beta note in the screen
+		context.runOnClient(client -> ModConfigManager.CONFIG.updatePrereleases = true);
+		check(context, base + "/good");
+		ModUpdates.Release beta = ModUpdates.available();
+		assertTrue(beta != null && beta.version().equals("10.0.0-beta.1") && beta.prerelease(), "beta offered in beta mode");
+		context.runOnClient(client -> ModConfigManager.CONFIG.updatePrereleases = false);
+		check(context, base + "/good");
+		ModUpdates.Release stable = ModUpdates.available();
+		assertTrue(stable != null && stable.version().equals("9.9.9"), "stable only with beta mode off");
 
 		// a release for another Minecraft version is found but refused after the download
 		check(context, base + "/future");
