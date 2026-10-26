@@ -69,7 +69,7 @@ public class ModConfig {
 	// Updates von GitHub
 	public boolean updateCheck = true;
 	public boolean updateAutoInstall = false;
-	public boolean updatePrereleases = false;
+	public boolean updatePrereleases = true;
 	public String updateSkippedVersion = "";
 
 	// Einstellungsmenü: Logo-Knopf im Pausemenü
