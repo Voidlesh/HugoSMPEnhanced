@@ -9,6 +9,7 @@ import com.hugosmpenhanced.client.feature.colorcodes.ColorCodes;
 import com.hugosmpenhanced.client.feature.debug.DebugDump;
 import com.hugosmpenhanced.client.feature.discord.DiscordPresence;
 import com.hugosmpenhanced.client.feature.entityheatmap.EntityHeatmap;
+import com.hugosmpenhanced.client.feature.fakeclan.RemoteClanLists;
 import com.hugosmpenhanced.client.feature.farm.FarmFeature;
 import com.hugosmpenhanced.client.feature.gallery.GalleryFeature;
 import com.hugosmpenhanced.client.feature.hugoguard.HgCommand;
@@ -76,6 +77,7 @@ public class HugoSmpEnhancedClient implements ClientModInitializer {
 		EntityHeatmap.register();
 		SellFeature.register();
 		SpawnerPricesFeature.register();
+		RemoteClanLists.register();
 		DiscordPresence.register();
 		ColorCodes.register();
 		AntiLeak.register();

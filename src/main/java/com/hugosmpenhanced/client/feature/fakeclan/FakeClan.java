@@ -37,15 +37,15 @@ public final class FakeClan {
 		return FakeClanRules.clanOf(shown.substring(at + name.length()));
 	}
 
-	/** The real clan list from the config, never null. */
+	/** The real clans: the config's list plus the one from the Voidbot, never null. */
 	public static List<String> realClans() {
 		List<String> list = ModConfigManager.CONFIG.fakeClanReal;
-		return list == null ? List.of() : list;
+		return RemoteClanLists.real(list == null ? List.of() : list);
 	}
 
-	/** The manual fake clan list from the config, never null. */
+	/** The fake clans: the config's list plus the one from the Voidbot, never null. */
 	public static List<String> fakeClans() {
 		List<String> list = ModConfigManager.CONFIG.fakeClanFake;
-		return list == null ? List.of() : list;
+		return RemoteClanLists.fake(list == null ? List.of() : list);
 	}
 }

@@ -119,6 +119,8 @@ public class ModConfig {
 	public boolean fakeClanWarning = true;
 	public List<String> fakeClanReal = new ArrayList<>();
 	public List<String> fakeClanFake = new ArrayList<>();
+	/** Also uses the clan lists the admins keep on the Voidbot (api.voidlesh.de); the two lists above stay in force. */
+	public boolean clanListsRemote = true;
 	/** Shows a green line for players in a real clan; the list is fakeClanReal. */
 	public boolean trustedClanOverhead = true;
 	/** Size of the lines above the nametag (trusted, scammer, clan), 1.0 = normal. */

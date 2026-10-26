@@ -24,6 +24,7 @@
 			"com.hugosmpenhanced.test.ColorCodesGameTest",
 			"com.hugosmpenhanced.test.AntiLeakGameTest",
 			"com.hugosmpenhanced.test.SpawnerPricesGameTest",
+			"com.hugosmpenhanced.test.RemoteClanListsGameTest",
 			"com.hugosmpenhanced.test.StreamerGameTest",
 			"com.hugosmpenhanced.test.StreamerModeGameTest",
 			"com.hugosmpenhanced.test.UpdateGameTest",
