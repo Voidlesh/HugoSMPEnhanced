@@ -15,7 +15,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
-import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
@@ -27,19 +26,18 @@ import net.fabricmc.loader.api.FabricLoader;
 import net.minecraft.util.Util;
 
 /**
- * VOID Market's spawner buy and sell prices, from the public list on hugosmptools.com/trading
- * (voidbot pushes them there). Other servers on that list are ignored on purpose. Refreshed every five
- * minutes while on HugoSMP; the last answer is kept on disk, so tooltips have prices right after
- * joining and while the site is down.
+ * VOID Market's spawner buy and sell prices, fetched straight from the Voidbot's public price list
+ * (api.voidlesh.de). Refreshed every five minutes while on HugoSMP; the last answer is kept on disk,
+ * so tooltips have prices right after joining and while the bot is unreachable.
  *
- * <p>Wording as on the site: {@code buy} (Ankauf) is what a server pays you for a spawner,
+ * <p>Wording as in the Void Market shop: {@code buy} (Ankauf) is what VOID Market pays you for a spawner,
  * {@code sell} (Verkauf) is what it charges you.
  */
 public final class SpawnerPrices {
-	public static final String SITE = "https://hugosmptools.com/trading";
+	public static final String DISCORD = "https://discord.gg/voidtrading";
 	/** The only server whose prices the mod shows. */
 	public static final String SERVER = "VOID Market";
-	private static final String DEFAULT_API = "https://hugosmptools.com/api/public/trading";
+	private static final String DEFAULT_API = "https://api.voidlesh.de/v1/spawner-prices";
 	private static final String USER_AGENT = "Mozilla/5.0 (compatible; HugoSMPEnhanced/1.0; +https://github.com/Voidlesh/HugoSMPEnhanced)";
 	private static final Path CACHE = FabricLoader.getInstance().getConfigDir().resolve("hugosmpenhanced-spawner-prices.json");
 	private static final long REFRESH_MS = 5 * 60 * 1000L;
@@ -51,7 +49,7 @@ public final class SpawnerPrices {
 	public record Offer(String mobId, Long buy, Long sell) {
 	}
 
-	public record Server(String id, String name, String invite, int members, boolean verified, String note, List<Offer> offers) {
+	public record Server(String name, List<Offer> offers) {
 		public Offer offer(SpawnerMob mob) {
 			for (Offer offer : this.offers) {
 				if (offer.mobId().equals(mob.id)) {
@@ -72,7 +70,7 @@ public final class SpawnerPrices {
 		}
 	}
 
-	/** VOID Market's entry, or a null server if the list no longer has it. */
+	/** VOID Market's prices as of {@code fetchedAt}. */
 	public record Snapshot(Server server, long fetchedAt) {
 	}
 
@@ -148,7 +146,7 @@ public final class SpawnerPrices {
 		return lastError;
 	}
 
-	/** VOID Market's prices, or null before the first load or if it is not listed. */
+	/** VOID Market's prices, or null before the first load. */
 	public static Server voidMarket() {
 		Snapshot current = snapshot;
 		return current != null ? current.server() : null;
@@ -179,38 +177,21 @@ public final class SpawnerPrices {
 		}
 	}
 
-	/** Reads the {@code /api/public/trading} answer; throws if it is not one. */
+	/** Reads the {@code /v1/spawner-prices} answer of the Voidbot; throws if it is not one. */
 	public static Snapshot parse(JsonElement root, long fetchedAt) {
 		JsonObject body = root.getAsJsonObject();
-		if (!body.has("ok") || !body.get("ok").getAsBoolean() || !body.has("servers") || !body.get("servers").isJsonArray()) {
+		if (!body.has("ok") || !body.get("ok").getAsBoolean() || !body.has("offers") || !body.get("offers").isJsonArray()) {
 			throw new IllegalStateException("unexpected answer");
 		}
-		for (JsonElement element : body.getAsJsonArray("servers")) {
-			if (!element.isJsonObject()) {
-				continue;
+		List<Offer> offers = new ArrayList<>();
+		for (JsonElement rawOffer : body.getAsJsonArray("offers")) {
+			if (rawOffer.isJsonObject() && string(rawOffer.getAsJsonObject(), "mobId") != null) {
+				JsonObject offer = rawOffer.getAsJsonObject();
+				offers.add(new Offer(string(offer, "mobId"), price(offer, "buy"), price(offer, "sell")));
 			}
-			JsonObject server = element.getAsJsonObject();
-			String id = string(server, "id");
-			String name = string(server, "name");
-			if (id == null || name == null || !normalize(name).equals(normalize(SERVER))) {
-				continue;
-			}
-			List<Offer> offers = new ArrayList<>();
-			JsonArray rawOffers = server.has("offers") && server.get("offers").isJsonArray() ? server.getAsJsonArray("offers") : new JsonArray();
-			for (JsonElement rawOffer : rawOffers) {
-				if (rawOffer.isJsonObject() && string(rawOffer.getAsJsonObject(), "mobId") != null) {
-					JsonObject offer = rawOffer.getAsJsonObject();
-					offers.add(new Offer(string(offer, "mobId"), price(offer, "buy"), price(offer, "sell")));
-				}
-			}
-			String invite = string(server, "invite");
-			offers = List.copyOf(offers);
-			return new Snapshot(new Server(id, name, invite != null && invite.startsWith("https://") ? invite : null,
-				server.has("members") && server.get("members").isJsonPrimitive() ? server.get("members").getAsInt() : 0,
-				server.has("verified") && server.get("verified").isJsonPrimitive() && server.get("verified").getAsBoolean(),
-				string(server, "note"), offers), fetchedAt);
 		}
-		return new Snapshot(null, fetchedAt);
+		String name = string(body, "name");
+		return new Snapshot(new Server(name != null ? name : SERVER, List.copyOf(offers)), fetchedAt);
 	}
 
 	private static Snapshot readCache() {
@@ -237,7 +218,7 @@ public final class SpawnerPrices {
 		}
 	}
 
-	/** "12,5 Mio", "750.000", "5 Mio": the way the trading page writes spawner prices. */
+	/** "12,5 Mio", "750.000", "5 Mio": the way the shop writes spawner prices. */
 	public static String format(long price) {
 		if (price >= 1_000_000) {
 			double millions = price / 1_000_000.0;
@@ -264,10 +245,6 @@ public final class SpawnerPrices {
 		}
 		long days = hours / 24;
 		return days == 1 ? "vor 1 Tag" : "vor " + days + " Tagen";
-	}
-
-	private static String normalize(String name) {
-		return name.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
 	}
 
 	private static Long price(JsonObject object, String key) {

@@ -28,7 +28,6 @@ public class SpawnerPricesScreen extends Screen implements StyledScreen {
 	private static final int LABEL = 0xFF8A8A8A;
 
 	private final Screen parent;
-	private Button discordButton;
 	private Button refreshButton;
 
 	public SpawnerPricesScreen(Screen parent) {
@@ -46,34 +45,23 @@ public class SpawnerPricesScreen extends Screen implements StyledScreen {
 		int left = (this.width - PANEL_WIDTH) / 2;
 		int bottom = (this.height - this.panelHeight()) / 2 + this.panelHeight();
 		int y = bottom - 26;
-		int width = (PANEL_WIDTH - 16 - 3 * 4) / 4;
-		this.discordButton = this.addRenderableWidget(Button.builder(Component.literal("Discord"), b -> {
-			SpawnerPrices.Server server = SpawnerPrices.voidMarket();
-			if (server != null && server.invite() != null) {
-				//? if modern
-				Desktop.openUri(server.invite());
-				//? else
-				Util.getPlatform().openUri(server.invite());
-				//? end
-			}
+		int width = (PANEL_WIDTH - 16 - 2 * 4) / 3;
+		this.addRenderableWidget(Button.builder(Component.literal("Discord"), b -> {
+			//? if modern
+			Desktop.openUri(SpawnerPrices.DISCORD);
+			//? else
+			Util.getPlatform().openUri(SpawnerPrices.DISCORD);
+			//? end
 		}).bounds(left + 8, y, width, 20).build());
-		//? if modern
-		this.addRenderableWidget(Button.builder(Component.literal("Webseite"), b -> Desktop.openUri(SpawnerPrices.SITE))
-		//? else
-		this.addRenderableWidget(Button.builder(Component.literal("Webseite"), b -> Util.getPlatform().openUri(SpawnerPrices.SITE))
-		//? end
-			.bounds(left + 8 + (width + 4), y, width, 20).build());
 		this.refreshButton = this.addRenderableWidget(Button.builder(Component.literal("Aktualisieren"), b -> SpawnerPrices.refresh())
-			.bounds(left + 8 + 2 * (width + 4), y, width, 20).build());
+			.bounds(left + 8 + (width + 4), y, width, 20).build());
 		this.addRenderableWidget(Button.builder(Component.literal("Schließen"), b -> this.onClose())
-			.bounds(left + 8 + 3 * (width + 4), y, width, 20).build());
+			.bounds(left + 8 + 2 * (width + 4), y, width, 20).build());
 		this.tick();
 	}
 
 	@Override
 	public void tick() {
-		SpawnerPrices.Server server = SpawnerPrices.voidMarket();
-		this.discordButton.active = server != null && server.invite() != null;
 		this.refreshButton.active = !SpawnerPrices.loading();
 		this.refreshButton.setMessage(Component.literal(SpawnerPrices.loading() ? "Lädt…" : "Aktualisieren"));
 	}
@@ -103,7 +91,7 @@ public class SpawnerPricesScreen extends Screen implements StyledScreen {
 		graphics.text(this.font, "Spawner-Preise", 0, 0, 0xFFFFFFFF);
 		graphics.pose().popMatrix();
 		graphics.text(this.font, SpawnerPrices.SERVER, left + 10, top + 25, ACCENT);
-		String status = this.status(snapshot, server);
+		String status = this.status(snapshot);
 		graphics.text(this.font, status, left + PANEL_WIDTH - 10 - this.font.width(status), top + 12,
 			snapshot == null && SpawnerPrices.state() == SpawnerPrices.State.FAILED ? 0xFFFF6060 : LABEL);
 
@@ -131,7 +119,7 @@ public class SpawnerPricesScreen extends Screen implements StyledScreen {
 		graphics.text(this.font, "Ankauf = was VOID dir zahlt, Verkauf = was du zahlst", left + 10, y + 3, LABEL);
 	}
 
-	private String status(SpawnerPrices.Snapshot snapshot, SpawnerPrices.Server server) {
+	private String status(SpawnerPrices.Snapshot snapshot) {
 		if (snapshot == null) {
 			return SpawnerPrices.state() == SpawnerPrices.State.FAILED ? "Nicht erreichbar" : "Lädt Preise…";
 		}
@@ -139,7 +127,7 @@ public class SpawnerPricesScreen extends Screen implements StyledScreen {
 		if (SpawnerPrices.lastError() != null) {
 			return age + " · offline";
 		}
-		return server == null ? "Gerade nicht gelistet" : age;
+		return age;
 	}
 
 	private void price(GuiGraphicsExtractor graphics, int x, int y, Long price, int color) {

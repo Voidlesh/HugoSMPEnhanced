@@ -57,7 +57,7 @@ public class ModConfig {
 	public boolean auctionMarkHighlight = true;
 	public List<String> auctionMarkedItems = new ArrayList<>();
 
-	// Spawner-Preise von VOID Market (über hugosmptools.com/trading)
+	// Spawner-Preise von VOID Market (direkt vom Voidbot, api.voidlesh.de)
 	public boolean spawnerPricesTooltip = true;
 
 	// TPA-Toast

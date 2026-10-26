@@ -40,9 +40,9 @@ import net.minecraft.world.level.block.entity.BlockEntityType;
 import net.minecraft.world.level.levelgen.presets.WorldPresets;
 
 /**
- * Spawner prices from a local copy of hugosmptools.com's public trading list (the real VOID Market
- * and yayk clan prices of 12.10.2026): spawner items must show VOID's Ankauf/Verkauf and nothing
- * from other servers, other items nothing; the overview lists every kind; a failed refresh keeps
+ * Spawner prices from a local copy of the Voidbot's public price list (VOID Market prices of
+ * 12.10.2026): spawner items must show VOID's Ankauf/Verkauf, other items nothing;
+ * the overview lists every kind; a failed refresh keeps
  * the last prices.
  */
 @SuppressWarnings("UnstableApiUsage")
@@ -67,10 +67,10 @@ public class SpawnerPricesGameTest implements FabricClientGameTest {
 		check(Boolean.TRUE.equals(SpawnerPrices.refresh().join()), "prices must load: " + SpawnerPrices.lastError());
 		SpawnerPrices.Snapshot snapshot = SpawnerPrices.snapshot();
 		SpawnerPrices.Server voidMarket = snapshot.server();
-		check(voidMarket != null && voidMarket.name().equals("VOID Market"), "only VOID Market is kept");
+		check(voidMarket != null && voidMarket.name().equals("VOID Market"), "VOID Market prices are read");
 		check(voidMarket.buy(SpawnerMob.SKELETON) == 12_500_000L && voidMarket.sell(SpawnerMob.SKELETON) == null,
 			"VOID skeleton Ankauf 12.5M, no Verkauf");
-		check(voidMarket.buy(SpawnerMob.CREEPER) == 5_000_000L, "VOID creeper 5M (yayk's 7.5M is ignored)");
+		check(voidMarket.buy(SpawnerMob.CREEPER) == 5_000_000L, "VOID creeper 5M");
 
 		try (TestSingleplayerContext singleplayer = context.worldBuilder()
 			.adjustSettings(settings -> settings.getNormalPresetList().stream()
@@ -97,8 +97,7 @@ public class SpawnerPricesGameTest implements FabricClientGameTest {
 			String skeletonTooltip = tooltip(context, skeletons);
 			System.out.println("SPAWNER tooltip skeletons:\n" + skeletonTooltip);
 			check(skeletonTooltip.contains("VOID Market") && skeletonTooltip.contains("Ankauf: $12,5 Mio")
-				&& skeletonTooltip.contains("4× = $50 Mio") && skeletonTooltip.contains("Verkauf: kein Angebot")
-				&& !skeletonTooltip.contains("yayk"), "skeleton tooltip shows VOID only");
+				&& skeletonTooltip.contains("4× = $50 Mio") && skeletonTooltip.contains("Verkauf: kein Angebot"), "skeleton tooltip shows VOID prices");
 			String golemTooltip = tooltip(context, golem);
 			System.out.println("SPAWNER tooltip golem:\n" + golemTooltip);
 			check(golemTooltip.contains("Ankauf: $9 Mio"), "golem Ankauf");
@@ -170,7 +169,7 @@ public class SpawnerPricesGameTest implements FabricClientGameTest {
 		try (InputStream in = SpawnerPricesGameTest.class.getClassLoader().getResourceAsStream("spawner-prices-test.json")) {
 			byte[] body = in.readAllBytes();
 			HttpServer server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
-			server.createContext("/api/public/trading", exchange -> {
+			server.createContext("/v1/spawner-prices", exchange -> {
 				exchange.getResponseHeaders().add("Content-Type", "application/json");
 				exchange.sendResponseHeaders(200, body.length);
 				exchange.getResponseBody().write(body);
@@ -178,7 +177,7 @@ public class SpawnerPricesGameTest implements FabricClientGameTest {
 			});
 			server.start();
 			System.setProperty("hugosmpenhanced.spawnerPricesUrl",
-				"http://127.0.0.1:" + server.getAddress().getPort() + "/api/public/trading");
+				"http://127.0.0.1:" + server.getAddress().getPort() + "/v1/spawner-prices");
 			return server;
 		} catch (Exception e) {
 			throw new RuntimeException(e);

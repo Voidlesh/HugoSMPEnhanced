@@ -1,175 +1,43 @@
 {
  "ok": true,
- "mobs": [
+ "name": "VOID Market",
+ "invite": "https://discord.gg/voidtrading",
+ "updatedAt": 1760000000000,
+ "offers": [
   {
-   "id": "skeleton",
-   "label": "Skeleton"
-  },
-  {
-   "id": "creeper",
-   "label": "Creeper"
-  },
-  {
-   "id": "iron_golem",
-   "label": "Iron Golem"
-  },
-  {
-   "id": "spider",
-   "label": "Spider"
-  },
-  {
-   "id": "blaze",
-   "label": "Blaze"
-  },
-  {
-   "id": "pig",
-   "label": "Zombie Pigman"
-  },
-  {
-   "id": "cow",
-   "label": "Cow"
-  }
- ],
- "servers": [
-  {
-   "id": "server-msrbs7je",
-   "name": "VOID Market",
-   "invite": "https://discord.gg/Hy7FM9aKMe",
-   "avatar": "https://cdn.discordapp.com/icons/1518245956179591268/ba847824874e061c7c1a9eff2535ecd8.webp?size=256",
-   "members": 259,
-   "note": "Offizieller Void Market Server.",
-   "verified": true,
-   "offers": [
-    {
-     "mobId": "skeleton",
-     "buy": 12500000,
-     "sell": null
-    },
-    {
-     "mobId": "creeper",
-     "buy": 5000000,
-     "sell": null
-    },
-    {
-     "mobId": "iron_golem",
-     "buy": 9000000,
-     "sell": null
-    },
-    {
-     "mobId": "spider",
-     "buy": 5000000,
-     "sell": null
-    },
-    {
-     "mobId": "blaze",
-     "buy": null,
-     "sell": null
-    },
-    {
-     "mobId": "pig",
-     "buy": null,
-     "sell": null
-    },
-    {
-     "mobId": "cow",
-     "buy": null,
-     "sell": null
-    }
-   ]
-  },
-  {
-   "id": "server-msw597v9",
-   "name": "yayk clan",
-   "invite": "https://discord.gg/yayk",
-   "avatar": "https://media.tenor.com/1pbLmrMhHjsAAAAj/blue-emoji.gif",
-   "members": 1900,
-   "note": "YAYK Twitch:https://www.twitch.tv/yayk\\nDc Bot von: Phoenix\\n\\nDanke an Voidlesh ",
-   "verified": false,
-   "offers": [
-    {
-     "mobId": "skeleton",
-     "buy": 14400000,
-     "sell": 10500000
-    },
-    {
-     "mobId": "creeper",
-     "buy": 7500000,
-     "sell": 5500000
-    },
-    {
-     "mobId": "iron_golem",
-     "buy": null,
-     "sell": null
-    },
-    {
-     "mobId": "spider",
-     "buy": null,
-     "sell": null
-    },
-    {
-     "mobId": "blaze",
-     "buy": null,
-     "sell": null
-    },
-    {
-     "mobId": "pig",
-     "buy": null,
-     "sell": null
-    },
-    {
-     "mobId": "cow",
-     "buy": null,
-     "sell": null
-    }
-   ]
-  }
- ],
- "best": {
-  "skeleton": {
-   "buy": {
-    "price": 14400000,
-    "serverId": "server-msw597v9"
-   },
-   "sell": {
-    "price": 10500000,
-    "serverId": "server-msw597v9"
-   }
-  },
-  "creeper": {
-   "buy": {
-    "price": 7500000,
-    "serverId": "server-msw597v9"
-   },
-   "sell": {
-    "price": 5500000,
-    "serverId": "server-msw597v9"
-   }
-  },
-  "iron_golem": {
-   "buy": {
-    "price": 9000000,
-    "serverId": "server-msrbs7je"
-   },
+   "mobId": "skeleton",
+   "buy": 12500000,
    "sell": null
   },
-  "spider": {
-   "buy": {
-    "price": 5000000,
-    "serverId": "server-msrbs7je"
-   },
+  {
+   "mobId": "creeper",
+   "buy": 5000000,
    "sell": null
   },
-  "blaze": {
+  {
+   "mobId": "iron_golem",
+   "buy": 9000000,
+   "sell": null
+  },
+  {
+   "mobId": "spider",
+   "buy": 5000000,
+   "sell": null
+  },
+  {
+   "mobId": "blaze",
    "buy": null,
    "sell": null
   },
-  "pig": {
+  {
+   "mobId": "pig",
    "buy": null,
    "sell": null
   },
-  "cow": {
+  {
+   "mobId": "cow",
    "buy": null,
    "sell": null
   }
- }
+ ]
 }

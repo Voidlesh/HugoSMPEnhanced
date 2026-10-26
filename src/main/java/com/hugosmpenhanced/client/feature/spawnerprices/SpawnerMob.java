@@ -7,8 +7,8 @@ import net.minecraft.world.item.Item;
 import net.minecraft.world.item.Items;
 
 /**
- * The spawner kinds hugosmptools.com lists, with the words a HugoSMP spawner item's name or lore
- * may use for them. {@code pig} is listed there as "Zombie Pigman"; voidbot also calls it
+ * The spawner kinds the price list covers, with the words a HugoSMP spawner item's name or lore
+ * may use for them. {@code pig} is shown as "Zombie Pigman"; the shop also calls it
  * "Schwein", so both mobs map to it.
  */
 public enum SpawnerMob {
@@ -22,7 +22,7 @@ public enum SpawnerMob {
 		List.of("zombie pigman", "zombiepigman", "pigman", "zombified piglin", "zombifizierter piglin", "schweinezombie", "schwein", "pig")),
 	COW("cow", "Kuh", Items.COW_SPAWN_EGG, List.of("minecraft:cow"), List.of("kuh", "cow"));
 
-	/** The id hugosmptools.com uses. */
+	/** The id the Voidbot uses. */
 	public final String id;
 	public final String label;
 	/** Shown in the overview next to the name. */
