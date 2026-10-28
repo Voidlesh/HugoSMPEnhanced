@@ -1,0 +1,13 @@
+# 26.2 -> 26.1; applied after swaps-26.2.txt to the shared lines when the 26.1 sources are written. regex<TAB>replacement
+\.gui\.screen\(\)	.screen
+\bHud\b	Gui
+\.gui\.hud\.isHidden\(\)	.options.hideGui
+\.gui\.hud\.	.gui.
+\.gui\.overlay\(\)	.getOverlay()
+\.gui\.toastManager\(\)	.getToastManager()
+\blevelExtractor\b	levelRenderer
+Items\.STAINED_GLASS_PANE\.black\(\)	Items.BLACK_STAINED_GLASS_PANE
+Items\.STAINED_GLASS_PANE\.gray\(\)	Items.GRAY_STAINED_GLASS_PANE
+gameRenderer\.lighting\(\)	gameRenderer.getLighting()
+this\.minecraft\.gameRenderer\.panorama\(\)\.extractRenderState\(graphics, this\.width, this\.height\)	this.extractPanorama(graphics, partialTick)
+gameRenderer\.gameRenderState\(\)	gameRenderer.getGameRenderState()

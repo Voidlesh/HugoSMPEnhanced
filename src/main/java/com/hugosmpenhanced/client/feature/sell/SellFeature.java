@@ -66,8 +66,10 @@ public final class SellFeature {
 
 	private static boolean shiftDown() {
 		var window = Minecraft.getInstance().getWindow();
-		//? if modern
+		//? if v263
 		return InputConstants.isKeyDown(InputConstants.KEY_LSHIFT) || InputConstants.isKeyDown(InputConstants.KEY_RSHIFT);
+		//? elif modern
+		return InputConstants.isKeyDown(window, InputConstants.KEY_LSHIFT) || InputConstants.isKeyDown(window, InputConstants.KEY_RSHIFT);
 		//? else
 		return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_SHIFT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_SHIFT);
 		//? end

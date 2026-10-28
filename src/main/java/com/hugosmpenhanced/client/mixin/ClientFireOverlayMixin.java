@@ -1,12 +1,12 @@
 package com.hugosmpenhanced.client.mixin;
-//? if modern
+//? if v262
 
 import com.mojang.blaze3d.vertex.PoseStack;
 //? end
 
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-//? if modern
+//? if v262
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 //? else
@@ -16,12 +16,12 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import com.hugosmpenhanced.client.config.ModConfigManager;
 
 import net.minecraft.client.renderer.ScreenEffectRenderer;
-//? if modern
+//? if v262
 import net.minecraft.client.renderer.SubmitNodeCollector;
 import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 //? end
 
-//? if modern
+//? if v262
 /**
  * "Lower fire": the burning overlay sits lower, so the middle of the screen stays visible. The
  * overlay is submitted as one custom geometry quad that inherits the pose it is submitted with, so
@@ -32,7 +32,7 @@ import net.minecraft.client.renderer.texture.TextureAtlasSprite;
 //? end
 @Mixin(ScreenEffectRenderer.class)
 public abstract class ClientFireOverlayMixin {
-	//? if modern
+	//? if v262
 	private static final float LOWER = -0.18F;
 
 	@Inject(method = "submitFire", at = @At("HEAD"))

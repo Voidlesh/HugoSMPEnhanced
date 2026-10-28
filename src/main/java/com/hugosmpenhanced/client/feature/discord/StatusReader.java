@@ -23,7 +23,7 @@ import net.minecraft.stats.Stats;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.phys.Vec3;
 import net.minecraft.world.scores.DisplaySlot;
-//? if modern
+//? if v262
 import net.minecraft.world.scores.TeamColor;
 //? end
 import net.minecraft.world.scores.Objective;
@@ -132,7 +132,7 @@ public final class StatusReader {
 		Objective objective = sidebarObjective(scoreboard, player);
 		String title = objective == null ? "" : clean(objective.getDisplayName().getString());
 		List<String> sidebar = objective == null ? List.of() : sidebarLines(scoreboard, objective);
-		//? if modern
+		//? if v262
 		PlayerTabOverlayAccessor tab = (PlayerTabOverlayAccessor) client.gui.hud.getTabList();
 		//? else
 		PlayerTabOverlayAccessor tab = (PlayerTabOverlayAccessor) client.gui.getTabList();
@@ -284,7 +284,7 @@ public final class StatusReader {
 	private static Objective sidebarObjective(Scoreboard scoreboard, LocalPlayer player) {
 		PlayerTeam team = scoreboard.getPlayersTeam(player.getScoreboardName());
 		if (team != null) {
-			//? if modern
+			//? if v262
 			DisplaySlot slot = team.getColor().map(TeamColor::displaySlot).orElse(null);
 			//? else
 			DisplaySlot slot = DisplaySlot.teamColorToSlot(team.getColor());

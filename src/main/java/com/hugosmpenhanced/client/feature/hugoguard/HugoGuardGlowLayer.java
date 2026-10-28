@@ -82,8 +82,10 @@ public class HugoGuardGlowLayer extends RenderLayer<AvatarRenderState, PlayerMod
 		poseStack.scale(GROW, GROW, GROW);
 		poseStack.translate(0.0F, -CENTER_Y, 0.0F);
 		collector.submitModel(this.getParentModel(), state, poseStack, RenderTypes.entityTranslucentEmissive(TEXTURE),
-			//? if modern
+			//? if v263
 			LightCoordsUtil.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, color, null, 0);
+			//? elif modern
+			LightCoordsUtil.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, color, null, 0, null);
 			//? else
 			LightTexture.FULL_BRIGHT, OverlayTexture.NO_OVERLAY, color, null, 0, null);
 			//? end

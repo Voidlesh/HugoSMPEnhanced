@@ -25,7 +25,7 @@ loom {
 	}
 }
 
-ext.modern = false
+ext.level = 0
 apply from: rootProject.file('gradle/line.gradle')
 
 // The gate classes of the one-jar build run on both lines, so they are built here (Java 21) and only added to this line.

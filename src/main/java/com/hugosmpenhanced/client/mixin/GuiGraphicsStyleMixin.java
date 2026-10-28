@@ -1,7 +1,7 @@
 package com.hugosmpenhanced.client.mixin;
 
 import com.hugosmpenhanced.client.gui.HugoStyle;
-//? if modern
+//? if v263
 import com.mojang.renderpearl.api.pipeline.RenderPipeline;
 //? else
 import com.mojang.blaze3d.pipeline.RenderPipeline;
@@ -16,7 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 /** Swaps button, text field and slider sprites for {@link HugoStyle} on the mod's screens. */
 @Mixin(GuiGraphicsExtractor.class)
 public abstract class GuiGraphicsStyleMixin {
-	//? if modern
+	//? if v263
 	@Inject(method = "blitSprite(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIII)V",
 	//? else
 	@Inject(method = "blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIII)V",
@@ -29,7 +29,7 @@ public abstract class GuiGraphicsStyleMixin {
 		}
 	}
 
-	//? if modern
+	//? if v263
 	@Inject(method = "blitSprite(Lcom/mojang/renderpearl/api/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIIF)V",
 	//? else
 	@Inject(method = "blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/Identifier;IIIIF)V",

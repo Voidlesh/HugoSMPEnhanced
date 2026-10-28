@@ -9,7 +9,7 @@
 [![Release](https://img.shields.io/github/v/release/Voidlesh/HugoSMPEnhanced?include_prereleases&label=Release)](https://github.com/Voidlesh/HugoSMPEnhanced/releases)
 [![Build](https://img.shields.io/github/actions/workflow/status/Voidlesh/HugoSMPEnhanced/build.yml?label=Build)](https://github.com/Voidlesh/HugoSMPEnhanced/actions)
 [![Lizenz: MIT](https://img.shields.io/badge/Lizenz-MIT-blue.svg)](LICENSE)
-![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.3-62b47a)
+![Minecraft](https://img.shields.io/badge/Minecraft-1.21.11%20%7C%2026.1%20%E2%80%93%2026.3-62b47a)
 ![Fabric](https://img.shields.io/badge/Mod--Loader-Fabric-dbd0b4)
 
 </div>
@@ -51,13 +51,13 @@ Eine Übersicht pro Version steht in den [Release-Notizen](release-notes/).
 
 ## Installation
 
-1. [Fabric Loader](https://fabricmc.net/use/installer/) ab `0.19.5` für **Minecraft 1.21.11** oder **26.3** installieren.
+1. [Fabric Loader](https://fabricmc.net/use/installer/) ab `0.19.5` für **Minecraft 1.21.11**, **26.1**, **26.2** oder **26.3** installieren.
 2. [Fabric API](https://modrinth.com/mod/fabric-api) in den Ordner `mods` legen.
-3. Von der [Releases-Seite](https://github.com/Voidlesh/HugoSMPEnhanced/releases) die Jar `hugosmpenhanced-<Version>.jar` nach `mods` legen. Es ist dieselbe Datei für Minecraft 1.21.11 und 26.3.
+3. Von der [Releases-Seite](https://github.com/Voidlesh/HugoSMPEnhanced/releases) die Jar `hugosmpenhanced-<Version>.jar` nach `mods` legen. Es ist dieselbe Datei für Minecraft 1.21.11, 26.1 (auch 26.1.1 und 26.1.2), 26.2 und 26.3.
 4. Optional: [Mod Menu](https://modrinth.com/mod/modmenu) für den Zugang über die Mods-Liste.
 5. Minecraft starten und `hugosmp.net` beitreten, oder den neuen Knopf im Hauptmenü nutzen.
 
-Voraussetzungen: Java 21 oder neuer (Minecraft 26.3 braucht Java 25).
+Voraussetzungen: Java 21 oder neuer (Minecraft 26.x braucht Java 25).
 
 ### Updates
 

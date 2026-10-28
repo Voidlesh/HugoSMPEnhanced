@@ -128,7 +128,7 @@ final class GlyphFxVertexConsumer implements VertexConsumer {
 	}
 
 	@Override
-	//? if modern
+	//? if v263
 	public VertexConsumer setUv3(float u, float v) {
 		if (this.passthrough) {
 			this.out.setUv3(u, v);

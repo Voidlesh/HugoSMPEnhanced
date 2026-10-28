@@ -24,7 +24,7 @@ loom {
 	}
 }
 
-ext.modern = true
+ext.level = 3
 apply from: rootProject.file('gradle/line.gradle')
 
 tasks.withType(JavaCompile).configureEach {

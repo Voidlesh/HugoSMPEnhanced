@@ -17,7 +17,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.network.chat.contents.TranslatableContents;
 import net.minecraft.network.protocol.game.ServerboundSignUpdatePacket;
-//? if modern
+//? if v263
 import net.minecraft.world.level.block.entity.SignTextSlot;
 //? end
 import net.minecraft.world.item.Item;
@@ -96,7 +96,7 @@ public final class AuctionSearch {
 
 	private static boolean isSearchSign(SignBlockEntity sign, boolean front) {
 		for (int i = 0; i < 4; i++) {
-			//? if modern
+			//? if v263
 			if (sign.getText(front ? SignTextSlot.FRONT : SignTextSlot.BACK).getMessages(false).get(i).getString().toLowerCase(Locale.ROOT).contains("suchbegriff")) {
 			//? else
 			if (sign.getText(front).getMessage(i, false).getString().toLowerCase(Locale.ROOT).contains("suchbegriff")) {
@@ -116,7 +116,7 @@ public final class AuctionSearch {
 		String[] lines = new String[4];
 		lines[0] = query;
 		for (int i = 1; i < 4; i++) {
-			//? if modern
+			//? if v263
 			lines[i] = sign.getText(front ? SignTextSlot.FRONT : SignTextSlot.BACK).getMessages(false).get(i).getString();
 			//? else
 			lines[i] = sign.getText(front).getMessage(i, false).getString();
@@ -126,7 +126,7 @@ public final class AuctionSearch {
 		if (!query.isBlank()) {
 			LimitedOffers.newBrowse();
 		}
-		//? if modern
+		//? if v263
 		client.getConnection().send(new ServerboundSignUpdatePacket(sign.getBlockPos(), List.of(lines[0], lines[1], lines[2], lines[3]), front ? SignTextSlot.FRONT : SignTextSlot.BACK));
 		//? else
 		client.getConnection().send(new ServerboundSignUpdatePacket(sign.getBlockPos(), front, lines[0], lines[1], lines[2], lines[3]));
@@ -140,7 +140,7 @@ public final class AuctionSearch {
 		}
 		openingVanilla = true;
 		try {
-			//? if modern
+			//? if v263
 			client.player.openTextEdit(sign, front ? SignTextSlot.FRONT : SignTextSlot.BACK);
 			//? else
 			client.player.openTextEdit(sign, front);

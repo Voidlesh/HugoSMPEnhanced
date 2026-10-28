@@ -122,8 +122,10 @@ public final class SellOverlay {
 
 	private static boolean altDown() {
 		var window = Minecraft.getInstance().getWindow();
-		//? if modern
+		//? if v263
 		return InputConstants.isKeyDown(InputConstants.KEY_LALT) || InputConstants.isKeyDown(InputConstants.KEY_RALT);
+		//? elif modern
+		return InputConstants.isKeyDown(window, InputConstants.KEY_LALT) || InputConstants.isKeyDown(window, InputConstants.KEY_RALT);
 		//? else
 		return InputConstants.isKeyDown(window, GLFW.GLFW_KEY_LEFT_ALT) || InputConstants.isKeyDown(window, GLFW.GLFW_KEY_RIGHT_ALT);
 		//? end

@@ -1,0 +1,6 @@
+# 26.3 -> 26.1/26.2; applied to the shared lines when the sources of these lines are written. regex<TAB>replacement
+\b(pose|poseStack)\.rotate\((?=camera\.orientation|Axis\.)	$1.mulPose(
+InputConstants\.Type\.KEYBOARD	InputConstants.Type.KEYSYM
+new OptionsScreen\(this, this\.minecraft\.options\)	new OptionsScreen(this, this.minecraft.options, false)
+InputConstants\.KEY_LGUI	InputConstants.KEY_LSUPER
+InputConstants\.KEY_RGUI	InputConstants.KEY_RSUPER

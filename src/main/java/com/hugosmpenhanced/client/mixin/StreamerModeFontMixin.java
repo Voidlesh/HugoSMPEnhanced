@@ -29,7 +29,7 @@ public abstract class StreamerModeFontMixin {
 		return NameMask.mask(text);
 	}
 
-	//? if modern
+	//? if v262
 	@ModifyVariable(method = "prepare8xTextOutline", at = @At("HEAD"), argsOnly = true)
 	//? else
 	@ModifyVariable(method = "drawInBatch8xOutline", at = @At("HEAD"), argsOnly = true)

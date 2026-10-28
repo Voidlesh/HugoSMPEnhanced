@@ -13,18 +13,23 @@ import java.util.stream.Stream;
 /**
  * Turns the shared source tree into the sources of one Minecraft line.
  *
- * <p>Lines the two lines differ in are written once per line between directives (each on its own line):
+ * <p>Lines the Minecraft lines differ in are written once per line between directives (each on its own line):
  * <pre>
- * //? if modern      26.x: unobfuscated, Java 25
+ * //? if v263        26.3 and newer
+ * ...
+ * //? elif modern    26.1 and newer (so here: 26.1 and 26.2)
  * ...
  * //? else           1.21.11
  * ...
  * //? end
  * </pre>
- * {@code //? if legacy} works the same with the lines swapped. A file whose first line is {@code //? only modern}
- * (or {@code legacy}) exists in that line only. The shared lines are written for 26.x; for 1.21.11 the swaps of
- * {@code versions/swaps.txt} (plain renames such as GuiGraphicsExtractor -> GuiGraphics) are applied to them, in
- * {@code .java} files only.
+ * Conditions: {@code legacy} (1.21.11 only), {@code modern} (26.1 and newer), {@code v262} (26.2 and newer),
+ * {@code v263} (26.3 and newer), {@code pre262} (before 26.2) and {@code pre263} (before 26.3). The first branch that
+ * holds is written. A file whose first line is {@code //? only <condition>} exists in these lines only.
+ *
+ * <p>The shared lines are written for 26.3. For the older lines the swaps of {@code versions/swaps*.txt} (plain renames
+ * such as GuiGraphicsExtractor -> GuiGraphics) are applied to them, in {@code .java} files only; inside directive blocks
+ * only from 26.1 on. The line level is 0 for 1.21.11, 1 for 26.1, 2 for 26.2 and 3 for 26.3.
  */
 public final class Preprocessor {
 	private static final String MARK = "//?";
@@ -33,12 +38,24 @@ public final class Preprocessor {
 	public record Swap(Pattern pattern, String replacement) {
 	}
 
-	private final boolean modern;
+	private final int level;
 	private final List<Swap> swaps;
 
-	public Preprocessor(boolean modern, List<Swap> swaps) {
-		this.modern = modern;
+	public Preprocessor(int level, List<Swap> swaps) {
+		this.level = level;
 		this.swaps = swaps;
+	}
+
+	private boolean holds(String name, String where) {
+		return switch (name) {
+			case "legacy" -> level == 0;
+			case "modern" -> level >= 1;
+			case "v262" -> level >= 2;
+			case "v263" -> level >= 3;
+			case "pre263" -> level < 3;
+			case "pre262" -> level < 2;
+			default -> throw new IllegalStateException(where + ": unknown condition " + name);
+		};
 	}
 
 	public static List<Swap> readSwaps(Path file) throws IOException {
@@ -84,14 +101,15 @@ public final class Preprocessor {
 		String[] lines = text.split("\n", -1);
 		StringBuilder out = new StringBuilder(text.length());
 		boolean first = true;
-		int state = 0; // 0 outside, 1 in the first branch, 2 in else
-		boolean firstActive = false;
+		int state = 0; // 0 outside, 1 in an if/elif branch, 2 in else
+		boolean active = false; // the current branch is written
+		boolean taken = false; // a branch of this block was already chosen
 		for (int i = 0; i < lines.length; i++) {
 			String line = lines[i];
 			String trimmed = line.strip();
 			if (trimmed.startsWith(MARK)) {
 				String[] words = trimmed.substring(MARK.length()).strip().split("\\s+");
-				if (words.length < 1 || words[0].isEmpty() || (words[0].equals("if") || words[0].equals("only")) && words.length < 2) {
+				if (words.length < 1 || words[0].isEmpty() || (words[0].equals("if") || words[0].equals("elif") || words[0].equals("only")) && words.length < 2) {
 					throw new IllegalStateException(where + ":" + (i + 1) + ": directive without argument: " + trimmed);
 				}
 				switch (words[0]) {
@@ -99,7 +117,7 @@ public final class Preprocessor {
 						if (i != 0) {
 							throw new IllegalStateException(where + ":" + (i + 1) + ": '//? only' must be the first line");
 						}
-						if (!words[1].equals(modern ? "modern" : "legacy")) {
+						if (!holds(words[1], where)) {
 							return null;
 						}
 						continue;
@@ -109,7 +127,16 @@ public final class Preprocessor {
 							throw new IllegalStateException(where + ":" + (i + 1) + ": nested '//? if'");
 						}
 						state = 1;
-						firstActive = words[1].equals(modern ? "modern" : "legacy");
+						active = holds(words[1], where + ":" + (i + 1));
+						taken = active;
+						continue;
+					}
+					case "elif" -> {
+						if (state != 1) {
+							throw new IllegalStateException(where + ":" + (i + 1) + ": '//? elif' without 'if'");
+						}
+						active = !taken && holds(words[1], where + ":" + (i + 1));
+						taken |= active;
 						continue;
 					}
 					case "else" -> {
@@ -117,6 +144,7 @@ public final class Preprocessor {
 							throw new IllegalStateException(where + ":" + (i + 1) + ": '//? else' without 'if'");
 						}
 						state = 2;
+						active = !taken;
 						continue;
 					}
 					case "end" -> {
@@ -129,10 +157,10 @@ public final class Preprocessor {
 					default -> throw new IllegalStateException(where + ":" + (i + 1) + ": unknown directive " + trimmed);
 				}
 			}
-			if (state == 1 && !firstActive || state == 2 && firstActive) {
+			if (state != 0 && !active) {
 				continue;
 			}
-			if (state == 0 && !modern && swap) {
+			if ((state == 0 || level >= 1) && !swaps.isEmpty() && swap) {
 				for (Swap rename : swaps) {
 					line = rename.pattern().matcher(line).replaceAll(rename.replacement());
 				}

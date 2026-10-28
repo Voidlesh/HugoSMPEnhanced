@@ -6,7 +6,7 @@ import com.hugosmpenhanced.client.HugoSmpEnhancedClient;
 import com.hugosmpenhanced.client.settings.Theme;
 import com.mojang.blaze3d.platform.NativeImage;
 import com.mojang.blaze3d.systems.RenderSystem;
-//? if modern
+//? if v263
 import com.mojang.renderpearl.api.textures.FilterMode;
 //? else
 import com.mojang.blaze3d.textures.FilterMode;

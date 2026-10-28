@@ -1,5 +1,5 @@
-// The mod is built for two Minecraft lines from one source tree (src/): 1.21.11 (versions/1.21.11, Loom with remapping,
-// Java 21) and 26.x (versions/26.3, unobfuscated, Java 25). mergedJar puts both into the one jar that gets released.
+// The mod is built for several Minecraft lines from one source tree (src/): 1.21.11 (versions/1.21.11, Loom with remapping,
+// Java 21) and 26.1, 26.2, 26.3 (versions/26.*, unobfuscated, Java 25). mergedJar puts all into the one jar that gets released.
 plugins {
 	id 'base'
 	// Both Loom variants are declared here once so that the two version projects share one plugin class loader.
@@ -8,14 +8,21 @@ plugins {
 }
 
 evaluationDependsOn(':mc1_21_11')
+evaluationDependsOn(':mc26_1')
+evaluationDependsOn(':mc26_2')
 evaluationDependsOn(':mc26_3')
+
+def modernProjects = ['mc26_1', 'mc26_2', 'mc26_3']
 
 def mergedJar = tasks.register('mergedJar', hse.MergeJarTask) {
 	group = 'build'
-	description = 'The release jar: the 1.21.11 and the 26.x build of the mod in one jar.'
-	dependsOn ':mc1_21_11:remapJar', ':mc26_3:jar'
+	description = 'The release jar: the 1.21.11 and the 26.1, 26.2 and 26.3 builds of the mod in one jar.'
+	dependsOn ':mc1_21_11:remapJar', ':mc26_1:jar', ':mc26_2:jar', ':mc26_3:jar'
 	legacyJar = project(':mc1_21_11').tasks.named('remapJar').flatMap { it.archiveFile }
-	modernJar = project(':mc26_3').tasks.named('jar').flatMap { it.archiveFile }
+	modernNames = modernProjects
+	modernProjects.each { name -> modernJars.add(project(":${name}").tasks.named('jar').flatMap { it.archiveFile }) }
+	// 1.21.11, then 26.1 (26.1, 26.1.1, 26.1.2), 26.2 and 26.3 and newer (the copy of 26.3 also serves what comes after)
+	minecraft = ['1.21.11', '>=26.1']
 	output = layout.buildDirectory.file("libs/hugosmpenhanced-${project.version}.jar")
 }
 
@@ -24,5 +31,5 @@ tasks.named('assemble') {
 }
 
 tasks.named('build') {
-	dependsOn ':mc1_21_11:build', ':mc26_3:build'
+	dependsOn ':mc1_21_11:build', ':mc26_1:build', ':mc26_2:build', ':mc26_3:build'
 }

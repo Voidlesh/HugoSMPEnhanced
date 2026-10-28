@@ -1,5 +1,5 @@
 // Shared by versions/*/build.gradle, applied after the Loom plugin and the fabricApi test setup of the line.
-// The caller sets ext.modern (true for 26.x). The sources are the shared ones of src/, written for this line
+// The caller sets ext.level (0 for 1.21.11, 1 for 26.1, 2 for 26.2, 3 for 26.3). The sources are the shared ones of src/, written for this line
 // by hse.Preprocessor (see docs/MULTIVERSION.md).
 
 fabricApi {
@@ -14,13 +14,16 @@ fabricApi {
 	}
 }
 
-def swapsFile = rootProject.layout.projectDirectory.file('versions/swaps.txt')
+// Renames of the shared lines (written for 26.3) in the older lines: 1.21.11 swaps.txt, 26.1 and 26.2 swaps-26.2.txt, 26.1 also swaps-26.1.txt
+def swapFiles = [
+	[0: ['swaps.txt'], 1: ['swaps-26.1.txt', 'swaps-26.2.txt'], 2: ['swaps-26.2.txt'], 3: []][project.ext.level]
+].flatten().collect { rootProject.layout.projectDirectory.file("versions/${it}") }
 
 def prepare = { String name, String set ->
 	tasks.register(name, hse.PreprocessTask) {
 		source = rootProject.layout.projectDirectory.dir("src/${set}")
-		swaps = swapsFile
-		modern = project.ext.modern
+		swaps.from(swapFiles)
+		level = project.ext.level
 		target = layout.buildDirectory.dir("generated/${set}")
 	}
 }

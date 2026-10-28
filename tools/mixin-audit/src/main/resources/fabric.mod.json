@@ -1,0 +1,8 @@
+{
+  "schemaVersion": 1,
+  "id": "hugosmpenhanced-mixin-audit",
+  "version": "1",
+  "environment": "client",
+  "entrypoints": { "client": ["audit.Audit"] },
+  "depends": { "hugosmpenhanced": "*" }
+}

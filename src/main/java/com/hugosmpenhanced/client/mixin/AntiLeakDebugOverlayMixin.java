@@ -24,9 +24,12 @@ public abstract class AntiLeakDebugOverlayMixin {
 	@Final
 	private Font font;
 
-	//? if modern
+	//? if v263
 	@Inject(method = "extractLines", at = @At("HEAD"), cancellable = true)
 	private void hugosmpenhanced$maskCoordinates(GuiGraphicsExtractor graphics, List<String> lines, boolean left, int width, CallbackInfo ci) {
+	//? elif modern
+	@Inject(method = "extractLines", at = @At("HEAD"), cancellable = true)
+	private void hugosmpenhanced$maskCoordinates(GuiGraphicsExtractor graphics, List<String> lines, boolean left, CallbackInfo ci) {
 	//? else
 	@Inject(method = "renderLines", at = @At("HEAD"), cancellable = true)
 	private void hugosmpenhanced$maskCoordinates(GuiGraphics graphics, List<String> lines, boolean left, CallbackInfo ci) {

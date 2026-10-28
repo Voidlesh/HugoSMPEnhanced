@@ -6,7 +6,7 @@ import com.mojang.math.Axis;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.render.pip.PictureInPictureRenderer;
-//? if modern
+//? if v262
 import net.minecraft.client.renderer.SubmitNodeCollector;
 //? else
 import net.minecraft.client.renderer.MultiBufferSource;
@@ -24,7 +24,7 @@ import net.minecraft.world.phys.AABB;
 public class ItemSpinRenderer extends PictureInPictureRenderer<ItemSpinRenderState> {
 	private final ItemStackRenderState item = new ItemStackRenderState();
 
-	//? if legacy
+	//? if pre262
 	public ItemSpinRenderer(MultiBufferSource.BufferSource bufferSource) {
 		super(bufferSource);
 	}
@@ -36,7 +36,7 @@ public class ItemSpinRenderer extends PictureInPictureRenderer<ItemSpinRenderSta
 	}
 
 	@Override
-	//? if modern
+	//? if v262
 	protected void renderToTexture(ItemSpinRenderState state, PoseStack pose, SubmitNodeCollector submitNodeCollector) {
 	//? else
 	protected void renderToTexture(ItemSpinRenderState state, PoseStack pose) {
@@ -56,7 +56,7 @@ public class ItemSpinRenderer extends PictureInPictureRenderer<ItemSpinRenderSta
 		pose.rotate(Axis.XP.rotationDegrees(state.tilt()));
 		pose.rotate(Axis.YP.rotationDegrees(state.yaw()));
 		pose.translate(-box.getCenter().x, -box.getCenter().y, -box.getCenter().z);
-		//? if modern
+		//? if v262
 		client.gameRenderer.lighting().setupFor(this.item.usesBlockLight() ? Lighting.Entry.ITEMS_3D : Lighting.Entry.ENTITY_IN_UI);
 		this.item.submit(pose, submitNodeCollector, 0xF000F0, OverlayTexture.NO_OVERLAY, 0);
 		//? else

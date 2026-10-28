@@ -18,7 +18,7 @@ import com.hugosmpenhanced.client.HugoSmpEnhancedClient;
 import com.hugosmpenhanced.client.gui.HugoStyle;
 import com.hugosmpenhanced.client.gui.StyledScreen;
 import com.mojang.authlib.GameProfile;
-//? if modern
+//? if v263
 import com.mojang.authlib.services.ProfileResult;
 //? else
 import com.mojang.authlib.yggdrasil.ProfileResult;

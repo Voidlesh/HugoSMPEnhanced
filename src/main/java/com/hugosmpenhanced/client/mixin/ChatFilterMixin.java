@@ -33,7 +33,7 @@ public abstract class ChatFilterMixin {
 			return;
 		}
 
-		//? if modern
+		//? if v263
 		Component unsigned = packet.unsignedContent().orElse(null);
 		//? else
 		Component unsigned = packet.unsignedContent();

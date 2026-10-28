@@ -8,7 +8,7 @@ import org.spongepowered.asm.mixin.extensibility.IMixinConfigPlugin;
 import org.spongepowered.asm.mixin.extensibility.IMixinInfo;
 
 /**
- * Both mixin configs use this plugin. It lets a config apply only on its own Minecraft line and hands every call to
+ * Every mixin config uses this plugin. It lets a config apply only on its own Minecraft line and hands every call to
  * the mod's own plugin of that line, which is only loaded then (its classes are built for a different Java version).
  */
 public class GatePlugin implements IMixinConfigPlugin {
@@ -16,8 +16,7 @@ public class GatePlugin implements IMixinConfigPlugin {
 
 	@Override
 	public void onLoad(String mixinPackage) {
-		boolean forModernLine = mixinPackage.startsWith(Line.NEW_PACKAGE);
-		if (forModernLine != Line.modern()) {
+		if (!Line.lineOf(mixinPackage).equals(Line.current())) {
 			return;
 		}
 		try {

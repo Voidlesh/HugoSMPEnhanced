@@ -1,0 +1,26 @@
+// Starts the real 26.x client with the merged jar and loads every class the mod's mixins target (see Audit.java).
+// Not part of the mod build. Use run.sh.
+plugins {
+	id 'net.fabricmc.fabric-loom' version "1.17.20"
+}
+
+repositories {
+	maven { url = "https://api.modrinth.com/maven" }
+}
+
+dependencies {
+	minecraft "com.mojang:minecraft:${project.findProperty('mc')}"
+	implementation "net.fabricmc:fabric-loader:0.19.5"
+	implementation "net.fabricmc.fabric-api:fabric-api:${project.findProperty('fabric')}"
+	implementation "maven.modrinth:modmenu:${project.findProperty('modmenu')}"
+	runtimeOnly files(project.findProperty('modjar'))
+}
+
+java {
+	sourceCompatibility = JavaVersion.VERSION_25
+	targetCompatibility = JavaVersion.VERSION_25
+}
+
+tasks.withType(JavaCompile).configureEach {
+	it.options.release = 25
+}

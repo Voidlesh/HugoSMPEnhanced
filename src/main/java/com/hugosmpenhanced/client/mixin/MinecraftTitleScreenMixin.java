@@ -2,7 +2,7 @@ package com.hugosmpenhanced.client.mixin;
 
 import com.hugosmpenhanced.client.config.ModConfigManager;
 import com.hugosmpenhanced.client.feature.mainmenu.HugoTitleScreen;
-//? if modern
+//? if v262
 import net.minecraft.client.gui.Gui;
 //? else
 import net.minecraft.client.Minecraft;
@@ -14,7 +14,7 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.ModifyVariable;
 
 /** Shows {@link HugoTitleScreen} wherever the game opens the vanilla title screen, while it is enabled. */
-//? if modern
+//? if v262
 @Mixin(Gui.class)
 //? else
 @Mixin(Minecraft.class)

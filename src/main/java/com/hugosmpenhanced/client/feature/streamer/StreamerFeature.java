@@ -72,8 +72,10 @@ public final class StreamerFeature {
 			InputConstants.KEY_J,
 			TpaKeybinds.CATEGORY));
 
-		//? if modern
+		//? if v262
 		PictureInPictureRendererRegistry.register(context -> new ItemSpinRenderer());
+		//? elif modern
+		PictureInPictureRendererRegistry.register(context -> new ItemSpinRenderer(context.bufferSource()));
 		//? else
 		SpecialGuiElementRegistry.register(context -> new ItemSpinRenderer(context.vertexConsumers()));
 		//? end

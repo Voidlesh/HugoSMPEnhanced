@@ -12,7 +12,7 @@ import net.minecraft.world.phys.Vec3;
 /** Anti-Leak: the cloud pattern is tied to X and Z, so it is shifted by a secret amount per game start. */
 @Mixin(CloudRenderer.class)
 public abstract class AntiLeakCloudMixin {
-	//? if modern
+	//? if v263
 	@ModifyVariable(method = "prepare(ILnet/minecraft/client/CloudStatus;FILnet/minecraft/world/phys/Vec3;JF)V", at = @At("HEAD"), argsOnly = true)
 	//? else
 	@ModifyVariable(method = "render", at = @At("HEAD"), argsOnly = true)

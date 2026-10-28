@@ -46,10 +46,15 @@ import net.minecraft.world.phys.Vec3;
 @Mixin(NameTagFeatureRenderer.class)
 //? end
 public abstract class NametagWorldTextMixin {
-	//? if modern
+	//? if v262
 	@Inject(method = "submitNameTag", at = @At("HEAD"), cancellable = true)
 	private void hugosmpenhanced$submitStyledNameTag(
 		PoseStack poseStack, Vec3 attachment, int offset, Component name, boolean seeThrough, int lightCoords, CameraRenderState camera,
+		CallbackInfo ci
+	//? elif modern
+	@Inject(method = "submitNameTag", at = @At("HEAD"), cancellable = true)
+	private void hugosmpenhanced$submitStyledNameTag(
+		PoseStack poseStack, Vec3 attachment, int offset, Component name, boolean seeThrough, int lightCoords, double distance, CameraRenderState camera,
 		CallbackInfo ci
 	//? else
 	@Redirect(
